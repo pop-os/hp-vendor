@@ -10,11 +10,11 @@ fn main() {
         process::exit(1);
     }
 
-    let sys_vendor = report_file("/sys/class/dmi/id/sys_vendor").unwrap_or_else(|_| {
+    let product_name = report_file("/sys/class/dmi/id/product_name").unwrap_or_else(|_| {
         "Unknown".to_string()
     });
-    if sys_vendor != "HP" {
-        eprintln!("hp-vendor: unknown vendor '{}'", sys_vendor);
+    if product_name != "HP EliteBook 845 G8 Notebook PC" {
+        eprintln!("hp-vendor: unknown product '{}'", product_name);
         process::exit(1);
     }
 
@@ -94,6 +94,28 @@ fn main() {
         });
         section.item("Version", ReportFreq::Boot, || {
             OsRelease::new().map(|x| x.version)
+        });
+    }
+
+    {
+        let section = report.section("Battery");
+        section.item("Capacity", ReportFreq::Boot, || {
+            report_file("/sys/class/power_supply/BAT0/capacity")
+        });
+        section.item("Cycle Count", ReportFreq::Boot, || {
+            report_file("/sys/class/power_supply/BAT0/cycle_count")
+        });
+        section.item("Manufacturer", ReportFreq::Boot, || {
+            report_file("/sys/class/power_supply/BAT0/manufacturer")
+        });
+        section.item("Model", ReportFreq::Boot, || {
+            report_file("/sys/class/power_supply/BAT0/model_name")
+        });
+        section.item("Serial", ReportFreq::Boot, || {
+            report_file("/sys/class/power_supply/BAT0/serial_number")
+        });
+        section.item("Technology", ReportFreq::Boot, || {
+            report_file("/sys/class/power_supply/BAT0/technology")
         });
     }
 
