@@ -1,5 +1,9 @@
 use os_release::OsRelease;
-use std::process;
+use raw_cpuid::CpuId;
+use std::{
+    io,
+    process,
+};
 
 use report::{Report, ReportFreq, report_file};
 mod report;
@@ -116,6 +120,26 @@ fn main() {
         });
         section.item("Technology", ReportFreq::Boot, || {
             report_file("/sys/class/power_supply/BAT0/technology")
+        });
+    }
+
+    {
+        let section = report.section("CPU");
+        section.item("Vendor", ReportFreq::Boot, || {
+            CpuId::new().get_vendor_info()
+                .map(|x| x.as_str().to_string())
+                .ok_or(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "no cpuid vendor"
+                ))
+        });
+        section.item("Model", ReportFreq::Boot, || {
+            CpuId::new().get_processor_brand_string()
+                .map(|x| x.as_str().to_string())
+                .ok_or(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "no cpuid model"
+                ))
         });
     }
 
