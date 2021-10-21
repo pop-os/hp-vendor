@@ -5,6 +5,7 @@ use std::{
     process,
 };
 
+mod proto;
 use report::{Report, ReportFreq, report_file};
 mod report;
 
