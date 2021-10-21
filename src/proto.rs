@@ -1,0 +1,17 @@
+pub mod base_board;
+pub mod battery;
+pub mod display;
+pub mod driver;
+pub mod event;
+pub mod firmware;
+pub mod graphics;
+pub mod memory;
+pub mod network;
+pub mod operating_system;
+pub mod peripheral;
+pub mod processor;
+pub mod state;
+pub mod storage;
+pub mod system;
+pub mod thermal;
+pub mod tpm;
