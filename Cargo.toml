@@ -12,3 +12,5 @@ log = "0.4.14"
 os-release = "0.1.0"
 protobuf = "=2.8.1"
 raw-cpuid = "10.2.0"
+schemafy = "0.6"
+serde = { version = "1", features = ["derive"] }
