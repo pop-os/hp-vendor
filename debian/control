@@ -1,0 +1,17 @@
+Source: pop-hp-vendor
+Section: admin
+Priority: optional
+Maintainer: System76 <info@system76.com>
+Build-Depends:
+  debhelper-compat (= 11),
+  cargo,
+Standards-Version: 4.1.1
+Homepage: https://github.com/pop-os/hp-vendor
+
+Package: pop-hp-vendor
+Architecture: amd64 arm64
+Depends:
+  systemd,
+  ${misc:Depends},
+  ${shlibs:Depends}
+Description: HP vendor support
