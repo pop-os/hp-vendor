@@ -1,13 +1,53 @@
+use nix::sys::utsname::uname;
 use os_release::OsRelease;
 use raw_cpuid::CpuId;
-use std::{
-    io,
-    process,
-};
+use std::{io, process};
+use time::{format_description, OffsetDateTime};
 
 mod event;
-use report::{Report, ReportFreq, report_file};
+use report::{report_file, Report, ReportFreq};
 mod report;
+
+fn unknown() -> String {
+    "unknown".to_string()
+}
+
+fn data_header() -> event::TelemetryHeaderModel {
+    let (os_name, os_version) = match OsRelease::new() {
+        Ok(OsRelease { name, version, .. }) => (name, version),
+        Err(_) => (unknown(), unknown()),
+    };
+
+    // XXX offset format? Fraction?
+    let format =
+        format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap();
+    let (timestamp, timestamp_utc_offset) = match OffsetDateTime::now_local() {
+        Ok(time) => (
+            time.format(&format).ok().unwrap_or_else(unknown),
+            time.offset().whole_hours().into(),
+        ),
+        Err(_) => (unknown(), 0),
+    };
+
+    event::TelemetryHeaderModel {
+        consent: event::DataCollectionConsent {
+            level: String::new(), // TODO
+        },
+        data_provider: event::DataProviderInfo {
+            app_name: env!("CARGO_PKG_NAME").to_string(),
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
+            os_name,
+            os_version,
+        },
+        ids: event::DeviceOSIds {
+            bios_uuid: String::new(),     // TODO
+            device_id: String::new(),     // TODO
+            os_install_id: String::new(), // TODO
+        },
+        timestamp,
+        timestamp_utc_offset,
+    }
+}
 
 fn main() {
     if unsafe { libc::geteuid() } != 0 {
@@ -15,9 +55,8 @@ fn main() {
         process::exit(1);
     }
 
-    let product_name = report_file("/sys/class/dmi/id/product_name").unwrap_or_else(|_| {
-        "Unknown".to_string()
-    });
+    let product_name =
+        report_file("/sys/class/dmi/id/product_name").unwrap_or_else(|_| "Unknown".to_string());
     if product_name != "HP EliteBook 845 G8 Notebook PC" {
         eprintln!("hp-vendor: unknown product '{}'", product_name);
         process::exit(1);
@@ -127,24 +166,37 @@ fn main() {
     {
         let section = report.section("CPU");
         section.item("Vendor", ReportFreq::Boot, || {
-            CpuId::new().get_vendor_info()
+            CpuId::new()
+                .get_vendor_info()
                 .map(|x| x.as_str().to_string())
-                .ok_or(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "no cpuid vendor"
-                ))
+                .ok_or(io::Error::new(io::ErrorKind::NotFound, "no cpuid vendor"))
         });
         section.item("Model", ReportFreq::Boot, || {
-            CpuId::new().get_processor_brand_string()
+            CpuId::new()
+                .get_processor_brand_string()
                 .map(|x| x.as_str().to_string())
-                .ok_or(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "no cpuid model"
-                ))
+                .ok_or(io::Error::new(io::ErrorKind::NotFound, "no cpuid model"))
         });
     }
 
     report.update();
 
     println!("{:#?}", report.values());
+
+    let utsname = uname();
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&event::Event {
+            data_header: data_header(),
+            data: vec![event::AnyTelemetryEventEnum::SwLinuxKernel(
+                event::LinuxKernel {
+                    name: utsname.sysname().to_string(),
+                    release: utsname.release().to_string(),
+                    state: event::Swstate::Same, // TODO
+                    version: utsname.version().to_string(),
+                }
+            )]
+        })
+        .unwrap()
+    );
 }
