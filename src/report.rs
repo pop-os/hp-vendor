@@ -1,16 +1,12 @@
 use indexmap::IndexMap;
 use log::error;
-use std::{
-    fs,
-    io,
-    path::Path,
-    time::Instant,
-};
+use std::{fs, io, path::Path, time::Instant};
 
 pub fn report_file<P: AsRef<Path>>(path: P) -> io::Result<String> {
     fs::read_to_string(path).map(|x| x.trim().to_string())
 }
 
+#[derive(Copy, Clone)]
 pub enum ReportFreq {
     /// One update per boot cycle
     Boot,
@@ -123,7 +119,8 @@ impl Report {
         for section in self.sections.iter() {
             for item in section.items.iter() {
                 if let Some(value) = &item.value {
-                    values.entry(section.name)
+                    values
+                        .entry(section.name)
                         .or_insert(IndexMap::new())
                         .insert(item.name, value.clone());
                 }

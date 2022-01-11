@@ -3,8 +3,29 @@ use os_release::OsRelease;
 use time::{format_description, OffsetDateTime};
 
 pub mod event;
+pub mod report;
 
 use event::{AnyTelemetryEventEnum, TelemetryEventType};
+use report::ReportFreq;
+
+pub struct EventDesc {
+    freq: ReportFreq,
+    cb: fn() -> AnyTelemetryEventEnum,
+}
+
+impl EventDesc {
+    fn new(freq: ReportFreq, cb: fn() -> AnyTelemetryEventEnum) -> Self {
+        Self { freq, cb }
+    }
+
+    pub fn freq(&self) -> ReportFreq {
+        self.freq
+    }
+
+    pub fn generate(&self) -> AnyTelemetryEventEnum {
+        (self.cb)()
+    }
+}
 
 fn unknown() -> String {
     "unknown".to_string()
@@ -47,9 +68,9 @@ pub fn data_header() -> event::TelemetryHeaderModel {
     }
 }
 
-pub fn event(type_: TelemetryEventType) -> Option<AnyTelemetryEventEnum> {
+pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
     Some(match type_ {
-        TelemetryEventType::SwLinuxKernel => {
+        TelemetryEventType::SwLinuxKernel => EventDesc::new(ReportFreq::Daily, || {
             let utsname = uname();
             event::LinuxKernel {
                 name: utsname.sysname().to_string(),
@@ -57,8 +78,8 @@ pub fn event(type_: TelemetryEventType) -> Option<AnyTelemetryEventEnum> {
                 state: event::Swstate::Same, // TODO
                 version: utsname.version().to_string(),
             }
-        }
-        .into(),
+            .into()
+        }),
         _ => return None,
     })
 }

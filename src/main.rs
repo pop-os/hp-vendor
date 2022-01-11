@@ -2,10 +2,10 @@ use os_release::OsRelease;
 use raw_cpuid::CpuId;
 use std::{io, process};
 
-use report::{report_file, Report, ReportFreq};
-mod report;
-
-use hp_vendor::event;
+use hp_vendor::{
+    event,
+    report::{report_file, Report, ReportFreq},
+};
 
 fn main() {
     if unsafe { libc::geteuid() } != 0 {
@@ -148,6 +148,7 @@ fn main() {
             data_header: hp_vendor::data_header(),
             data: event::TelemetryEventType::iter()
                 .filter_map(hp_vendor::event)
+                .map(|x| x.generate())
                 .collect(),
         }
         .to_json_pretty()
