@@ -15,6 +15,7 @@ fn main() {
 
     let product_name =
         report_file("/sys/class/dmi/id/product_name").unwrap_or_else(|_| "Unknown".to_string());
+    #[cfg(not(feature = "disable-model-check"))]
     if product_name != "HP EliteBook 845 G8 Notebook PC" {
         eprintln!("hp-vendor: unknown product '{}'", product_name);
         process::exit(1);
