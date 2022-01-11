@@ -1,4 +1,6 @@
 use convert_case::{Case, Casing};
+use proc_macro2::{Ident, Span};
+use quote::quote;
 use serde_json::{Map, Value};
 use std::{
     env,
@@ -32,6 +34,8 @@ fn main() {
                 .unwrap();
             let struct_ = ref_.strip_prefix("#/definitions/").unwrap();
             let struct_ = struct_.replace("NVMES", "Nvmes"); // XXX Why? Better?
+            let variant = Ident::new(&variant, Span::call_site());
+            let struct_ = Ident::new(&struct_, Span::call_site());
             (variant, struct_)
         })
         .collect::<Vec<_>>();
@@ -42,56 +46,88 @@ fn main() {
     let mut file = File::create(path).unwrap();
 
     // Generate a `AnyTelemetryEventEnum` enum
-    writeln!(file, "#[derive(Debug, Deserialize, Serialize)]").unwrap();
-    writeln!(file, "#[serde(rename_all = \"snake_case\")]").unwrap();
-    writeln!(file, "pub enum AnyTelemetryEventEnum {{").unwrap();
-    for (variant, struct_) in properties.iter() {
-        writeln!(file, "    {}({}),", variant, &struct_).unwrap();
-    }
-    writeln!(file, "}}").unwrap();
+    let variants = properties.iter().map(|(variant, struct_)| {
+        quote! {#variant(#struct_)}
+    });
+    writeln!(
+        file,
+        "{}",
+        quote! {
+            #[derive(Debug, Deserialize, Serialize)]
+            #[serde(rename_all = "snake_case")]
+            pub enum AnyTelemetryEventEnum {
+                #(#variants),*
+            }
+        }
+    )
+    .unwrap();
 
     // Implement `From<T> for AnyTelemetryEventEnum` for every type wrapper by enum
     for (variant, struct_) in properties.iter() {
-        writeln!(file, "impl From<{}> for AnyTelemetryEventEnum {{", struct_).unwrap();
-        writeln!(file, "    fn from(value: {}) -> Self {{", struct_).unwrap();
-        writeln!(file, "        AnyTelemetryEventEnum::{}(value)", variant).unwrap();
-        writeln!(file, "    }}").unwrap();
-        writeln!(file, "}}").unwrap();
-    }
-
-    // Define `TelemetryEventType` enum
-    writeln!(file, "#[derive(Debug, Clone, Copy)]").unwrap();
-    writeln!(file, "pub enum TelemetryEventType {{").unwrap();
-    for (variant, _) in properties.iter() {
-        writeln!(file, "    {},", variant).unwrap();
-    }
-    writeln!(file, "}}").unwrap();
-
-    // Generate `TelemetryEventType::iter()` method to iterate over variants
-    writeln!(file, "impl TelemetryEventType {{").unwrap();
-    writeln!(file, "    pub fn iter() -> impl Iterator<Item=Self> {{").unwrap();
-    writeln!(file, "        static VARIANTS: &[TelemetryEventType] = &[").unwrap();
-    for (variant, _) in properties.iter() {
-        writeln!(file, "            TelemetryEventType::{},", variant).unwrap();
-    }
-    writeln!(file, "        ];").unwrap();
-    writeln!(file, "        VARIANTS.iter().copied()").unwrap();
-    writeln!(file, "    }}").unwrap();
-    writeln!(file, "}}").unwrap();
-
-    // Generate function from `AnyTelemetryEventEnum` to `AnyTelemetryEventEnum`
-    writeln!(file, "impl AnyTelemetryEventEnum {{").unwrap();
-    writeln!(file, "    fn type_(&self) -> TelemetryEventType {{").unwrap();
-    writeln!(file, "        match self {{").unwrap();
-    for (variant, _) in properties.iter() {
         writeln!(
             file,
-            "            AnyTelemetryEventEnum::{0}(_) => TelemetryEventType::{0},",
-            variant
+            "{}",
+            quote! {
+                impl From<#struct_> for AnyTelemetryEventEnum {
+                    fn from(value: #struct_) -> Self {
+                        AnyTelemetryEventEnum::#variant(value)
+                    }
+                }
+            }
         )
         .unwrap();
     }
-    writeln!(file, "        }}").unwrap();
-    writeln!(file, "    }}").unwrap();
-    writeln!(file, "}}").unwrap();
+
+    // Define `TelemetryEventType` enum
+    let variants = properties.iter().map(|(variant, _)| variant);
+    writeln!(
+        file,
+        "{}",
+        quote! {
+            #[derive(Debug, Clone, Copy)]
+            pub enum TelemetryEventType {
+                #(#variants),*
+            }
+        }
+    )
+    .unwrap();
+
+    // Generate `TelemetryEventType::iter()` method to iterate over variants
+    let variants = properties.iter().map(|(variant, _)| {
+        quote! {TelemetryEventType::#variant}
+    });
+    writeln!(
+        file,
+        "{}",
+        quote! {
+            impl TelemetryEventType {
+                pub fn iter() -> impl Iterator<Item=Self> {
+                    static VARIANTS: &[TelemetryEventType] = &[
+                        #(#variants),*
+                    ];
+                    VARIANTS.iter().copied()
+                }
+            }
+        }
+    )
+    .unwrap();
+
+    // Generate function from `AnyTelemetryEventEnum` to `AnyTelemetryEventEnum`
+    let cases = properties.iter().map(
+        |(variant, _)| quote!(AnyTelemetryEventEnum::#variant(_) => TelemetryEventType::#variant),
+    );
+    writeln!(
+        file,
+        "{}",
+        quote! {
+            impl AnyTelemetryEventEnum {
+                fn type_(&self) -> TelemetryEventType {
+                    match self {
+                        #(#cases),*
+                    }
+                }
+            }
+        }
+    )
+    .unwrap();
 }

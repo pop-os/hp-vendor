@@ -20,6 +20,8 @@ time = { version = "0.3", features = ["formatting", "local-offset"] }
 
 [build-dependencies]
 convert_case = "0.5"
+proc-macro2 = "1"
+quote = "1"
 serde_json = "1"
 
 [features]
