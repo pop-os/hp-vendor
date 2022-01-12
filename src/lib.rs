@@ -38,19 +38,16 @@ pub fn data_header() -> event::TelemetryHeaderModel {
     };
 
     // XXX offset format? Fraction?
-    let format =
-        format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap();
-    let (timestamp, timestamp_utc_offset) = match OffsetDateTime::now_local() {
-        Ok(time) => (
-            time.format(&format).ok().unwrap_or_else(unknown),
-            time.offset().whole_hours().into(),
-        ),
-        Err(_) => (unknown(), 0),
-    };
+    let format = time::format_description::well_known::Rfc3339;
+    let timestamp = OffsetDateTime::now_utc()
+        .format(&format)
+        .ok()
+        .unwrap_or_else(unknown);
 
     event::TelemetryHeaderModel {
         consent: event::DataCollectionConsent {
-            level: String::new(), // TODO
+            opted_in_level: String::new(), // XXX
+            version: String::new(),        // XXX
         },
         data_provider: event::DataProviderInfo {
             app_name: env!("CARGO_PKG_NAME").to_string(),
@@ -64,7 +61,6 @@ pub fn data_header() -> event::TelemetryHeaderModel {
             os_install_id: String::new(), // TODO
         },
         timestamp,
-        timestamp_utc_offset,
     }
 }
 
