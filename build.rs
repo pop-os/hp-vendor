@@ -1,6 +1,6 @@
 use convert_case::{Case, Casing};
-use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, TokenStreamExt};
+use proc_macro2::{Ident, Span};
+use quote::quote;
 use serde_json::Value;
 use std::{
     env,
@@ -14,7 +14,7 @@ fn main() {
 
     let json_str = fs::read_to_string("event_package.json").unwrap();
     let root: Value = serde_json::from_str(&json_str).unwrap();
-    let properties = root
+    let (variants, structs): (Vec<_>, Vec<_>) = root
         .pointer("/definitions/AnyTelemetryEvent/properties")
         .unwrap()
         .as_object()
@@ -30,70 +30,50 @@ fn main() {
                 Ident::new(&struct_, Span::call_site()),
             )
         })
-        .collect::<Vec<_>>();
+        .unzip();
 
-    let mut tokens = TokenStream::new();
-
-    // Generate a `AnyTelemetryEventEnum` enum
-    let variants = properties.iter().map(|(variant, struct_)| {
-        quote! {#variant(#struct_)}
-    });
-    tokens.append_all(quote! {
+    let tokens = quote! {
+        // Generate a `AnyTelemetryEventEnum` enum
         #[derive(Debug, Deserialize, Serialize)]
         #[serde(rename_all = "snake_case")]
         pub enum AnyTelemetryEventEnum {
-            #(#variants),*
+            #(#variants(#structs)),*
         }
-    });
 
-    // Implement `From<T> for AnyTelemetryEventEnum` for every type wrapper by enum
-    for (variant, struct_) in properties.iter() {
-        tokens.append_all(quote! {
-            impl From<#struct_> for AnyTelemetryEventEnum {
-                fn from(value: #struct_) -> Self {
-                    AnyTelemetryEventEnum::#variant(value)
+        // Implement `From<T> for AnyTelemetryEventEnum` for every type wrapper by enum
+        #(
+            impl From<#structs> for AnyTelemetryEventEnum {
+                fn from(value: #structs) -> Self {
+                    AnyTelemetryEventEnum::#variants(value)
                 }
             }
-        });
-    }
+        )*
 
-    // Define `TelemetryEventType` enum
-    let variants = properties.iter().map(|(variant, _)| variant);
-    tokens.append_all(quote! {
+        // Define `TelemetryEventType` enum
         #[derive(Debug, Clone, Copy)]
         pub enum TelemetryEventType {
             #(#variants),*
         }
-    });
 
-    // Generate `TelemetryEventType::iter()` method to iterate over variants
-    let variants = properties
-        .iter()
-        .map(|(variant, _)| quote! {TelemetryEventType::#variant});
-    tokens.append_all(quote! {
+        // Generate `TelemetryEventType::iter()` method to iterate over variants
         impl TelemetryEventType {
             pub fn iter() -> impl Iterator<Item=Self> {
                 static VARIANTS: &[TelemetryEventType] = &[
-                    #(#variants),*
+                    #(TelemetryEventType::#variants),*
                 ];
                 VARIANTS.iter().copied()
             }
         }
-    });
 
-    // Generate function from `AnyTelemetryEventEnum` to `AnyTelemetryEventEnum`
-    let cases = properties.iter().map(
-        |(variant, _)| quote!(AnyTelemetryEventEnum::#variant(_) => TelemetryEventType::#variant),
-    );
-    tokens.append_all(quote! {
+        // Generate function from `AnyTelemetryEventEnum` to `AnyTelemetryEventEnum`
         impl AnyTelemetryEventEnum {
             fn type_(&self) -> TelemetryEventType {
                 match self {
-                    #(#cases),*
+                    #(AnyTelemetryEventEnum::#variants(_) => TelemetryEventType::#variants),*
                 }
             }
         }
-    });
+    };
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let mut path = PathBuf::from(out_dir);
