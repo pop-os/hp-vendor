@@ -1,5 +1,5 @@
 {
-  "title": "EventPackageModel",
+  "title": "UploadEventPackageRequestModel",
   "description": "A package of events",
   "type": "object",
   "properties": {
@@ -77,13 +77,18 @@
       "title": "DataCollectionConsent",
       "type": "object",
       "properties": {
-        "level": {
-          "title": "Level",
+        "opted_in_level": {
+          "title": "Opted In Level",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
           "type": "string"
         }
       },
       "required": [
-        "level"
+        "opted_in_level",
+        "version"
       ]
     },
     "TelemetryHeaderModel": {
@@ -99,10 +104,6 @@
           "type": "string",
           "format": "date-time"
         },
-        "timestamp_utc_offset": {
-          "title": "Timestamp Utc Offset",
-          "type": "integer"
-        },
         "data_provider": {
           "$ref": "#/definitions/DataProviderInfo"
         },
@@ -113,7 +114,6 @@
       "required": [
         "ids",
         "timestamp",
-        "timestamp_utc_offset",
         "data_provider",
         "consent"
       ]
@@ -135,12 +135,22 @@
         "state": {
           "$ref": "#/definitions/HWState"
         },
+        "ct_number": {
+          "title": "Ct Number",
+          "description": "\n        CT Number of the base board - HP-specific identifier (PRIMARY KEY)\n        ",
+          "examples": [
+            "PLETU00WBFF0CX"
+          ],
+          "source": {
+            "Linux": "TBD"
+          },
+          "type": "string"
+        },
         "base_board_id": {
           "title": "Base Board Id",
-          "description": "Base board identifier, otherwise known as the Platform ID or System ID.Typically a 4 digit Hex code.",
+          "description": "\n        Base board identifier\n        ",
           "examples": [
-            "8895",
-            "860F"
+            "8895"
           ],
           "source": {
             "Linux": "/sys/class/dmi/id/board_name"
@@ -158,17 +168,6 @@
           },
           "type": "string"
         },
-        "ct_number": {
-          "title": "Ct Number",
-          "description": "\n        CT Number of the base board for traceability (HP-specific identifier).\n        CT Number format: **CAAAARRSSWWXXX**\n        * C - commodity code (P for base boards/platforms)\n        * AAAA - assembly code\n        * RR - revision level\n        * SS - supplier/site of manufacture\n        * WW - week of manufacture\n        * XXX - unique sequence identifier\n        ",
-          "examples": [
-            "PLETU00WBFF0CX"
-          ],
-          "source": {
-            "Linux": "TBD"
-          },
-          "type": "string"
-        },
         "version": {
           "title": "Version",
           "description": "Base Board version",
@@ -183,10 +182,7 @@
       },
       "required": [
         "state",
-        "base_board_id",
-        "manufacturer",
-        "ct_number",
-        "version"
+        "ct_number"
       ]
     },
     "Battery": {
@@ -266,11 +262,7 @@
       "required": [
         "state",
         "serial_number",
-        "ct_number",
-        "manufacturer",
-        "devicename",
-        "energy_design",
-        "voltage_design"
+        "ct_number"
       ]
     },
     "BatteryUsage": {
@@ -449,15 +441,7 @@
         "battery_state",
         "cycle_count",
         "energy_full",
-        "energy_remaining",
-        "energy_rate",
-        "voltage",
-        "time_to_empty",
-        "eletric_current",
-        "temperature",
-        "max_error",
-        "status_register",
-        "cell_voltage"
+        "energy_remaining"
       ]
     },
     "Display": {
@@ -606,10 +590,7 @@
         "bus_info",
         "type",
         "manufacturer",
-        "model",
-        "chip_name",
-        "memory_size",
-        "cores_count"
+        "model"
       ]
     },
     "MemoryPhysical": {
@@ -744,16 +725,7 @@
       "required": [
         "state",
         "serial_number",
-        "part_number",
-        "manufacturer",
-        "form_factor",
-        "type",
-        "size",
-        "speed",
-        "data_width",
-        "bank_label",
-        "locator",
-        "rank"
+        "part_number"
       ]
     },
     "NetworkCard": {
@@ -762,6 +734,17 @@
       "properties": {
         "state": {
           "$ref": "#/definitions/HWState"
+        },
+        "serial_number": {
+          "title": "Serial Number",
+          "description": "Card Serial Number (PRIMARY KEY)",
+          "examples": [
+            "20:1e:88:db:72:11"
+          ],
+          "source": {
+            "Linux": ""
+          },
+          "type": "string"
         },
         "description": {
           "title": "Description",
@@ -819,17 +802,6 @@
           },
           "type": "string"
         },
-        "serial_value": {
-          "title": "Serial Value",
-          "description": "Card Serial Value",
-          "examples": [
-            "20:1e:88:db:72:11"
-          ],
-          "source": {
-            "Linux": ""
-          },
-          "type": "string"
-        },
         "clock_speed": {
           "title": "Clock Speed",
           "description": "Card Clock Speed (in MHz)",
@@ -872,15 +844,7 @@
       },
       "required": [
         "state",
-        "description",
-        "product_name",
-        "manufacturer",
-        "interface_type",
-        "bus_info",
-        "serial_value",
-        "clock_speed",
-        "width",
-        "capabilities"
+        "serial_number"
       ]
     },
     "PeripheralAudioPort": {
@@ -924,7 +888,7 @@
     },
     "PeripheralUSBTypeA": {
       "title": "PeripheralUSBTypeA",
-      "description": "PeripheralUSBTypeA is any gadget that is plugged/unplugged from one of the USB type A ports\nIncluding: External Mic, External Camera, USB Flash Drive, etc.\n\nLinux source will be a combination of dmesg, /proc/kmesg, journalctl, udev, lsusb",
+      "description": "PeripheralUSBTypeA is any gadget that is plugged/unplugged from one of the USB type A ports\nIncluding: External Mic, External Camera, USB Flash Drive, etc.\n\nLinux source will be a combination of dmesg, /proc/kmesg, journalctl, udev, lsusb\n\nPrimary keys are the DEVICE ID and the BUS ID telling where it was added/removed",
       "type": "object",
       "properties": {
         "state": {
@@ -932,12 +896,13 @@
         },
         "timestamp": {
           "title": "Timestamp",
+          "description": "Time of the event",
           "type": "string",
           "format": "date-time"
         },
         "usb_bus_id": {
           "title": "Usb Bus Id",
-          "description": "USB Bus Id",
+          "description": "USB Bus Id (PRIMARY KEY)",
           "examples": [
             ""
           ],
@@ -948,7 +913,7 @@
         },
         "usb_device_id": {
           "title": "Usb Device Id",
-          "description": "USB Device Id",
+          "description": "USB Device Id (PRIMARY KEY)",
           "examples": [
             ""
           ],
@@ -1028,13 +993,7 @@
         "state",
         "timestamp",
         "usb_bus_id",
-        "usb_device_id",
-        "manufacturer_id",
-        "product_id",
-        "device_version",
-        "manufacturer",
-        "product",
-        "message"
+        "usb_device_id"
       ]
     },
     "PeripheralUSBTypeC": {
@@ -1103,6 +1062,30 @@
         "state": {
           "$ref": "#/definitions/HWState"
         },
+        "device_id": {
+          "title": "Device Id",
+          "description": "Device Id (PRIMARY KEY) - The DeviceID property contains a str uniquely identifying the processor with other devices on the system.",
+          "examples": [
+            "CPU0",
+            "CPU1",
+            "cpu@0"
+          ],
+          "source": {
+            "Linux": "* * Linux: TBD"
+          },
+          "type": "string"
+        },
+        "processor_id": {
+          "title": "Processor Id",
+          "description": "Processor Id (PRIMARY KEY) - Processor information that describes the processor features.",
+          "examples": [
+            "BFEBFBFF000506E3"
+          ],
+          "source": {
+            "Linux": "dmidecode -t processor"
+          },
+          "type": "string"
+        },
         "socket": {
           "title": "Socket",
           "description": "Processor Socket",
@@ -1145,30 +1128,6 @@
           ],
           "source": {
             "Linux": "dmidecode -t processor"
-          },
-          "type": "string"
-        },
-        "processor_id": {
-          "title": "Processor Id",
-          "description": "Processor Id - Processor information that describes the processor features.",
-          "examples": [
-            "BFEBFBFF000506E3"
-          ],
-          "source": {
-            "Linux": "dmidecode -t processor"
-          },
-          "type": "string"
-        },
-        "device_id": {
-          "title": "Device Id",
-          "description": "Device Id - The DeviceID property contains a str uniquely identifying the processor with other devices on the system.",
-          "examples": [
-            "CPU0",
-            "CPU1",
-            "cpu@0"
-          ],
-          "source": {
-            "Linux": "* * Linux: TBD"
           },
           "type": "string"
         },
@@ -1258,19 +1217,8 @@
       },
       "required": [
         "state",
-        "socket",
-        "name",
-        "manufacturer",
-        "signature",
-        "processor_id",
         "device_id",
-        "voltage",
-        "max_clock_speed",
-        "cores_count",
-        "cores_enabled",
-        "thread_count",
-        "capabilities",
-        "caches"
+        "processor_id"
       ]
     },
     "NVMEStoragePhysical": {
@@ -1360,13 +1308,7 @@
       },
       "required": [
         "state",
-        "serial_number",
-        "model",
-        "firmware_revision",
-        "vendor_id",
-        "sub_system_id",
-        "total_capacity",
-        "bus_info"
+        "serial_number"
       ]
     },
     "StoragePartition": {
@@ -1470,10 +1412,7 @@
       },
       "required": [
         "serial_number",
-        "node_id",
-        "used_capacity",
-        "lba_size",
-        "partitions"
+        "node_id"
       ]
     },
     "NVMESmartLog": {
@@ -1635,6 +1574,30 @@
         "state": {
           "$ref": "#/definitions/HWState"
         },
+        "serialnumber": {
+          "title": "Serialnumber",
+          "description": "\n        System Serial Number (PRIMARY KEY)\n        Contains encoded information that represents serial number of system or device.\n        Format: \n        * CCC = supplier code (encoded)\n        * YMM = week of manufacture (encoded)\n        * RRRR = random values\n        ",
+          "examples": [
+            "5CG4441ZNV",
+            "CND8127SCP"
+          ],
+          "source": {
+            "Linux": "/sys/class/dmi/id/product_serial"
+          },
+          "type": "string"
+        },
+        "uuid": {
+          "title": "Uuid",
+          "description": "System UUID (PRIMARY KEY) - Universally Unique Identifier is a 16-octet (128-bit) number ",
+          "examples": [
+            "550E8400-E29B-41D4-A716-446655440000",
+            "7F57D02D-7314-E311-A9BD-F7757856691A"
+          ],
+          "source": {
+            "Linux": "/sys/class/dmi/id/product_uuid"
+          },
+          "type": "string"
+        },
         "chassis": {
           "title": "Chassis",
           "description": "System Chassis",
@@ -1702,42 +1665,6 @@
           },
           "type": "string"
         },
-        "serialnumber": {
-          "title": "Serialnumber",
-          "description": "\n        System Serial Number\n        Contains encoded information that represents serial number of system or device.\n        Format: \n        * CCC = supplier code (encoded)\n        * YMM = week of manufacture (encoded)\n        * RRRR = random values\n        ",
-          "examples": [
-            "5CG4441ZNV",
-            "CND8127SCP"
-          ],
-          "source": {
-            "Linux": "/sys/class/dmi/id/product_serial"
-          },
-          "type": "string"
-        },
-        "name": {
-          "title": "Name",
-          "description": "System Name",
-          "examples": [
-            "JOHNDOE10",
-            "my-awesome-pc"
-          ],
-          "source": {
-            "Linux": "hostname"
-          },
-          "type": "string"
-        },
-        "uuid": {
-          "title": "Uuid",
-          "description": "System UUID - Universally Unique Identifier is a 16-octet (128-bit) number ",
-          "examples": [
-            "550E8400-E29B-41D4-A716-446655440000",
-            "7F57D02D-7314-E311-A9BD-F7757856691A"
-          ],
-          "source": {
-            "Linux": "/sys/class/dmi/id/product_uuid"
-          },
-          "type": "string"
-        },
         "width": {
           "title": "Width",
           "description": "System Bit Width",
@@ -1780,18 +1707,8 @@
       },
       "required": [
         "state",
-        "chassis",
-        "manufacturer",
-        "model",
-        "version",
-        "family",
-        "sku",
         "serialnumber",
-        "name",
-        "uuid",
-        "width",
-        "capabilities",
-        "feature_byte"
+        "uuid"
       ]
     },
     "ThermalContextSample": {
@@ -1862,15 +1779,21 @@
       "description": "Thermal Context it is the context of all sensor readings that correlate/cause thermal variations\n\nWhen collected all Thermal Samples should be read",
       "type": "object",
       "properties": {
-        "timestamp": {
-          "title": "Timestamp",
-          "description": "Time when all sensors were read",
+        "start_time": {
+          "title": "Start Time",
+          "description": "Sensor read start time",
+          "type": "string",
+          "format": "date-time"
+        },
+        "end_time": {
+          "title": "End Time",
+          "description": "Sensor read stop time",
           "type": "string",
           "format": "date-time"
         },
         "start_trigger_event": {
           "title": "Start Trigger Event",
-          "description": "Trigger Event - Event that triggers the sample collections.",
+          "description": "Trigger Event - Event that triggers the sample collection.",
           "examples": [
             "FAN RPM increased beyond X%"
           ],
@@ -1900,7 +1823,8 @@
         }
       },
       "required": [
-        "timestamp",
+        "start_time",
+        "end_time",
         "start_trigger_event",
         "stop_trigger_event",
         "samples"
@@ -2007,11 +1931,7 @@
         "manufacturer_id",
         "manufacturer_version",
         "manufacturer_version_info",
-        "trusted_computing_group_version",
-        "physical_presence_version",
-        "tpm_activated",
-        "tpm_enabled",
-        "tpm_has_owner"
+        "trusted_computing_group_version"
       ]
     },
     "SWState": {
@@ -2273,7 +2193,9 @@
         }
       },
       "required": [
-        "state"
+        "state",
+        "crash_time",
+        "kernel"
       ]
     },
     "Firmware": {
@@ -2399,6 +2321,17 @@
           },
           "type": "string"
         },
+        "boot_device": {
+          "title": "Boot Device",
+          "description": "OS Boot Device",
+          "examples": [
+            "\\Device\\HarddiskVolume1"
+          ],
+          "source": {
+            "Linux": "TBD"
+          },
+          "type": "string"
+        },
         "version": {
           "title": "Version",
           "description": "OS Version",
@@ -2442,24 +2375,11 @@
             "Linux": "TBD"
           },
           "type": "string"
-        },
-        "boot_device": {
-          "title": "Boot Device",
-          "description": "OS Boot Device",
-          "examples": [
-            "\\Device\\HarddiskVolume1"
-          ],
-          "source": {
-            "Linux": "TBD"
-          },
-          "type": "string"
         }
       },
       "required": [
         "state",
         "name",
-        "version",
-        "manufacturer",
         "boot_device"
       ]
     },

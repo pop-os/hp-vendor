@@ -10,9 +10,9 @@ use std::{
 };
 
 fn main() {
-    println!("cargo:rerun-if-changed=event_package.json");
+    println!("cargo:rerun-if-changed=UploadEventPackageRequestModel.json");
 
-    let json_str = fs::read_to_string("event_package.json").unwrap();
+    let json_str = fs::read_to_string("UploadEventPackageRequestModel.json").unwrap();
     let root: Value = serde_json::from_str(&json_str).unwrap();
     let (variants, structs): (Vec<_>, Vec<_>) = root
         .pointer("/definitions/AnyTelemetryEvent/properties")
