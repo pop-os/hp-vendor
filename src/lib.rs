@@ -10,7 +10,9 @@ use event::{AnyTelemetryEventEnum, TelemetryEventType};
 use report::ReportFreq;
 
 pub fn read_file<P: AsRef<Path>, T: FromStr>(path: P) -> Option<T> {
-    fs::read_to_string(path).ok().and_then(|x| x.parse().ok())
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|x| x.trim().parse().ok())
 }
 
 pub struct EventDesc {
