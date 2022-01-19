@@ -1,4 +1,3 @@
-use raw_cpuid::CpuId;
 use std::{fs, process};
 
 use hp_vendor::event;
@@ -18,13 +17,12 @@ fn main() {
 
     println!(
         "{}",
-        event::Event {
-            data_header: hp_vendor::data_header(),
-            data: event::TelemetryEventType::iter()
+        event::Event::new(
+            event::TelemetryEventType::iter()
                 .filter_map(hp_vendor::event)
                 .map(|x| x.generate())
-                .collect(),
-        }
+                .collect()
+        )
         .to_json_pretty()
     );
 }
