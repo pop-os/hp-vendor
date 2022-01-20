@@ -1,4 +1,4 @@
-use std::{fs, process};
+use std::process;
 
 use hp_vendor::event;
 
@@ -8,11 +8,14 @@ fn main() {
         process::exit(1);
     }
 
-    let product_name = fs::read_to_string("/sys/class/dmi/id/product_name").unwrap();
     #[cfg(not(feature = "disable-model-check"))]
-    if product_name != "HP EliteBook 845 G8 Notebook PC" {
-        eprintln!("hp-vendor: unknown product '{}'", product_name);
-        process::exit(1);
+    {
+        let product_name = std::fs::read_to_string("/sys/class/dmi/id/product_name")
+            .unwrap_or_else(|_| "unknown".to_string());
+        if product_name != "HP EliteBook 845 G8 Notebook PC" {
+            eprintln!("hp-vendor: unknown product '{}'", product_name);
+            process::exit(1);
+        }
     }
 
     let mut events = Vec::new();
