@@ -43,9 +43,9 @@ pub fn data_header() -> TelemetryHeaderModel {
             os_version,
         },
         ids: DeviceOSIds {
-            bios_uuid: String::new(),     // TODO
-            device_id: String::new(),     // TODO
-            os_install_id: String::new(), // TODO
+            bios_uuid: String::new(),            // TODO
+            device_id: "XXXXXXXXXX".to_string(), // TODO
+            os_install_id: String::new(),        // TODO
         },
         timestamp,
     }
