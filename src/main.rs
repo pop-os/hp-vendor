@@ -15,14 +15,11 @@ fn main() {
         process::exit(1);
     }
 
-    println!(
-        "{}",
-        event::Event::new(
-            event::TelemetryEventType::iter()
-                .filter_map(hp_vendor::event)
-                .map(|x| x.generate())
-                .collect()
-        )
-        .to_json_pretty()
-    );
+    let mut events = Vec::new();
+    for i in event::TelemetryEventType::iter() {
+        if let Some(event) = hp_vendor::event(i) {
+            event.generate(&mut events);
+        }
+    }
+    println!("{}", event::Event::new(events).to_json_pretty());
 }
