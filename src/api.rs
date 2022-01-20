@@ -6,15 +6,26 @@ const TOKEN_URL: &str = "API_URL";
 const UPLOAD_URL: &str =
     "API_URL";
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 pub struct TokenRequest {
     pub devicesn: String,
     pub biosuuid: String,
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct TokenResponse {
+    pub message: String,
+    pub token: String,
+}
+
 impl TokenRequest {
-    pub fn send(&self, client: &Client) -> reqwest::Result<reqwest::blocking::Response> {
-        client.post(TOKEN_URL).json(self).send()
+    pub fn send(&self, client: &Client) -> reqwest::Result<TokenResponse> {
+        client
+            .post(TOKEN_URL)
+            .header("x-api-key", option_env!("API_KEY").unwrap_or(""))
+            .json(self)
+            .send()?
+            .json()
     }
 }
 
