@@ -1,5 +1,6 @@
 use nix::sys::utsname::uname;
 use os_release::OsRelease;
+use std::str::FromStr;
 
 pub mod event;
 pub mod report;
@@ -122,6 +123,32 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
                 .into(),
             );
+        }),
+        TelemetryEventType::SwDriver => EventDesc::new(ReportFreq::Daily, |events| {
+            if let Some(modules) = read_file::<_, String>("/proc/modules") {
+                for line in modules.lines() {
+                    let mut cols = line.split(' ');
+                    let module_name = cols.next().unwrap_or("unknown");
+                    let size = cols.next().and_then(|s| i64::from_str(s).ok());
+                    let _instances = cols.next();
+                    let _deps = cols.next();
+                    let _state = cols.next();
+                    events.push(
+                        event::Driver {
+                            display_name: None,         // XXX
+                            driver_category: None,      // XXX
+                            driver_type: String::new(), // XXX
+                            driver_version: None,       // XXX
+                            link_time: None,            // XXX
+                            module_name: module_name.to_string(),
+                            pnp_device_id: None, // XXX
+                            size,
+                            state: event::Swstate::Same, // XXX
+                        }
+                        .into(),
+                    );
+                }
+            }
         }),
         _ => return None,
     })
