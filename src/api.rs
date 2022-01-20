@@ -37,6 +37,7 @@ impl Event {
     ) -> reqwest::Result<reqwest::blocking::Response> {
         client
             .post(UPLOAD_URL)
+            .header("x-api-key", option_env!("API_KEY").unwrap_or(""))
             .header("authorizationToken", token)
             .json(self)
             .send()
