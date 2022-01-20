@@ -2,6 +2,7 @@ use nix::sys::utsname::uname;
 use os_release::OsRelease;
 use std::str::FromStr;
 
+pub mod api;
 pub mod event;
 pub mod report;
 
