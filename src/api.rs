@@ -18,6 +18,19 @@ pub struct TokenResponse {
     pub token: String,
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct EventResponseDetail {
+    pub loc: (String, String, u32, String, String),
+    pub msg: String,
+    #[serde(rename = "type")]
+    pub type_: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EventResponse {
+    detail: Vec<EventResponseDetail>,
+}
+
 impl TokenRequest {
     pub fn send(&self, client: &Client) -> reqwest::Result<TokenResponse> {
         client
@@ -30,16 +43,13 @@ impl TokenRequest {
 }
 
 impl Event {
-    pub fn send(
-        &self,
-        client: &Client,
-        token: &str,
-    ) -> reqwest::Result<reqwest::blocking::Response> {
+    pub fn send(&self, client: &Client, token: &str) -> reqwest::Result<EventResponse> {
         client
             .post(UPLOAD_URL)
             .header("x-api-key", option_env!("API_KEY").unwrap_or(""))
             .header("authorizationToken", token)
             .json(self)
-            .send()
+            .send()?
+            .json()
     }
 }
