@@ -1,6 +1,7 @@
 use nix::sys::utsname::uname;
 use os_release::OsRelease;
 use std::str::FromStr;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 pub mod api;
 pub mod event;
@@ -55,6 +56,46 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     state: event::Hwstate::Same, // TODO
                     voltage_design: read_file("/sys/class/power_supply/BAT0/voltage_min_design")
                         .map(|x: f64| x / 1000.),
+                }
+                .into(),
+            );
+        }),
+        TelemetryEventType::HwBatteryUsage => EventDesc::new(ReportFreq::Daily, |events| {
+            // XXX: Division? Integers?
+            fn energy_rate() -> Option<i64> {
+                let current: i64 = read_file("/sys/class/power_supply/BAT0/current_now")?;
+                let voltage: i64 = read_file("/sys/class/power_supply/BAT0/voltage_now")?;
+                Some(current * voltage / 1000000)
+            }
+            let timestamp = OffsetDateTime::now_utc()
+                .format(&Rfc3339)
+                .ok()
+                .unwrap_or_else(unknown);
+            events.push(
+                event::BatteryUsage {
+                    battery_state: read_file("/sys/class/power_supply/BAT0/status")
+                        .unwrap_or_else(unknown),
+                    cell_voltage: None,       // XXX
+                    ct_number: String::new(), // XXX
+                    cycle_count: read_file("/sys/class/power_supply/BAT0/cycle_count")
+                        .unwrap_or(-1),
+                    eletric_current: None, // XXX
+                    energy_full: read_file("/sys/class/power_supply/BAT0/charge_full")
+                        .map(|x: f64| x / 1000000.)
+                        .unwrap_or(-1.),
+                    energy_rate: energy_rate(),
+                    energy_remaining: read_file("/sys/class/power_supply/BAT0/charge_now")
+                        .map(|x: f64| x / 1000000.)
+                        .unwrap_or(-1.),
+                    max_error: None, // XXX
+                    serial_number: read_file("/sys/class/power_supply/BAT0/serial_number")
+                        .unwrap_or_else(unknown),
+                    status_register: None, // XXX
+                    temperature: None,     // XXX
+                    time_to_empty: None,   // XXX
+                    timestamp,
+                    voltage: read_file("/sys/class/power_supply/BAT0/voltage_now")
+                        .map(|x: i64| x / 1000000),
                 }
                 .into(),
             );

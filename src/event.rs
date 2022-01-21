@@ -1,7 +1,7 @@
 use os_release::OsRelease;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path, str::FromStr};
-use time::OffsetDateTime;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 schemafy::schemafy!("UploadEventPackageRequestModel.json");
 
@@ -24,10 +24,8 @@ pub fn data_header() -> TelemetryHeaderModel {
         Err(_) => (unknown(), unknown()),
     };
 
-    // XXX offset format? Fraction?
-    let format = time::format_description::well_known::Rfc3339;
     let timestamp = OffsetDateTime::now_utc()
-        .format(&format)
+        .format(&Rfc3339)
         .ok()
         .unwrap_or_else(unknown);
 
