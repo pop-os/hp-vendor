@@ -1,6 +1,6 @@
 use nix::sys::utsname::uname;
 use os_release::OsRelease;
-use std::str::FromStr;
+use std::{fs, str::FromStr};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 pub mod api;
@@ -189,6 +189,30 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         }
                         .into(),
                     );
+                }
+            }
+        }),
+        TelemetryEventType::HwNvmeStoragePhysical => EventDesc::new(ReportFreq::Daily, |events| {
+            let entries = fs::read_dir("/sys/class/block");
+            for i in entries.into_iter().flatten().filter_map(Result::ok) {
+                if let Some(name) = i.file_name().to_str() {
+                    if name.starts_with("nvme") {
+                        let path = i.path();
+                        events.push(
+                            event::NvmestoragePhysical {
+                                bus_info: read_file(path.join("device/address")),
+                                firmware_revision: read_file(path.join("device/firmware_rev")),
+                                model: read_file(path.join("device/model")),
+                                serial_number: read_file(path.join("device/serial"))
+                                    .unwrap_or_else(unknown),
+                                state: event::Hwstate::Same, // XXX
+                                sub_system_id: None,         // XXX
+                                total_capacity: None,        // XXX
+                                vendor_id: None,             // XXX
+                            }
+                            .into(),
+                        );
+                    }
                 }
             }
         }),
