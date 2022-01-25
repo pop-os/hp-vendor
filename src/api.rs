@@ -1,6 +1,6 @@
 use reqwest::blocking::Client;
 
-use crate::event::Event;
+use crate::event::Events;
 
 const TOKEN_URL: &str = "API_URL";
 const UPLOAD_URL: &str =
@@ -19,7 +19,7 @@ pub struct TokenResponse {
 }
 
 #[derive(Debug, serde::Deserialize)]
-pub struct EventResponseDetail {
+pub struct EventsResponseDetail {
     pub loc: (String, String, u32, String, String),
     pub msg: String,
     #[serde(rename = "type")]
@@ -27,8 +27,8 @@ pub struct EventResponseDetail {
 }
 
 #[derive(Debug, serde::Deserialize)]
-pub struct EventResponse {
-    detail: Vec<EventResponseDetail>,
+pub struct EventsResponse {
+    detail: Vec<EventsResponseDetail>,
 }
 
 impl TokenRequest {
@@ -42,8 +42,8 @@ impl TokenRequest {
     }
 }
 
-impl Event {
-    pub fn send(&self, client: &Client, token: &str) -> reqwest::Result<EventResponse> {
+impl Events {
+    pub fn send(&self, client: &Client, token: &str) -> reqwest::Result<EventsResponse> {
         client
             .post(UPLOAD_URL)
             .header("x-api-key", option_env!("API_KEY").unwrap_or(""))

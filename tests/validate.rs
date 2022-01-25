@@ -8,7 +8,7 @@ fn validate() {
             event.generate(&mut events);
         }
     }
-    let value = serde_json::to_value(Event::new(events)).unwrap();
+    let value = serde_json::to_value(Events::new(events)).unwrap();
 
     let mut scope = valico::json_schema::Scope::new();
     let schema_json: serde_json::Value =

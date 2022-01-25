@@ -50,12 +50,12 @@ pub fn data_header() -> TelemetryHeaderModel {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Event {
+pub struct Events {
     pub data: Vec<TelemetryEvent>,
     pub data_header: TelemetryHeaderModel,
 }
 
-impl Event {
+impl Events {
     pub fn new(data: Vec<TelemetryEvent>) -> Self {
         Self {
             data,

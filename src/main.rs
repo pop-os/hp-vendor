@@ -24,5 +24,5 @@ fn main() {
             event.generate(&mut events);
         }
     }
-    println!("{}", event::Event::new(events).to_json_pretty());
+    println!("{}", event::Events::new(events).to_json_pretty());
 }
