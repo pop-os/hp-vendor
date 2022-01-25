@@ -71,3 +71,8 @@ impl Events {
         serde_json::to_string_pretty(self).unwrap()
     }
 }
+
+enum MutState<'a> {
+    Sw(&'a mut Swstate),
+    Hw(&'a mut Hwstate),
+}

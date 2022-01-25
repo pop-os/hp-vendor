@@ -14,23 +14,39 @@ fn main() {
 
     let json_str = fs::read_to_string("UploadEventPackageRequestModel.json").unwrap();
     let root: Value = serde_json::from_str(&json_str).unwrap();
-    let (variants, structs): (Vec<_>, Vec<_>) = root
+    let mut variants = Vec::new();
+    let mut structs = Vec::new();
+    let mut states = Vec::new();
+    for (k, v) in root
         .pointer("/definitions/AnyTelemetryEvent/properties")
         .unwrap()
         .as_object()
         .unwrap()
-        .iter()
-        .map(|(k, v)| {
-            let variant = k.to_case(Case::UpperCamel);
-            let ref_ = v.pointer("/$ref").unwrap().as_str().unwrap();
-            let struct_ = ref_.strip_prefix("#/definitions/").unwrap();
-            let struct_ = struct_.replace("NVMES", "Nvmes"); // XXX Why? Better?
-            (
-                Ident::new(&variant, Span::call_site()),
-                Ident::new(&struct_, Span::call_site()),
-            )
-        })
-        .unzip();
+    {
+        let variant = k.to_case(Case::UpperCamel);
+        variants.push(Ident::new(&variant, Span::call_site()));
+
+        let ref_ = v.pointer("/$ref").unwrap().as_str().unwrap();
+        let type_ = ref_.strip_prefix("#/definitions/").unwrap();
+        let struct_ = type_.replace("NVMES", "Nvmes"); // XXX Why? Better?
+        structs.push(Ident::new(&struct_, Span::call_site()));
+
+        let properties = root
+            .pointer(&format!("/definitions/{}/properties", type_))
+            .unwrap();
+        states.push(if let Some(ref_) = properties.pointer("state/$ref") {
+            let ref_ = ref_.as_str().unwrap();
+            if ref_ == "#/definitions/SWState" {
+                quote! { Some(MutState::Sw(&mut x.state)) }
+            } else if ref_ == "#/definitions/HWState" {
+                quote! { Some(MutState::Hw(&mut x.state)) }
+            } else {
+                unreachable!();
+            }
+        } else {
+            quote! { None }
+        });
+    }
 
     let tokens = quote! {
         // Generate a `TelemetryEvent` enum
@@ -70,6 +86,12 @@ fn main() {
             fn type_(&self) -> TelemetryEventType {
                 match self {
                     #(TelemetryEvent::#variants(_) => TelemetryEventType::#variants),*
+                }
+            }
+
+            fn state(&mut self) -> Option<&mut MutState> {
+                match self {
+                    #(TelemetryEvent::#variants(x) => #states),*
                 }
             }
         }
