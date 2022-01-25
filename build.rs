@@ -50,7 +50,7 @@ fn main() {
 
     let tokens = quote! {
         // Generate a `TelemetryEvent` enum
-        #[derive(Debug, Deserialize, Serialize)]
+        #[derive(Debug, PartialEq, Deserialize, Serialize)]
         #[serde(rename_all = "snake_case")]
         pub enum TelemetryEvent {
             #(#variants(#structs)),*
@@ -66,7 +66,7 @@ fn main() {
         )*
 
         // Define `TelemetryEventType` enum
-        #[derive(Debug, Clone, Copy)]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub enum TelemetryEventType {
             #(#variants),*
         }
