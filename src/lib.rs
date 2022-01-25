@@ -113,10 +113,18 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             );
         }),
         TelemetryEventType::SwFirmware => EventDesc::new(ReportFreq::Daily, |events| {
+            fn bios_date() -> Option<String> {
+                let date: String = read_file("/sys/class/dmi/id/bios_date")?;
+                let mut parts = date.split('/');
+                let month = parts.next()?;
+                let day = parts.next()?;
+                let year = parts.next()?;
+                Some(format!("{}-{}-{}", year, month, day))
+            }
             events.push(
                 event::Firmware {
                     address: None, // XXX
-                    bios_release_date: read_file("/sys/class/dmi/id/bios_date"),
+                    bios_release_date: bios_date(),
                     bios_vendor: read_file("/sys/class/dmi/id/bios_vendor"),
                     bios_version: read_file("/sys/class/dmi/id/bios_version"),
                     capabilities: None, // XXX
