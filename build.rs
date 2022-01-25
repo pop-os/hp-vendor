@@ -33,18 +33,18 @@ fn main() {
         .unzip();
 
     let tokens = quote! {
-        // Generate a `AnyTelemetryEventEnum` enum
+        // Generate a `TelemetryEvent` enum
         #[derive(Debug, Deserialize, Serialize)]
         #[serde(rename_all = "snake_case")]
-        pub enum AnyTelemetryEventEnum {
+        pub enum TelemetryEvent {
             #(#variants(#structs)),*
         }
 
-        // Implement `From<T> for AnyTelemetryEventEnum` for every type wrapper by enum
+        // Implement `From<T> for TelemetryEvent` for every type wrapper by enum
         #(
-            impl From<#structs> for AnyTelemetryEventEnum {
+            impl From<#structs> for TelemetryEvent {
                 fn from(value: #structs) -> Self {
-                    AnyTelemetryEventEnum::#variants(value)
+                    TelemetryEvent::#variants(value)
                 }
             }
         )*
@@ -65,11 +65,11 @@ fn main() {
             }
         }
 
-        // Generate function from `AnyTelemetryEventEnum` to `AnyTelemetryEventEnum`
-        impl AnyTelemetryEventEnum {
+        // Generate function from `TelemetryEvent` to `TelemetryEvent`
+        impl TelemetryEvent {
             fn type_(&self) -> TelemetryEventType {
                 match self {
-                    #(AnyTelemetryEventEnum::#variants(_) => TelemetryEventType::#variants),*
+                    #(TelemetryEvent::#variants(_) => TelemetryEventType::#variants),*
                 }
             }
         }
