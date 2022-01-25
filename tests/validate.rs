@@ -1,4 +1,4 @@
-use hp_vendor::event::{Event, TelemetryEventType};
+use hp_vendor::event::{Events, TelemetryEventType};
 
 #[test]
 fn validate() {
