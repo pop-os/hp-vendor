@@ -7,16 +7,16 @@ pub mod api;
 pub mod event;
 pub mod report;
 
-use event::{read_file, unknown, AnyTelemetryEventEnum, TelemetryEventType};
+use event::{read_file, unknown, TelemetryEvent, TelemetryEventType};
 use report::ReportFreq;
 
 pub struct EventDesc {
     freq: ReportFreq,
-    cb: fn(&mut Vec<AnyTelemetryEventEnum>),
+    cb: fn(&mut Vec<TelemetryEvent>),
 }
 
 impl EventDesc {
-    fn new(freq: ReportFreq, cb: fn(&mut Vec<AnyTelemetryEventEnum>)) -> Self {
+    fn new(freq: ReportFreq, cb: fn(&mut Vec<TelemetryEvent>)) -> Self {
         Self { freq, cb }
     }
 
@@ -24,7 +24,7 @@ impl EventDesc {
         self.freq
     }
 
-    pub fn generate(&self, events: &mut Vec<AnyTelemetryEventEnum>) {
+    pub fn generate(&self, events: &mut Vec<TelemetryEvent>) {
         (self.cb)(events)
     }
 }
