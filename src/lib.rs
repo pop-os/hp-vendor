@@ -227,3 +227,13 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
         _ => return None,
     })
 }
+
+pub fn all_events() -> Vec<event::TelemetryEvent> {
+    let mut events = Vec::new();
+    for i in event::TelemetryEventType::iter() {
+        if let Some(event) = event(i) {
+            event.generate(&mut events);
+        }
+    }
+    events
+}

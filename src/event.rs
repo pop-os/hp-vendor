@@ -49,13 +49,6 @@ pub fn data_header() -> TelemetryHeaderModel {
     }
 }
 
-impl TelemetryEvent {
-    fn update(&mut self, prev: &Self) {
-        self.type_() == prev.type_();
-        self == prev;
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Events {
     pub data: Vec<TelemetryEvent>,
