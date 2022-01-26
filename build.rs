@@ -40,10 +40,10 @@ fn main() {
         if let Some(ref_) = properties.pointer("/state/$ref") {
             let ref_ = ref_.as_str().unwrap();
             if ref_ == "#/definitions/SWState" {
-                states.push(quote! { Some(State::Sw(x.state.clone())) });
+                states.push(quote! { Some(State::Sw(x.state)) });
                 mut_states.push(quote! { Some(MutState::Sw(&mut x.state)) });
             } else if ref_ == "#/definitions/HWState" {
-                states.push(quote! { Some(State::Hw(x.state.clone())) });
+                states.push(quote! { Some(State::Hw(x.state)) });
                 mut_states.push(quote! { Some(MutState::Hw(&mut x.state)) });
             } else {
                 unreachable!();
@@ -114,18 +114,21 @@ fn main() {
                 }
             }
 
+            #[allow(unused_variables)]
             fn state(&self) -> Option<State> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #states),*
                 }
             }
 
+            #[allow(unused_variables)]
             fn state_mut(&mut self) -> Option<MutState> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #mut_states),*
                 }
             }
 
+            #[allow(unused_variables)]
             fn primaries(&self) -> Vec<String> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #primaries),*

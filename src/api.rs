@@ -28,7 +28,7 @@ pub struct EventsResponseDetail {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct EventsResponse {
-    detail: Vec<EventsResponseDetail>,
+    pub detail: Vec<EventsResponseDetail>,
 }
 
 impl TokenRequest {

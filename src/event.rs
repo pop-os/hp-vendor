@@ -100,7 +100,7 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
             } else {
                 match new.state_mut() {
                     Some(MutState::Sw(state)) => *state = Swstate::Updated,
-                    Some(MutState::Hw(state)) => {} // XXX ?
+                    Some(MutState::Hw(_state)) => {} // XXX ?
                     None => {}
                 }
             }
