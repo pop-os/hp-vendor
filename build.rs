@@ -66,7 +66,7 @@ fn main() {
         )*
 
         // Define `TelemetryEventType` enum
-        #[derive(Debug, Clone, Copy, PartialEq)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub enum TelemetryEventType {
             #(#variants),*
         }
