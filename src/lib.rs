@@ -204,7 +204,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             let entries = fs::read_dir("/sys/class/block");
             for i in entries.into_iter().flatten().filter_map(Result::ok) {
                 if let Some(name) = i.file_name().to_str() {
-                    if name.starts_with("nvme") {
+                    if name.starts_with("nvme") && !name.contains('p') {
                         let path = i.path();
                         events.push(
                             event::NvmestoragePhysical {
