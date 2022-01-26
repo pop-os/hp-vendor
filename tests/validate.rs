@@ -1,14 +1,8 @@
-use hp_vendor::event::{Events, TelemetryEventType};
+use hp_vendor::event::Events;
 
 #[test]
 fn validate() {
-    let mut events = Vec::new();
-    for i in TelemetryEventType::iter() {
-        if let Some(event) = hp_vendor::event(i) {
-            event.generate(&mut events);
-        }
-    }
-    let value = serde_json::to_value(Events::new(events)).unwrap();
+    let value = serde_json::to_value(Events::new(hp_vendor::all_events())).unwrap();
 
     let mut scope = valico::json_schema::Scope::new();
     let schema_json: serde_json::Value =

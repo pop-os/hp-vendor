@@ -1,6 +1,6 @@
 use std::process;
 
-use hp_vendor::event;
+use hp_vendor::{all_events, event};
 
 fn main() {
     if unsafe { libc::geteuid() } != 0 {
@@ -18,11 +18,6 @@ fn main() {
         }
     }
 
-    let mut events = Vec::new();
-    for i in event::TelemetryEventType::iter() {
-        if let Some(event) = hp_vendor::event(i) {
-            event.generate(&mut events);
-        }
-    }
+    let events = all_events();
     println!("{}", event::Events::new(events).to_json_pretty());
 }
