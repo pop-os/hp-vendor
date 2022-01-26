@@ -17,6 +17,7 @@ fn main() {
     let mut variants = Vec::new();
     let mut structs = Vec::new();
     let mut states = Vec::new();
+    let mut primaries = Vec::new();
     for (k, v) in root
         .pointer("/definitions/AnyTelemetryEvent/properties")
         .unwrap()
@@ -34,6 +35,7 @@ fn main() {
         let properties = root
             .pointer(&format!("/definitions/{}/properties", type_))
             .unwrap();
+
         states.push(if let Some(ref_) = properties.pointer("state/$ref") {
             let ref_ = ref_.as_str().unwrap();
             if ref_ == "#/definitions/SWState" {
@@ -45,6 +47,25 @@ fn main() {
             }
         } else {
             quote! { None }
+        });
+
+        let mut primary_keys: Vec<_> = properties
+            .as_object()
+            .unwrap()
+            .iter()
+            .filter_map(|(k, v)| {
+                if let Some(desc) = v.pointer("/description") {
+                    if desc.as_str().unwrap().contains("PRIMARY KEY") {
+                        return Some(Ident::new(k, Span::call_site()));
+                    }
+                }
+                None
+            })
+            .collect();
+        primary_keys.sort();
+
+        primaries.push(quote! {
+            vec![#(x.#primary_keys.to_string()),*]
         });
     }
 
@@ -92,6 +113,12 @@ fn main() {
             fn state(&mut self) -> Option<&mut MutState> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #states),*
+                }
+            }
+
+            fn primaries(&self) -> Vec<String> {
+                match self {
+                    #(TelemetryEvent::#variants(x) => #primaries),*
                 }
             }
         }
