@@ -37,7 +37,7 @@ fn main() {
             .pointer(&format!("/definitions/{}/properties", type_))
             .unwrap();
 
-        if let Some(ref_) = properties.pointer("state/$ref") {
+        if let Some(ref_) = properties.pointer("/state/$ref") {
             let ref_ = ref_.as_str().unwrap();
             if ref_ == "#/definitions/SWState" {
                 states.push(quote! { Some(State::Sw(x.state.clone())) });
