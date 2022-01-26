@@ -37,7 +37,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 event::LinuxKernel {
                     name: utsname.sysname().to_string(),
                     release: utsname.release().to_string(),
-                    state: event::Swstate::Same, // TODO
+                    state: event::Swstate::Installed,
                     version: utsname.version().to_string(),
                 }
                 .into(),
@@ -53,7 +53,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     manufacturer: read_file("/sys/class/power_supply/BAT0/manufacturer"),
                     serial_number: read_file("/sys/class/power_supply/BAT0/serial_number")
                         .unwrap_or_else(unknown),
-                    state: event::Hwstate::Same, // TODO
+                    state: event::Hwstate::Added,
                     voltage_design: read_file("/sys/class/power_supply/BAT0/voltage_min_design")
                         .map(|x: f64| x / 1000.),
                 }
@@ -106,7 +106,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     base_board_id: read_file("/sys/class/dmi/id/board_name"),
                     ct_number: String::new(), // XXX
                     manufacturer: read_file("/sys/class/dmi/id/board_vendor"),
-                    state: event::Hwstate::Same, // TODO
+                    state: event::Hwstate::Added,
                     version: read_file("/sys/class/dmi/id/board_version"),
                 }
                 .into(),
@@ -129,10 +129,10 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     bios_version: read_file("/sys/class/dmi/id/bios_version"),
                     capabilities: None, // XXX
                     embedded_controller_version: read_file("/sys/class/dmi/id/ec_firmware_release"),
-                    rom_size: None,              // XXX
-                    runtime_size: None,          // XXX
-                    smbios_version: None,        // XXX
-                    state: event::Swstate::Same, // XXX
+                    rom_size: None,       // XXX
+                    runtime_size: None,   // XXX
+                    smbios_version: None, // XXX
+                    state: event::Swstate::Installed,
                 }
                 .into(),
             );
@@ -149,7 +149,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     serialnumber: read_file("/sys/class/dmi/id/product_serial")
                         .unwrap_or_else(unknown),
                     sku: read_file("/sys/class/dmi/id/product_sku"),
-                    state: event::Hwstate::Same, // XXX,
+                    state: event::Hwstate::Added,
                     uuid: read_file("/sys/class/dmi/id/product_uuid").unwrap_or_else(unknown),
                     version: read_file("/sys/class/dmi/id/product_version"),
                     width: None, // XXX
@@ -167,8 +167,8 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     name: os_release
                         .as_ref()
                         .map_or_else(unknown, |x| x.name.to_owned()),
-                    sku: None,                   // XXX
-                    state: event::Swstate::Same, // XXX
+                    sku: None, // XXX
+                    state: event::Swstate::Installed,
                     version: os_release.map(|x| x.version.clone()),
                 }
                 .into(),
@@ -193,7 +193,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             module_name: module_name.to_string(),
                             pnp_device_id: None, // XXX
                             size,
-                            state: event::Swstate::Same, // XXX
+                            state: event::Swstate::Installed,
                         }
                         .into(),
                     );
@@ -213,10 +213,10 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 model: read_file(path.join("device/model")),
                                 serial_number: read_file(path.join("device/serial"))
                                     .unwrap_or_else(unknown),
-                                state: event::Hwstate::Same, // XXX
-                                sub_system_id: None,         // XXX
-                                total_capacity: None,        // XXX
-                                vendor_id: None,             // XXX
+                                state: event::Hwstate::Added,
+                                sub_system_id: None,  // XXX
+                                total_capacity: None, // XXX
+                                vendor_id: None,      // XXX
                             }
                             .into(),
                         );
