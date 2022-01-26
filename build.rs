@@ -71,7 +71,7 @@ fn main() {
 
     let tokens = quote! {
         // Generate a `TelemetryEvent` enum
-        #[derive(Debug, PartialEq, Deserialize, Serialize)]
+        #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
         #[serde(rename_all = "snake_case")]
         pub enum TelemetryEvent {
             #(#variants(#structs)),*
