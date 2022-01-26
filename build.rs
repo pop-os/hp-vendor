@@ -17,6 +17,7 @@ fn main() {
     let mut variants = Vec::new();
     let mut structs = Vec::new();
     let mut states = Vec::new();
+    let mut mut_states = Vec::new();
     let mut primaries = Vec::new();
     for (k, v) in root
         .pointer("/definitions/AnyTelemetryEvent/properties")
@@ -36,18 +37,21 @@ fn main() {
             .pointer(&format!("/definitions/{}/properties", type_))
             .unwrap();
 
-        states.push(if let Some(ref_) = properties.pointer("state/$ref") {
+        if let Some(ref_) = properties.pointer("state/$ref") {
             let ref_ = ref_.as_str().unwrap();
             if ref_ == "#/definitions/SWState" {
-                quote! { Some(MutState::Sw(&mut x.state)) }
+                states.push(quote! { Some(State::Sw(x.state.clone())) });
+                mut_states.push(quote! { Some(MutState::Sw(&mut x.state)) });
             } else if ref_ == "#/definitions/HWState" {
-                quote! { Some(MutState::Hw(&mut x.state)) }
+                states.push(quote! { Some(State::Hw(x.state.clone())) });
+                mut_states.push(quote! { Some(MutState::Hw(&mut x.state)) });
             } else {
                 unreachable!();
             }
         } else {
-            quote! { None }
-        });
+            states.push(quote! { None });
+            mut_states.push(quote! { None });
+        };
 
         let mut primary_keys: Vec<_> = properties
             .as_object()
@@ -110,9 +114,15 @@ fn main() {
                 }
             }
 
-            fn state(&mut self) -> Option<&mut MutState> {
+            fn state(&self) -> Option<State> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #states),*
+                }
+            }
+
+            fn state_mut(&mut self) -> Option<MutState> {
+                match self {
+                    #(TelemetryEvent::#variants(x) => #mut_states),*
                 }
             }
 
