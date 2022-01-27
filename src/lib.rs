@@ -1,5 +1,6 @@
 use nix::sys::utsname::uname;
 use os_release::OsRelease;
+use plain::Plain;
 
 use std::{collections::HashSet, fmt::Write, fs, path::Path, str::FromStr};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
@@ -158,6 +159,11 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 let year = parts.next()?;
                 Some(format!("{}-{}-{}", year, month, day))
             }
+            fn smbios_version() -> Option<String> {
+                let entry_point = fs::read("/sys/firmware/dmi/tables/smbios_entry_point").ok()?;
+                let smbios = dmi::Smbios::from_bytes(&entry_point).ok()?;
+                Some(format!("{}.{}", smbios.major_version, smbios.minor_version))
+            }
             events.push(
                 event::Firmware {
                     address: None, // XXX
@@ -166,9 +172,9 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     bios_version: read_file("/sys/class/dmi/id/bios_version"),
                     capabilities: None, // XXX
                     embedded_controller_version: read_file("/sys/class/dmi/id/ec_firmware_release"),
-                    rom_size: None,       // XXX
-                    runtime_size: None,   // XXX
-                    smbios_version: None, // XXX
+                    rom_size: None,     // XXX
+                    runtime_size: None, // XXX
+                    smbios_version: smbios_version(),
                     state: event::Swstate::Installed,
                 }
                 .into(),

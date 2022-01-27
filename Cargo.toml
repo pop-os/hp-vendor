@@ -11,6 +11,7 @@ libc = "0.2.104"
 log = "0.4.14"
 nix = "0.23"
 os-release = "0.1.0"
+plain = "0.2.3"
 protobuf = "=2.8.1"
 raw-cpuid = "10.2.0"
 redox_dmi = { git = "https://gitlab.redox-os.org/redox-os/dmi" }
