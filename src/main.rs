@@ -20,9 +20,4 @@ fn main() {
 
     let events = all_events();
     println!("{}", event::Events::new(events).to_json_pretty());
-
-    println!(
-        "dsn: {:?}",
-        hp_vendor::pcie_dsn("/sys/class/net/enp5s0f1/device/config")
-    );
 }
