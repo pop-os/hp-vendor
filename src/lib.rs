@@ -255,12 +255,42 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         _ => "Unknown",
                     }
                     .to_string();
+                    let type_ = match info.memory_kind {
+                        0x01 => "Other",
+                        0x02 => "Unknown",
+                        0x03 => "DRAM",
+                        0x04 => "EDRAM",
+                        0x05 => "VRAM",
+                        0x06 => "SRAM",
+                        0x07 => "RAM",
+                        0x08 => "ROM",
+                        0x09 => "FLASH",
+                        0x0A => "EEPROM",
+                        0x0B => "FEPROM",
+                        0x0C => "EPROM",
+                        0x0D => "CDRAM",
+                        0x0E => "3DRAM",
+                        0x0F => "SDRAM",
+                        0x10 => "SGRAM",
+                        0x11 => "RDRAM",
+                        0x12 => "DDR",
+                        0x13 => "DDR2",
+                        0x14 => "DDR2 FB-DIMM",
+                        0x18 => "DDR3",
+                        0x19 => "DBD2",
+                        0x1A => "DDR4",
+                        0x1B => "LPDDR",
+                        0x1C => "LPDDR2",
+                        0x1D => "LPDDR3",
+                        _ => "Unknown",
+                    }
+                    .to_string();
                     events.push(
                         event::MemoryPhysical {
-                            bank_label: i.get_str(info.bank_locator).cloned(), // ?
+                            bank_label: i.get_str(info.bank_locator).cloned(),
                             data_width: Some(info.data_width.into()),
                             form_factor: Some(form_factor),
-                            locator: i.get_str(info.device_locator).cloned(), // ?
+                            locator: i.get_str(info.device_locator).cloned(),
                             manufacturer: i.get_str(info.manufacturer).cloned(),
                             part_number: i
                                 .get_str(info.part_number)
@@ -274,7 +304,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             size: Some(info.size.into()),
                             speed: Some(info.speed.into()),
                             state: event::Hwstate::Added,
-                            type_: i.get_str(info.memory_kind).cloned(), // ?
+                            type_: Some(type_),
                         }
                         .into(),
                     )
