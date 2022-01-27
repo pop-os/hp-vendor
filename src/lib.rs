@@ -238,22 +238,68 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             }
         }),
         TelemetryEventType::HwNvmeStoragePhysical => EventDesc::new(ReportFreq::Daily, |events| {
+            let entries = fs::read_dir("/sys/class/nvme");
+            for i in entries.into_iter().flatten().filter_map(Result::ok) {
+                let path = i.path();
+                events.push(
+                    event::NvmestoragePhysical {
+                        bus_info: read_file(path.join("address")),
+                        firmware_revision: read_file(path.join("firmware_rev")),
+                        model: read_file(path.join("model")),
+                        serial_number: read_file(path.join("serial")).unwrap_or_else(unknown),
+                        state: event::Hwstate::Added,
+                        sub_system_id: read_file(path.join("device/subsystem_vendor")),
+                        total_capacity: None, // XXX
+                        vendor_id: read_file(path.join("device/vendor")),
+                    }
+                    .into(),
+                );
+            }
+        }),
+        TelemetryEventType::HwNvmeStorageLogical => EventDesc::new(ReportFreq::Daily, |events| {
             let entries = fs::read_dir("/sys/class/block");
             for i in entries.into_iter().flatten().filter_map(Result::ok) {
                 if let Some(name) = i.file_name().to_str() {
                     if name.starts_with("nvme") && !name.contains('p') {
                         let path = i.path();
+
+                        let entries = fs::read_dir("/sys/class/block");
+                        let partitions = entries
+                            .into_iter()
+                            .flatten()
+                            .filter_map(Result::ok)
+                            .filter_map(|i| {
+                                let file_name = i.file_name();
+                                let path = i.path();
+                                let number = match (|| {
+                                    let part_name = file_name.to_str()?;
+                                    let number = part_name.strip_prefix(name)?.strip_prefix('p')?;
+                                    let number: i64 = number.parse().ok()?;
+                                    Some(number)
+                                })() {
+                                    Some(number) => number,
+                                    None => {
+                                        return None;
+                                    }
+                                };
+                                Some(event::StoragePartition {
+                                    file_system: String::new(), // XXX
+                                    flags: Vec::new(),          // XXX
+                                    name: String::new(),        // XXX
+                                    number,
+                                    size: read_file(path.join("size")).unwrap_or(0),
+                                })
+                            })
+                            .collect();
+
                         events.push(
-                            event::NvmestoragePhysical {
-                                bus_info: read_file(path.join("device/address")),
-                                firmware_revision: read_file(path.join("device/firmware_rev")),
-                                model: read_file(path.join("device/model")),
+                            event::NvmestorageLogical {
+                                lba_size: None,         // XXX
+                                node_id: String::new(), // XXX
+                                partitions: Some(partitions),
                                 serial_number: read_file(path.join("device/serial"))
                                     .unwrap_or_else(unknown),
-                                state: event::Hwstate::Added,
-                                sub_system_id: None,  // XXX
-                                total_capacity: None, // XXX
-                                vendor_id: None,      // XXX
+                                used_capacity: None, // XXX
                             }
                             .into(),
                         );
