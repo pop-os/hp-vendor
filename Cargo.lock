@@ -261,6 +261,7 @@ dependencies = [
  "log",
  "nix",
  "os-release",
+ "plain",
  "proc-macro2",
  "protobuf",
  "quote",
