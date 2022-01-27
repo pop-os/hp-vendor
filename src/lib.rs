@@ -307,6 +307,35 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
+        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(ReportFreq::Daily, |events| {
+            // XXX limit to type A?
+            let entries = fs::read_dir("/sys/bus/usb/devices");
+            let timestamp = OffsetDateTime::now_utc()
+                .format(&Rfc3339)
+                .ok()
+                .unwrap_or_else(unknown);
+            for i in entries.into_iter().flatten().filter_map(Result::ok) {
+                let path = i.path();
+                if !path.join("idProduct").exists() {
+                    continue;
+                }
+                events.push(
+                    event::PeripheralUSBTypeA {
+                        device_version: None, // XXX
+                        manufacturer: read_file(path.join("manufacturer")),
+                        manufacturer_id: read_file(path.join("idVendor")),
+                        message: None, // XXX
+                        product: read_file(path.join("product")),
+                        product_id: read_file(path.join("idProduct")),
+                        state: event::Hwstate::Added,
+                        timestamp: timestamp.clone(), // XXX
+                        usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
+                        usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
+                    }
+                    .into(),
+                );
+            }
+        }),
         TelemetryEventType::HwMemoryPhysical => EventDesc::new(ReportFreq::Daily, |events| {
             for i in dmi() {
                 if let Some(info) = i.get::<dmi::MemoryDevice>() {
