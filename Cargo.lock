@@ -265,6 +265,7 @@ dependencies = [
  "protobuf",
  "quote",
  "raw-cpuid",
+ "redox_dmi",
  "reqwest",
  "schemafy",
  "serde",
@@ -670,6 +671,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58893f751c9b0412871a09abd62ecd2a00298c6c83befa223ef98c52aef40cbe"
 
 [[package]]
+name = "plain"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -767,6 +774,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "929f54e29691d4e6a9cc558479de70db7aa3d98cd6fe7ab86d7507aa2886b9d2"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "redox_dmi"
+version = "0.1.5"
+source = "git+https://gitlab.redox-os.org/redox-os/dmi#0a517c08bdb1f4b7ac2c7f38a9cae320c11d266b"
+dependencies = [
+ "plain",
 ]
 
 [[package]]

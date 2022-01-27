@@ -10,6 +10,14 @@ pub mod report;
 use event::{read_file, unknown, TelemetryEvent, TelemetryEventType};
 use report::ReportFreq;
 
+fn dmi() -> Vec<dmi::Table> {
+    if let Ok(data) = fs::read("/sys/firmware/dmi/tables/DMI") {
+        dmi::tables(&data)
+    } else {
+        Vec::new()
+    }
+}
+
 pub struct EventDesc {
     freq: ReportFreq,
     cb: fn(&mut Vec<TelemetryEvent>),
@@ -221,6 +229,55 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             .into(),
                         );
                     }
+                }
+            }
+        }),
+        TelemetryEventType::HwMemoryPhysical => EventDesc::new(ReportFreq::Daily, |events| {
+            for i in dmi() {
+                if let Some(info) = i.get::<dmi::MemoryDevice>() {
+                    let form_factor = match info.form_factor {
+                        0x01 => "Other",
+                        0x02 => "Unknown",
+                        0x03 => "SIMM",
+                        0x04 => "SIP",
+                        0x05 => "Chip",
+                        0x06 => "DIP",
+                        0x07 => "ZIP",
+                        0x08 => "Proprietary Card",
+                        0x09 => "DIMM",
+                        0x0A => "TSOP",
+                        0x0B => "Row of chips",
+                        0x0C => "RIMM",
+                        0x0D => "SODIMM",
+                        0x0E => "SRIMM",
+                        0x0F => "FB-DIMM",
+                        0x10 => "Die",
+                        _ => "Unknown",
+                    }
+                    .to_string();
+                    events.push(
+                        event::MemoryPhysical {
+                            bank_label: i.get_str(info.bank_locator).cloned(), // ?
+                            data_width: Some(info.data_width.into()),
+                            form_factor: Some(form_factor),
+                            locator: i.get_str(info.device_locator).cloned(), // ?
+                            manufacturer: i.get_str(info.manufacturer).cloned(),
+                            part_number: i
+                                .get_str(info.part_number)
+                                .cloned()
+                                .unwrap_or_else(unknown),
+                            rank: Some((info.attributes & 0b1111).into()),
+                            serial_number: i
+                                .get_str(info.serial_number)
+                                .cloned()
+                                .unwrap_or_else(unknown),
+                            size: Some(info.size.into()),
+                            speed: Some(info.speed.into()),
+                            state: event::Hwstate::Added,
+                            type_: i.get_str(info.memory_kind).cloned(), // ?
+                        }
+                        .into(),
+                    )
                 }
             }
         }),
