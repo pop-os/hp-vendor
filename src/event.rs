@@ -72,29 +72,6 @@ impl Events {
     }
 }
 
-impl TelemetryEvent {
-    fn diff(&mut self, old: &Self) {
-        // Set new state to same as old, before comparison
-        if let (Some(mut new_state), Some(v_state)) = (self.state_mut(), old.state()) {
-            new_state.set(v_state);
-        }
-        if self == old {
-            match self.state_mut() {
-                Some(MutState::Sw(state)) => *state = Swstate::Same,
-                Some(MutState::Hw(state)) => *state = Hwstate::Same,
-                None => {}
-            }
-        } else {
-            match self.state_mut() {
-                Some(MutState::Sw(state)) => *state = Swstate::Updated,
-                Some(MutState::Hw(_state)) => {} // XXX ?
-                None => {}
-            }
-        }
-        // TODO: how to include only changed fields?
-    }
-}
-
 pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     // TODO: warn if multiple things have same primary key?
 
@@ -110,7 +87,19 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
 
     for (k, new) in m1.iter_mut() {
         if let Some(old) = m2.get(k) {
-            new.diff(old);
+            if new.diff(old) {
+                match new.state_mut() {
+                    Some(MutState::Sw(state)) => *state = Swstate::Updated,
+                    Some(MutState::Hw(_state)) => {} // XXX ?
+                    None => {}
+                }
+            } else {
+                match new.state_mut() {
+                    Some(MutState::Sw(state)) => *state = Swstate::Same,
+                    Some(MutState::Hw(state)) => *state = Hwstate::Same,
+                    None => {}
+                }
+            }
         } else {
             match new.state_mut() {
                 Some(MutState::Sw(state)) => *state = Swstate::Installed,
@@ -136,26 +125,7 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     events.extend(new_events);
 }
 
-impl Copy for Swstate {}
-impl Copy for Hwstate {}
-
-#[derive(Clone, Copy)]
-enum State {
-    Sw(Swstate),
-    Hw(Hwstate),
-}
-
 enum MutState<'a> {
     Sw(&'a mut Swstate),
     Hw(&'a mut Hwstate),
-}
-
-impl<'a> MutState<'a> {
-    fn set(&mut self, other: State) {
-        match (self, other) {
-            (Self::Sw(l), State::Sw(r)) => **l = r,
-            (Self::Hw(l), State::Hw(r)) => **l = r,
-            _ => {}
-        }
-    }
 }

@@ -1,5 +1,5 @@
 use convert_case::{Case, Casing};
-use proc_macro2::{Ident, Span};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use serde_json::Value;
 use std::{
@@ -8,6 +8,60 @@ use std::{
     io::Write,
     path::PathBuf,
 };
+
+fn gen_diff(root: &Value, type_: &str) -> TokenStream {
+    let properties = root
+        .pointer(&format!("/definitions/{}/properties", type_))
+        .unwrap();
+    let properties_obj = properties.as_object().unwrap();
+
+    let required: Vec<_> = root
+        .pointer(&format!("/definitions/{}/required", type_))
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|x| x.as_str().unwrap())
+        .collect();
+
+    let mut props = Vec::new();
+    for (k, _) in properties_obj.iter() {
+        if k == "state" {
+            continue;
+        }
+
+        let prop = if k == "type" {
+            Ident::new("type_", Span::call_site())
+        } else {
+            Ident::new(k, Span::call_site())
+        };
+
+        props.push(if required.contains(&k.as_str()) {
+            quote! {
+                if old.#prop != new.#prop {
+                    changed = true;
+                }
+            }
+        } else {
+            quote! {
+                if old.#prop != new.#prop {
+                    changed = true;
+                } else {
+                    new.#prop = None;
+                }
+            }
+        });
+    }
+
+    quote! {
+        {
+            #[allow(unused_mut)]
+            let mut changed = false;
+            #(#props)*
+            changed
+        }
+    }
+}
 
 fn main() {
     println!("cargo:rerun-if-changed=UploadEventPackageRequestModel.json");
@@ -19,6 +73,7 @@ fn main() {
     let mut states = Vec::new();
     let mut mut_states = Vec::new();
     let mut primaries = Vec::new();
+    let mut diffs = Vec::new();
     for (k, v) in root
         .pointer("/definitions/AnyTelemetryEvent/properties")
         .unwrap()
@@ -36,6 +91,7 @@ fn main() {
         let properties = root
             .pointer(&format!("/definitions/{}/properties", type_))
             .unwrap();
+        let properties_obj = properties.as_object().unwrap();
 
         if let Some(ref_) = properties.pointer("/state/$ref") {
             let ref_ = ref_.as_str().unwrap();
@@ -53,9 +109,7 @@ fn main() {
             mut_states.push(quote! { None });
         };
 
-        let mut primary_keys: Vec<_> = properties
-            .as_object()
-            .unwrap()
+        let mut primary_keys: Vec<_> = properties_obj
             .iter()
             .filter_map(|(k, v)| {
                 if let Some(desc) = v.pointer("/description") {
@@ -71,6 +125,8 @@ fn main() {
         primaries.push(quote! {
             vec![#(x.#primary_keys.to_string()),*]
         });
+
+        diffs.push(gen_diff(&root, &type_));
     }
 
     let tokens = quote! {
@@ -115,13 +171,6 @@ fn main() {
             }
 
             #[allow(unused_variables)]
-            fn state(&self) -> Option<State> {
-                match self {
-                    #(TelemetryEvent::#variants(x) => #states),*
-                }
-            }
-
-            #[allow(unused_variables)]
             fn state_mut(&mut self) -> Option<MutState> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #mut_states),*
@@ -132,6 +181,15 @@ fn main() {
             fn primaries(&self) -> Vec<String> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #primaries),*
+                }
+            }
+
+            // Panics if objects are of different variants
+            #[allow(unused_variables)]
+            fn diff(&mut self, old: &Self) -> bool {
+                match (self, old) {
+                    #((TelemetryEvent::#variants(new), TelemetryEvent::#variants(old)) => #diffs),*
+                    _ => { unreachable!() }
                 }
             }
         }
