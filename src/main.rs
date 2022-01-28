@@ -1,4 +1,8 @@
-use std::{env, fs, io, process};
+use nix::{
+    errno::Errno,
+    fcntl::{fcntl, FcntlArg},
+};
+use std::{env, fs, io, os::unix::io::AsRawFd, process};
 
 use hp_vendor::{
     all_events,
@@ -26,6 +30,25 @@ fn main() {
     if let Err(err) = fs::create_dir("/var/hp-vendor") {
         if err.kind() != io::ErrorKind::AlreadyExists {
             panic!("Failed to create `/var/hp-vendor`: {}", err);
+        }
+    }
+
+    // Get unique lock
+    let lock_file = fs::File::create("/var/hp-vendor/lock").unwrap();
+    if let Err(err) = fcntl(
+        lock_file.as_raw_fd(),
+        FcntlArg::F_SETLK(&libc::flock {
+            l_type: libc::F_WRLCK as _,
+            l_whence: libc::SEEK_SET as _,
+            l_start: 0,
+            l_len: 0,
+            l_pid: 0,
+        }),
+    ) {
+        if err == Errno::EACCES || err == Errno::EAGAIN {
+            panic!("Lock already held on `/var/hp-vendor/lock`");
+        } else {
+            panic!("Error locking `/var/hp-vendor/lock`: {}", err);
         }
     }
 
