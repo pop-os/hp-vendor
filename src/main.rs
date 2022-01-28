@@ -1,6 +1,9 @@
-use std::process;
+use std::{env, fs, io, process};
 
-use hp_vendor::{all_events, event};
+use hp_vendor::{
+    all_events,
+    event::{self, TelemetryEvent},
+};
 
 fn main() {
     if unsafe { libc::geteuid() } != 0 {
@@ -18,6 +21,48 @@ fn main() {
         }
     }
 
-    let events = all_events();
-    println!("{}", event::Events::new(events).to_json_pretty());
+    // env::args().nth(1);
+
+    if let Err(err) = fs::create_dir("/var/hp-vendor") {
+        if err.kind() != io::ErrorKind::AlreadyExists {
+            panic!("Failed to create `/var/hp-vendor`: {}", err);
+        }
+    }
+
+    let old: Option<Vec<TelemetryEvent>> = match fs::File::open("/var/hp-vendor/daily.json") {
+        Ok(file) => Some(serde_json::from_reader(file).unwrap()),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => None,
+        Err(err) => {
+            panic!("Failed to open `/var/hp-vendor/daily.json`: {}", err);
+        }
+    };
+
+    // TODO: only handle daily events, etc.
+    let mut new = all_events();
+
+    let new_file = fs::File::create("/var/hp-vendor/daily-updated.json").unwrap();
+    serde_json::to_writer(new_file, &new).unwrap();
+
+    if let Some(old) = old {
+        event::diff(&mut new, &old);
+    }
+
+    let events = event::Events::new(new);
+    println!("{}", events.to_json_pretty());
+
+    /*
+    let client = reqwest::blocking::Client::new();
+    let req = hp_vendor::api::TokenRequest {
+        devicesn: "a".to_string(),
+        biosuuid: "aa".to_string(),
+    };
+    let token = req.send(&client).unwrap().token;
+    println!("{:#?}", events.send(&client, &token).unwrap());
+    */
+
+    fs::rename(
+        "/var/hp-vendor/daily-updated.json",
+        "/var/hp-vendor/daily.json",
+    )
+    .unwrap();
 }
