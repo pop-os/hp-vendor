@@ -72,6 +72,29 @@ impl Events {
     }
 }
 
+impl TelemetryEvent {
+    fn diff(&mut self, old: &Self) {
+        // Set new state to same as old, before comparison
+        if let (Some(mut new_state), Some(v_state)) = (self.state_mut(), old.state()) {
+            new_state.set(v_state);
+        }
+        if self == old {
+            match self.state_mut() {
+                Some(MutState::Sw(state)) => *state = Swstate::Same,
+                Some(MutState::Hw(state)) => *state = Hwstate::Same,
+                None => {}
+            }
+        } else {
+            match self.state_mut() {
+                Some(MutState::Sw(state)) => *state = Swstate::Updated,
+                Some(MutState::Hw(_state)) => {} // XXX ?
+                None => {}
+            }
+        }
+        // TODO: how to include only changed fields?
+    }
+}
+
 pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     // TODO: warn if multiple things have same primary key?
 
@@ -87,24 +110,7 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
 
     for (k, new) in m1.iter_mut() {
         if let Some(old) = m2.get(k) {
-            // Set new state to same as old, before comparison
-            if let (Some(mut new_state), Some(v_state)) = (new.state_mut(), old.state()) {
-                new_state.set(v_state);
-            }
-            if new == old {
-                match new.state_mut() {
-                    Some(MutState::Sw(state)) => *state = Swstate::Same,
-                    Some(MutState::Hw(state)) => *state = Hwstate::Same,
-                    None => {}
-                }
-            } else {
-                match new.state_mut() {
-                    Some(MutState::Sw(state)) => *state = Swstate::Updated,
-                    Some(MutState::Hw(_state)) => {} // XXX ?
-                    None => {}
-                }
-            }
-            // TODO: how to include only changed fields?
+            new.diff(old);
         } else {
             match new.state_mut() {
                 Some(MutState::Sw(state)) => *state = Swstate::Installed,
