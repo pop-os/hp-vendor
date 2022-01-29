@@ -3,6 +3,7 @@ sysconfdir ?= /etc
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
 libdir = $(exec_prefix)/lib
+libexecdir = $(exec_prefix)/libexec
 includedir = $(prefix)/include
 datarootdir = $(prefix)/share
 datadir = $(datarootdir)
@@ -33,10 +34,12 @@ distclean:
 	rm -rf .cargo vendor vendor.tar.xz
 
 install: all
-	install -D -m 0755 "target/release/$(BIN)" "$(DESTDIR)$(bindir)/$(BIN)"
+	install -D -m 0755 "target/release/$(BIN)" "$(DESTDIR)$(libexecdir)/$(BIN)"
+	install -D -m 0644 "$(BIN).service" "$(DESTDIR)$(libdir)/systemd/system/$(BIN).service"
 
 uninstall:
-	rm -f "$(DESTDIR)$(bindir)/$(BIN)"
+	rm -f "$(DESTDIR)$(libexecdir)/$(BIN)"
+	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN).service"
 
 update:
 	cargo update
@@ -52,4 +55,4 @@ target/release/$(BIN): $(SRC)
 ifeq ($(VENDORED),1)
 	tar pxf vendor.tar.xz
 endif
-	cargo build $(ARGS)
+	cargo build --features disable-model-check $(ARGS)
