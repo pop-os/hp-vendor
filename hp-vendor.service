@@ -1,0 +1,13 @@
+[Unit]
+Description=
+Documentation=
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/hp-vendor
+
+[Install]
+WantedBy=graphical.target
+
