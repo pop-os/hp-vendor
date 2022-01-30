@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{
     env,
     fs::{self, File},
@@ -9,21 +9,26 @@ use std::{
     path::PathBuf,
 };
 
-fn gen_diff(root: &Value, type_: &str) -> TokenStream {
-    let properties = root
-        .pointer(&format!("/definitions/{}/properties", type_))
-        .unwrap();
-    let properties_obj = properties.as_object().unwrap();
-
-    let required: Vec<_> = root
-        .pointer(&format!("/definitions/{}/required", type_))
-        .unwrap()
-        .as_array()
-        .unwrap()
+fn gen_primary(properties_obj: &Map<String, Value>) -> TokenStream {
+    let mut primary_keys: Vec<_> = properties_obj
         .iter()
-        .map(|x| x.as_str().unwrap())
+        .filter_map(|(k, v)| {
+            if let Some(desc) = v.pointer("/description") {
+                if desc.as_str().unwrap().contains("PRIMARY KEY") {
+                    return Some(Ident::new(k, Span::call_site()));
+                }
+            }
+            None
+        })
         .collect();
+    primary_keys.sort();
 
+    quote! {
+        vec![#(x.#primary_keys.to_string()),*]
+    }
+}
+
+fn gen_diff(properties_obj: &Map<String, Value>, required: &[&str]) -> TokenStream {
     let mut props = Vec::new();
     for (k, _) in properties_obj.iter() {
         if k == "state" {
@@ -63,6 +68,29 @@ fn gen_diff(root: &Value, type_: &str) -> TokenStream {
     }
 }
 
+fn gen_clear_options(properties_obj: &Map<String, Value>, required: &[&str]) -> TokenStream {
+    let mut props = Vec::new();
+
+    for (k, _) in properties_obj.iter() {
+        if !required.contains(&k.as_str()) {
+            let prop = if k == "type" {
+                Ident::new("type_", Span::call_site())
+            } else {
+                Ident::new(k, Span::call_site())
+            };
+            props.push(quote! {
+                inner.#prop = None;
+            })
+        }
+    }
+
+    quote! {
+        {
+            #(#props)*
+        }
+    }
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=UploadEventPackageRequestModel.json");
 
@@ -74,6 +102,7 @@ fn main() {
     let mut mut_states = Vec::new();
     let mut primaries = Vec::new();
     let mut diffs = Vec::new();
+    let mut clear_options = Vec::new();
     for (k, v) in root
         .pointer("/definitions/AnyTelemetryEvent/properties")
         .unwrap()
@@ -93,6 +122,15 @@ fn main() {
             .unwrap();
         let properties_obj = properties.as_object().unwrap();
 
+        let required: Vec<_> = root
+            .pointer(&format!("/definitions/{}/required", type_))
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x.as_str().unwrap())
+            .collect();
+
         if let Some(ref_) = properties.pointer("/state/$ref") {
             let ref_ = ref_.as_str().unwrap();
             if ref_ == "#/definitions/SWState" {
@@ -109,24 +147,9 @@ fn main() {
             mut_states.push(quote! { None });
         };
 
-        let mut primary_keys: Vec<_> = properties_obj
-            .iter()
-            .filter_map(|(k, v)| {
-                if let Some(desc) = v.pointer("/description") {
-                    if desc.as_str().unwrap().contains("PRIMARY KEY") {
-                        return Some(Ident::new(k, Span::call_site()));
-                    }
-                }
-                None
-            })
-            .collect();
-        primary_keys.sort();
-
-        primaries.push(quote! {
-            vec![#(x.#primary_keys.to_string()),*]
-        });
-
-        diffs.push(gen_diff(&root, &type_));
+        primaries.push(gen_primary(&properties_obj));
+        diffs.push(gen_diff(&properties_obj, &required));
+        clear_options.push(gen_clear_options(&properties_obj, &required));
     }
 
     let tokens = quote! {
@@ -190,6 +213,13 @@ fn main() {
                 match (self, old) {
                     #((TelemetryEvent::#variants(new), TelemetryEvent::#variants(old)) => #diffs),*
                     _ => { unreachable!() }
+                }
+            }
+
+            #[allow(unused_variables)]
+            fn clear_options(&mut self) {
+                match self {
+                    #(TelemetryEvent::#variants(inner) => #clear_options),*
                 }
             }
         }

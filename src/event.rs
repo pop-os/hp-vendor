@@ -118,7 +118,7 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
                 Some(MutState::Hw(state)) => *state = Hwstate::Removed,
                 None => {}
             }
-            // TODO: omit other fields?
+            new.clear_options();
             new_events.push(new);
         }
     }
