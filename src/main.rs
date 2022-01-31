@@ -2,7 +2,11 @@ use nix::{
     errno::Errno,
     fcntl::{fcntl, FcntlArg},
 };
-use std::{env, fs, io, os::unix::io::AsRawFd, process};
+use std::{
+    env, fs, io,
+    os::unix::{fs::PermissionsExt, io::AsRawFd},
+    process,
+};
 
 use hp_vendor::{
     all_events,
@@ -64,6 +68,9 @@ fn main() {
     let mut new = all_events();
 
     let new_file = fs::File::create("/var/hp-vendor/daily-updated.json").unwrap();
+    new_file
+        .set_permissions(fs::Permissions::from_mode(0o600))
+        .unwrap();
     serde_json::to_writer(new_file, &new).unwrap();
 
     if let Some(old) = old {
