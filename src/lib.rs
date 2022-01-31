@@ -2,7 +2,7 @@ use nix::sys::utsname::uname;
 use os_release::OsRelease;
 use plain::Plain;
 
-use std::{collections::HashSet, fmt::Write, fs, path::Path, str::FromStr};
+use std::{collections::HashSet, fmt::Write, fs, path::Path, process::Command, str::FromStr};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 pub mod api;
@@ -226,13 +226,25 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     let _instances = cols.next();
                     let _deps = cols.next();
                     let _state = cols.next();
+                    let modinfo = |field| {
+                        let res = Command::new("/usr/sbin/modinfo")
+                            .args(["-F", field, module_name])
+                            .output()
+                            .ok()?;
+                        if !res.status.success() {
+                            return None;
+                        }
+                        let mut s = String::from_utf8(res.stdout).ok()?;
+                        s.truncate(s.trim_end().len());
+                        Some(s)
+                    };
                     events.push(
                         event::Driver {
-                            display_name: None,         // XXX
-                            driver_category: None,      // XXX
-                            driver_type: String::new(), // XXX
-                            driver_version: None,       // XXX
-                            link_time: None,            // XXX
+                            display_name: None,                 // XXX
+                            driver_category: None,              // XXX
+                            driver_type: String::new(),         // XXX
+                            driver_version: modinfo("version"), // XXX most don't have version
+                            link_time: None,                    // XXX
                             module_name: module_name.to_string(),
                             pnp_device_id: None, // XXX
                             size,
