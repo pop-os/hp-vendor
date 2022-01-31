@@ -1,5 +1,5 @@
 use nix::sys::utsname::uname;
-use os_release::OsRelease;
+use os_release::OS_RELEASE;
 use plain::Plain;
 
 use std::{collections::HashSet, fmt::Write, fs, path::Path, process::Command, str::FromStr};
@@ -201,7 +201,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             );
         }),
         TelemetryEventType::SwOperatingSystem => EventDesc::new(ReportFreq::Daily, |events| {
-            let os_release = OsRelease::new().ok();
+            let os_release = OS_RELEASE.as_ref().ok();
             events.push(
                 event::OperatingSystem {
                     boot_device: String::new(), // XXX
