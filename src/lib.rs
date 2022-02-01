@@ -97,7 +97,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 event::LinuxKernel {
                     name: utsname.sysname().to_string(),
                     release: utsname.release().to_string(),
-                    state: event::Swstate::Installed,
                     version: utsname.version().to_string(),
                 }
                 .into(),
@@ -113,7 +112,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     manufacturer: read_file("/sys/class/power_supply/BAT0/manufacturer"),
                     serial_number: read_file("/sys/class/power_supply/BAT0/serial_number")
                         .unwrap_or_else(unknown),
-                    state: event::Hwstate::Added,
+                    state: event::State::Added,
                     voltage_design: read_file("/sys/class/power_supply/BAT0/voltage_min_design")
                         .map(|x: f64| x / 1000.),
                 }
@@ -166,7 +165,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     base_board_id: read_file("/sys/class/dmi/id/board_name"),
                     ct_number: String::new(), // XXX
                     manufacturer: read_file("/sys/class/dmi/id/board_vendor"),
-                    state: event::Hwstate::Added,
+                    state: event::State::Added,
                     version: read_file("/sys/class/dmi/id/board_version"),
                 }
                 .into(),
@@ -188,16 +187,13 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             }
             events.push(
                 event::Firmware {
-                    address: None, // XXX
                     bios_release_date: bios_date(),
                     bios_vendor: read_file("/sys/class/dmi/id/bios_vendor"),
                     bios_version: read_file("/sys/class/dmi/id/bios_version"),
                     capabilities: None, // XXX
                     embedded_controller_version: read_file("/sys/class/dmi/id/ec_firmware_release"),
-                    rom_size: None,     // XXX
-                    runtime_size: None, // XXX
+                    rom_size: None, // XXX
                     smbios_version: smbios_version(),
-                    state: event::Swstate::Installed,
                 }
                 .into(),
             );
@@ -214,7 +210,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     serialnumber: read_file("/sys/class/dmi/id/product_serial")
                         .unwrap_or_else(unknown),
                     sku: read_file("/sys/class/dmi/id/product_sku"),
-                    state: event::Hwstate::Added,
+                    state: event::State::Added,
                     uuid: read_file("/sys/class/dmi/id/product_uuid").unwrap_or_else(unknown),
                     version: read_file("/sys/class/dmi/id/product_version"),
                     width: None, // XXX
@@ -233,7 +229,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         .as_ref()
                         .map_or_else(unknown, |x| x.name.to_owned()),
                     sku: None, // XXX
-                    state: event::Swstate::Installed,
                     version: os_release.map(|x| x.version.clone()),
                 }
                 .into(),
@@ -262,15 +257,14 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     };
                     events.push(
                         event::Driver {
-                            display_name: None,                 // XXX
-                            driver_category: None,              // XXX
-                            driver_type: String::new(),         // XXX
+                            author: None,                       // XXX
+                            description: None,                  // XXX
                             driver_version: modinfo("version"), // XXX most don't have version
                             link_time: None,                    // XXX
                             module_name: module_name.to_string(),
-                            pnp_device_id: None, // XXX
+                            module_path: String::new(), // XXX
+                            module_type: String::new(), // XXX
                             size,
-                            state: event::Swstate::Installed,
                         }
                         .into(),
                     );
@@ -287,7 +281,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         firmware_revision: read_file(path.join("firmware_rev")),
                         model: read_file(path.join("model")),
                         serial_number: read_file(path.join("serial")).unwrap_or_else(unknown),
-                        state: event::Hwstate::Added,
+                        state: event::State::Added,
                         sub_system_id: read_file(path.join("device/subsystem_vendor")),
                         total_capacity: None, // XXX
                         vendor_id: read_file(path.join("device/vendor")),
@@ -367,7 +361,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         message: None, // XXX
                         product: read_file(path.join("product")),
                         product_id: read_file(path.join("idProduct")),
-                        state: event::Hwstate::Added,
+                        state: event::State::Added,
                         timestamp: timestamp.clone(), // XXX
                         usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
                         usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
@@ -447,7 +441,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 .unwrap_or_else(unknown),
                             size: Some(info.size.into()),
                             speed: Some(info.speed.into()),
-                            state: event::Hwstate::Added,
+                            state: event::State::Added,
                             type_: Some(type_),
                         }
                         .into(),
@@ -525,7 +519,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             processor_id: format!("{:X}", processor_id), // XXX: correct?
                             signature: None, // XXX where does dmidecocode get this?
                             socket: i.get_str(processor.socket_designation).cloned(),
-                            state: event::Hwstate::Added,
+                            state: event::State::Added,
                             thread_count: Some(processor.thread_count.into()),
                             voltage: Some(f64::from(processor.voltage) / 10.),
                         }

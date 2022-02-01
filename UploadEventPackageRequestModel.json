@@ -118,22 +118,24 @@
         "consent"
       ]
     },
-    "HWState": {
-      "title": "HWState",
-      "description": "HWState defines the possible states of a HW device",
+    "State": {
+      "title": "State",
+      "description": "State defines the possible states of a SW/HW component (i.e. Application, Firmware, OS)\nand what data should be captured/uploaded\n\n* SAME - HW/SW component was not changed since last execution (do nothing, no data to send)\n* ADDED - HW/SW component was added (populate all data fields)\n* REMOVED - HW/SW component was removed (populate PKs only)\n* UPDATED - HW/SW component was updated (populate PKs and changed fields)",
       "enum": [
         "same",
         "added",
-        "removed"
+        "removed",
+        "updated"
       ],
       "type": "string"
     },
     "BaseBoard": {
       "title": "BaseBoard",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "ct_number": {
           "title": "Ct Number",
@@ -187,10 +189,11 @@
     },
     "Battery": {
       "title": "Battery",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "serial_number": {
           "title": "Serial Number",
@@ -446,10 +449,11 @@
     },
     "Display": {
       "title": "Display",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "display_name": {
           "title": "Display Name",
@@ -495,10 +499,11 @@
     },
     "GraphicsCard": {
       "title": "GraphicsCard",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "bus_info": {
           "title": "Bus Info",
@@ -595,10 +600,11 @@
     },
     "MemoryPhysical": {
       "title": "MemoryPhysical",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "serial_number": {
           "title": "Serial Number",
@@ -730,14 +736,15 @@
     },
     "NetworkCard": {
       "title": "NetworkCard",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "serial_number": {
           "title": "Serial Number",
-          "description": "Card Serial Number (PRIMARY KEY)",
+          "description": "Card Serial Number",
           "examples": [
             "20:1e:88:db:72:11"
           ],
@@ -757,9 +764,9 @@
           },
           "type": "string"
         },
-        "product_name": {
-          "title": "Product Name",
-          "description": "Network Card Product Name",
+        "product_id": {
+          "title": "Product Id",
+          "description": "Network Card Product ID (as specified by PCIE)",
           "examples": [
             ""
           ],
@@ -768,11 +775,11 @@
           },
           "type": "string"
         },
-        "manufacturer": {
-          "title": "Manufacturer",
-          "description": "Manufacturer of the Network card / interface",
+        "vendor_id": {
+          "title": "Vendor Id",
+          "description": "Vendor/Manufacturer Id of the Network card / interface (as specified by PCIE)",
           "examples": [
-            "Advanced Micro Devices, Inc. [AMD/ATI] [1002]"
+            ""
           ],
           "source": {
             "Linux": ""
@@ -843,8 +850,7 @@
         }
       },
       "required": [
-        "state",
-        "serial_number"
+        "state"
       ]
     },
     "PeripheralAudioPort": {
@@ -853,7 +859,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         }
       },
       "required": [
@@ -866,7 +872,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         }
       },
       "required": [
@@ -879,7 +885,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         }
       },
       "required": [
@@ -892,7 +898,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "timestamp": {
           "title": "Timestamp",
@@ -1002,7 +1008,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         }
       },
       "required": [
@@ -1015,7 +1021,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         }
       },
       "required": [
@@ -1057,10 +1063,11 @@
     },
     "Processor": {
       "title": "Processor",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "device_id": {
           "title": "Device Id",
@@ -1223,10 +1230,11 @@
     },
     "NVMEStoragePhysical": {
       "title": "NVMEStoragePhysical",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "serial_number": {
           "title": "Serial Number",
@@ -1349,7 +1357,6 @@
     },
     "NVMEStorageLogical": {
       "title": "NVMEStorageLogical",
-      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "serial_number": {
@@ -1569,10 +1576,11 @@
     },
     "System": {
       "title": "System",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "serialnumber": {
           "title": "Serialnumber",
@@ -1713,7 +1721,7 @@
     },
     "ThermalContextSample": {
       "title": "ThermalContextSample",
-      "description": "Samples of the sensors that have any correlation/causation effect in temperature and cooling.\n\nThese sensors are:\n* Temperature readings from the sensors spread on the components of the PC (Processor, GPU, Battery, Storage, Wifi card, etc.) as well as the base board\n* Cooling device velocity sensor (when possible, collect requested vs. actual velocity)\n* Power sensor (which could be System power or Compoenent power)",
+      "description": "Samples of the sensors that have any correlation/causation effect in temperature and cooling.\n\nThese sensors are:\n* Temperature readings from the sensors spread on the components of the PC (Processor, GPU, Battery, Storage, Wifi card, etc.) as well as the base board\n* Cooling device velocity sensor (when possible, collect requested vs. actual velocity)\n* Power sensor (which could be System power or Component power)",
       "type": "object",
       "properties": {
         "sensor_name": {
@@ -1832,10 +1840,11 @@
     },
     "TrustedPlatformModule": {
       "title": "TrustedPlatformModule",
+      "description": "A wrapper model of all events",
       "type": "object",
       "properties": {
         "state": {
-          "$ref": "#/definitions/HWState"
+          "$ref": "#/definitions/State"
         },
         "manufacturer_id": {
           "title": "Manufacturer Id",
@@ -1934,25 +1943,11 @@
         "trusted_computing_group_version"
       ]
     },
-    "SWState": {
-      "title": "SWState",
-      "description": "SWState defines the possible states of a SW (i.e. Application, Firmware, OS)\n\n* INSTALLED - SW component was installed / first detected (populate all data fields)\n* UNINSTALLED - SW component was uninstalled / not detected anymore (populate PKs only)\n* UPDATED - SW component was updated / upgraded (populate PKs and changed fields)",
-      "enum": [
-        "same",
-        "installed",
-        "uninstalled",
-        "updated"
-      ],
-      "type": "string"
-    },
     "Driver": {
       "title": "Driver",
       "description": "Example of DRIVER data from Linux (with extra headers):\n<code>\n    > lsmod | sort\n    Module Name     Size      Used By\n    =============== ========  ==========================================\n    aesni_intel       372736  2\n    ahci               40960  1\n    ashmen_linux       20480  0\n    bluetooth         544768  33 btrtl,btintel,btbcm,bnep,btusb,rfcom\n</code>",
       "type": "object",
       "properties": {
-        "state": {
-          "$ref": "#/definitions/SWState"
-        },
         "module_name": {
           "title": "Module Name",
           "description": "Driver Module Name (PRIMARY KEY)",
@@ -1967,40 +1962,51 @@
           },
           "type": "string"
         },
-        "display_name": {
-          "title": "Display Name",
-          "description": "Driver Display Name",
+        "module_path": {
+          "title": "Module Path",
+          "description": "Driver Module Path (PRIMARY KEY)",
           "examples": [
-            "3ware"
+            "/lib/modules/5.15.8-76051508-generic/kernel/drivers/hid/hid-jabra.ko"
           ],
           "source": {
-            "Linux": "TBD"
+            "Linux": "modinfo <modulename>"
           },
           "type": "string"
         },
-        "driver_type": {
-          "title": "Driver Type",
-          "description": "Driver Type (PRIMARY KEY)",
+        "module_type": {
+          "title": "Module Type",
+          "description": "Driver Module Type (PRIMARY KEY)",
           "examples": [
-            "Kernel",
-            "File System"
+            "builtin",
+            "loadable"
           ],
           "source": {
-            "Linux": "TBD"
+            "Linux": [
+              "lsmod",
+              "/lib/modules/<kernel>/modules.builtin"
+            ]
           },
           "type": "string"
         },
-        "driver_category": {
-          "title": "Driver Category",
-          "description": "Driver Category",
+        "description": {
+          "title": "Description",
+          "description": "Driver Description",
           "examples": [
-            "HID",
-            "Battery",
-            "ACPI Thermal Zone",
-            "Bluetooth"
+            "Jabra USB HID Driver"
           ],
           "source": {
-            "Linux": "TBD"
+            "Linux": "modinfo <module_name>"
+          },
+          "type": "string"
+        },
+        "author": {
+          "title": "Author",
+          "description": "Driver Author",
+          "examples": [
+            "John Doe <jd@jd.com>"
+          ],
+          "source": {
+            "Linux": "modinfo <module_name>"
           },
           "type": "string"
         },
@@ -2039,34 +2045,19 @@
           },
           "type": "string",
           "format": "date-time"
-        },
-        "pnp_device_id": {
-          "title": "Pnp Device Id",
-          "description": "Plug-n-Play Device Id",
-          "examples": [
-            "SWD\\DRIVERENUM\\CFABACAD-7939-467C-96A7-93781D90D2D8#WIRELESSBUTTONDRIVER_USERSVC&3&3229B8BB&0",
-            "ACPI\\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_140_-_11TH_GEN_INTEL(R)_CORE(TM)_I7-1185G7_@_3.00GHZ\\_7"
-          ],
-          "source": {
-            "Linux": "TBD"
-          },
-          "type": "string"
         }
       },
       "required": [
-        "state",
         "module_name",
-        "driver_type"
+        "module_path",
+        "module_type"
       ]
     },
     "LinuxDriverCrash": {
       "title": "LinuxDriverCrash",
-      "description": "",
+      "description": "Based on: <a href=\"https://ubuntu.com/server/docs/kernel-crash-dump\">https://ubuntu.com/server/docs/kernel-crash-dump</a>\n\nExample of a crash dump (<a href=\"https://www.dedoimedo.com/computers/crash-analyze.html\">https://www.dedoimedo.com/computers/crash-analyze.html</a>)\n<code>\n    KERNEL: /usr/lib/debug/lib/modules/2.6.18-164.10.1.el5.centos.plus/vmlinux\n    DUMPFILE: vmcore\n        CPUS: 2\n        DATE: Tue Jan 19 20:21:19 2010\n    UPTIME: 00:00:00\nLOAD AVERAGE: 0.00, 0.04, 0.07\n    TASKS: 134\n    NODENAME: testhost2@localdomain\n    RELEASE: 2.6.18-164.10.1.el5\n    VERSION: #1 SMP Thu Jan 7 19:54:26 EST 2010\n    MACHINE: x86_64  (3000 Mhz)\n    MEMORY: 7.5 GB\n    PANIC: \"SysRq : Trigger a crashdump\"\n        PID: 0\n    COMMAND: \"swapper\"\n        TASK: ffffffff80300ae0  (1 of 2)  [THREAD_INFO: ffffffff803f2000]\n        CPU: 0\n    STATE: TASK_RUNNING (ACTIVE)\n</code>\n\nNote: This is under construction.",
       "type": "object",
       "properties": {
-        "state": {
-          "$ref": "#/definitions/SWState"
-        },
         "crash_time": {
           "title": "Crash Time",
           "description": "Crash Time",
@@ -2193,7 +2184,6 @@
         }
       },
       "required": [
-        "state",
         "crash_time",
         "kernel"
       ]
@@ -2202,9 +2192,6 @@
       "title": "Firmware",
       "type": "object",
       "properties": {
-        "state": {
-          "$ref": "#/definitions/SWState"
-        },
         "bios_vendor": {
           "title": "Bios Vendor",
           "examples": [
@@ -2254,24 +2241,6 @@
           },
           "type": "string"
         },
-        "address": {
-          "title": "Address",
-          "description": "Address",
-          "example": "0xF000",
-          "source": {
-            "Linux": "TBD"
-          },
-          "type": "string"
-        },
-        "runtime_size": {
-          "title": "Runtime Size",
-          "description": "Runtime size (in kB)",
-          "example": "64",
-          "source": {
-            "Linux": "TBD"
-          },
-          "type": "string"
-        },
         "rom_size": {
           "title": "Rom Size",
           "description": "ROM Size (in MB)",
@@ -2300,18 +2269,12 @@
             "type": "string"
           }
         }
-      },
-      "required": [
-        "state"
-      ]
+      }
     },
     "OperatingSystem": {
       "title": "OperatingSystem",
       "type": "object",
       "properties": {
-        "state": {
-          "$ref": "#/definitions/SWState"
-        },
         "name": {
           "title": "Name",
           "description": "OS Name",
@@ -2378,7 +2341,6 @@
         }
       },
       "required": [
-        "state",
         "name",
         "boot_device"
       ]
@@ -2387,9 +2349,6 @@
       "title": "LinuxKernel",
       "type": "object",
       "properties": {
-        "state": {
-          "$ref": "#/definitions/SWState"
-        },
         "name": {
           "title": "Name",
           "description": "OS Kernel",
@@ -2425,7 +2384,6 @@
         }
       },
       "required": [
-        "state",
         "name",
         "release",
         "version"
