@@ -2234,7 +2234,7 @@
             "Linux": "/sys/class/dmi/id/bios_date"
           },
           "type": "string",
-          "format": "date-time"
+          "format": "date"
         },
         "smbios_version": {
           "title": "Smbios Version",
