@@ -14,6 +14,27 @@ use report::ReportFreq;
 
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
 
+#[repr(packed)]
+#[derive(Clone, Default, Debug)]
+struct CacheInfo21 {
+    socket: u8,
+    configuration: u16,
+    maximum_size: u16,
+    installed_size: u16,
+    supported_sram_type: u16,
+    current_sram_type: u16,
+    cache_speed: u8,
+    error_correction_type: u8,
+    system_cache_type: u8,
+    associativity: u8,
+}
+
+unsafe impl Plain for CacheInfo21 {}
+
+impl dmi::TableKind for CacheInfo21 {
+    const KIND: u8 = 7;
+}
+
 fn dmi() -> Vec<dmi::Table> {
     if let Ok(data) = fs::read("/sys/firmware/dmi/tables/DMI") {
         dmi::tables(&data)
@@ -430,6 +451,34 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         }
                         .into(),
                     )
+                }
+            }
+        }),
+        TelemetryEventType::HwProcessor => EventDesc::new(ReportFreq::Daily, |events| {
+            let dmi = dmi();
+            for i in dmi {
+                if let Some(processor) = i.get::<dmi::ProcessorInfo>() {
+                    events.push(
+                        event::Processor {
+                            caches: None,       // XXX
+                            capabilities: None, // XXX
+                            cores_count: Some(processor.core_count.into()),
+                            cores_enabled: Some(processor.core_enabled.into()),
+                            device_id: String::new(), // XXX
+                            manufacturer: i.get_str(processor.processor_manufacturer).cloned(),
+                            max_clock_speed: Some(
+                                (u64::from(processor.max_speed) * 1000).to_string(),
+                            ), // XXX why string?
+                            name: i.get_str(processor.processor_version).cloned(),
+                            processor_id: format!("{:X}", processor.processor_id), // XXX: correct?
+                            signature: None, // XXX where does dmidecocode get this?
+                            socket: i.get_str(processor.socket_designation).cloned(),
+                            state: event::Hwstate::Added,
+                            thread_count: Some(processor.thread_count.into()),
+                            voltage: Some(f64::from(processor.voltage) / 10.),
+                        }
+                        .into(),
+                    );
                 }
             }
         }),
