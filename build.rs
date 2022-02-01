@@ -122,26 +122,20 @@ fn main() {
             .unwrap();
         let properties_obj = properties.as_object().unwrap();
 
-        let required: Vec<_> = root
+        let required = root
             .pointer(&format!("/definitions/{}/required", type_))
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|x| x.as_str().unwrap())
-            .collect();
+            .map_or_else(Vec::new, |x| {
+                x.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|x| x.as_str().unwrap())
+                    .collect()
+            });
 
         if let Some(ref_) = properties.pointer("/state/$ref") {
-            let ref_ = ref_.as_str().unwrap();
-            if ref_ == "#/definitions/SWState" {
-                states.push(quote! { Some(State::Sw(x.state)) });
-                mut_states.push(quote! { Some(MutState::Sw(&mut x.state)) });
-            } else if ref_ == "#/definitions/HWState" {
-                states.push(quote! { Some(State::Hw(x.state)) });
-                mut_states.push(quote! { Some(MutState::Hw(&mut x.state)) });
-            } else {
-                unreachable!();
-            }
+            assert_eq!(ref_, "#/definitions/State");
+            states.push(quote! { Some(x.state) });
+            mut_states.push(quote! { Some(&mut x.state) });
         } else {
             states.push(quote! { None });
             mut_states.push(quote! { None });
@@ -194,7 +188,7 @@ fn main() {
             }
 
             #[allow(unused_variables)]
-            fn state_mut(&mut self) -> Option<MutState> {
+            fn state_mut(&mut self) -> Option<&mut State> {
                 match self {
                     #(TelemetryEvent::#variants(x) => #mut_states),*
                 }

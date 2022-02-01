@@ -88,23 +88,17 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     for (k, new) in m1.iter_mut() {
         if let Some(old) = m2.get(k) {
             if new.diff(old) {
-                match new.state_mut() {
-                    Some(MutState::Sw(state)) => *state = Swstate::Updated,
-                    Some(MutState::Hw(_state)) => {} // XXX ?
-                    None => {}
+                if let Some(state) = new.state_mut() {
+                    *state = State::Updated;
                 }
             } else {
-                match new.state_mut() {
-                    Some(MutState::Sw(state)) => *state = Swstate::Same,
-                    Some(MutState::Hw(state)) => *state = Hwstate::Same,
-                    None => {}
+                if let Some(state) = new.state_mut() {
+                    *state = State::Same; // XXX
                 }
             }
         } else {
-            match new.state_mut() {
-                Some(MutState::Sw(state)) => *state = Swstate::Installed,
-                Some(MutState::Hw(state)) => *state = Hwstate::Added,
-                None => {}
+            if let Some(state) = new.state_mut() {
+                *state = State::Added;
             }
         }
     }
@@ -113,19 +107,12 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     for (k, old) in m2.iter_mut() {
         if !m1.contains_key(k) {
             let mut new = (**old).clone();
-            match new.state_mut() {
-                Some(MutState::Sw(state)) => *state = Swstate::Uninstalled,
-                Some(MutState::Hw(state)) => *state = Hwstate::Removed,
-                None => {}
+            if let Some(state) = new.state_mut() {
+                *state = State::Removed;
             }
             new.clear_options();
             new_events.push(new);
         }
     }
     events.extend(new_events);
-}
-
-enum MutState<'a> {
-    Sw(&'a mut Swstate),
-    Hw(&'a mut Hwstate),
 }
