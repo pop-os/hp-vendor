@@ -1,6 +1,11 @@
 use os_release::OsRelease;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::Path, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::Path,
+    str::FromStr,
+};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 schemafy::schemafy!("UploadEventPackageRequestModel.json");
@@ -76,8 +81,8 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     // TODO: warn if multiple things have same primary key?
 
     let mut m1 = HashMap::new();
-    for event in events.iter_mut() {
-        m1.insert((event.type_(), event.primaries()), event);
+    for (n, event) in events.iter_mut().enumerate() {
+        m1.insert((event.type_(), event.primaries()), (n, event));
     }
 
     let mut m2 = HashMap::new();
@@ -85,21 +90,24 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
         m2.insert((event.type_(), event.primaries()), event);
     }
 
-    for (k, new) in m1.iter_mut() {
+    let mut added_updated = HashSet::new();
+    for (k, (n, new)) in m1.iter_mut() {
         if let Some(old) = m2.get(k) {
             if new.diff(old) {
                 if let Some(state) = new.state_mut() {
                     *state = State::Updated;
                 }
+                added_updated.insert(*n);
             } else {
                 if let Some(state) = new.state_mut() {
-                    *state = State::Same; // XXX
+                    *state = State::Same;
                 }
             }
         } else {
             if let Some(state) = new.state_mut() {
                 *state = State::Added;
             }
+            added_updated.insert(*n);
         }
     }
 
@@ -114,5 +122,11 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
             new_events.push(new);
         }
     }
+
+    let mut i = 0;
+    events.retain(|_| {
+        i += 1;
+        added_updated.contains(&(i - 1))
+    });
     events.extend(new_events);
 }
