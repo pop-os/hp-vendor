@@ -15,7 +15,8 @@ use report::ReportFreq;
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
 
 #[repr(packed)]
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Copy)]
+#[allow(dead_code)]
 struct CacheInfo21 {
     socket: u8,
     configuration: u16,
@@ -456,11 +457,59 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
         }),
         TelemetryEventType::HwProcessor => EventDesc::new(ReportFreq::Daily, |events| {
             let dmi = dmi();
-            for i in dmi {
+            for i in &dmi {
                 if let Some(processor) = i.get::<dmi::ProcessorInfo>() {
+                    let mut cache_infos = Vec::new();
+                    for i in [
+                        processor.l1_cache_handle,
+                        processor.l2_cache_handle,
+                        processor.l3_cache_handle,
+                    ] {
+                        if i == 0 {
+                            continue;
+                        }
+                        if let Some(cache) = dmi.iter().find(|x| x.header.handle == i) {
+                            if let Some(cache_info) = cache.get::<CacheInfo21>() {
+                                cache_infos.push(cache_info);
+                                // Seems to handle non-unified L1
+                                if cache_info.socket != 0 {
+                                    for j in &dmi {
+                                        if let Some(other_cache_info) = j.get::<CacheInfo21>() {
+                                            if cache.get_str(other_cache_info.socket)
+                                                == j.get_str(cache_info.socket)
+                                            {
+                                                cache_infos.push(cache_info)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    let caches = cache_infos
+                        .iter()
+                        .map(|cache_info| {
+                            let level = (cache_info.configuration & 0b111) + 1;
+                            let type_ = match cache_info.system_cache_type {
+                                0x01 => "Other",
+                                0x02 => "Unknown",
+                                0x03 => "Instruction",
+                                0x05 => "Data",
+                                0x06 => "Unified",
+                                _ => "Unknown",
+                            };
+                            event::ProcessorCache {
+                                name: format!("L{} {}-Cache", level, type_),
+                                size: cache_info.installed_size.into(), // TODO support larger size w/ newer smbios
+                            }
+                        })
+                        .collect();
+
+                    let processor_id = processor.processor_id;
                     events.push(
                         event::Processor {
-                            caches: None,       // XXX
+                            caches: Some(caches),
                             capabilities: None, // XXX
                             cores_count: Some(processor.core_count.into()),
                             cores_enabled: Some(processor.core_enabled.into()),
@@ -470,7 +519,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 (u64::from(processor.max_speed) * 1000).to_string(),
                             ), // XXX why string?
                             name: i.get_str(processor.processor_version).cloned(),
-                            processor_id: format!("{:X}", processor.processor_id), // XXX: correct?
+                            processor_id: format!("{:X}", processor_id), // XXX: correct?
                             signature: None, // XXX where does dmidecocode get this?
                             socket: i.get_str(processor.socket_designation).cloned(),
                             state: event::Hwstate::Added,
