@@ -474,11 +474,14 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 // Seems to handle non-unified L1
                                 if cache_info.socket != 0 {
                                     for j in &dmi {
+                                        if j.header.handle == i {
+                                            continue;
+                                        }
                                         if let Some(other_cache_info) = j.get::<CacheInfo21>() {
                                             if cache.get_str(other_cache_info.socket)
                                                 == j.get_str(cache_info.socket)
                                             {
-                                                cache_infos.push(cache_info)
+                                                cache_infos.push(other_cache_info)
                                             }
                                         }
                                     }
@@ -495,8 +498,8 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 0x01 => "Other",
                                 0x02 => "Unknown",
                                 0x03 => "Instruction",
-                                0x05 => "Data",
-                                0x06 => "Unified",
+                                0x04 => "Data",
+                                0x05 => "Unified",
                                 _ => "Unknown",
                             };
                             event::ProcessorCache {
