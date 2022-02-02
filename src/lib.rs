@@ -71,20 +71,10 @@ impl DrmDevice {
         &self,
         connector: &drm::control::connector::Info,
     ) -> Option<drm::control::Mode> {
+        // NOTE: doesn't work on Nvidia without `nvidia-drm.modeset`
         let encoder = self.get_encoder(connector.current_encoder()?).ok()?;
         let crtc = self.get_crtc(encoder.crtc()?).ok()?;
         crtc.mode()
-    }
-
-    fn connector_size(&self, connector: &drm::control::connector::Info) -> Option<(u16, u16)> {
-        Some(self.connector_mode(connector)?.size())
-    }
-
-    fn connector_modes(&self) -> Vec<(u16, u16)> {
-        self.connectors()
-            .iter()
-            .filter_map(|connector| self.connector_size(connector))
-            .collect()
     }
 }
 
@@ -602,6 +592,28 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             state: event::State::Added,
                             thread_count: Some(processor.thread_count.into()),
                             voltage: Some(f64::from(processor.voltage) / 10.),
+                        }
+                        .into(),
+                    );
+                }
+            }
+        }),
+        TelemetryEventType::HwDisplay => EventDesc::new(ReportFreq::Daily, |events| {
+            for device in DrmDevice::all() {
+                for connector in device.connectors() {
+                    let connected = connector.state() == drm::control::connector::State::Connected;
+                    let display_name =
+                        format!("{:?}{}", connector.interface(), connector.interface_id()); // XXX probably should depend on gpu
+                    let pixel_size = device.connector_mode(&connector).map_or(0, |mode| {
+                        let (width, height) = mode.size();
+                        width as i64 * height as i64
+                    }); // XXX ?
+                    events.push(
+                        event::Display {
+                            connected,
+                            display_name,
+                            pixel_size,
+                            state: event::State::Added,
                         }
                         .into(),
                     );
