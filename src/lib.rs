@@ -1,8 +1,17 @@
+use drm::{control::Device as ControlDevice, Device};
 use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;
 
-use std::{collections::HashSet, fmt::Write, fs, path::Path, process::Command, str::FromStr};
+use std::{
+    collections::HashSet,
+    fmt::Write,
+    fs,
+    os::unix::io::{AsRawFd, RawFd},
+    path::Path,
+    process::Command,
+    str::FromStr,
+};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 pub mod api;
@@ -13,6 +22,77 @@ use event::{read_file, unknown, TelemetryEvent, TelemetryEventType};
 use report::ReportFreq;
 
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
+
+struct DrmDevice(fs::File);
+
+impl Device for DrmDevice {}
+impl ControlDevice for DrmDevice {}
+
+impl DrmDevice {
+    fn all() -> impl Iterator<Item = Self> {
+        fs::read_dir("/dev/dri")
+            .into_iter()
+            .flatten()
+            .filter_map(|entry| {
+                if let Ok(entry) = entry {
+                    if let Some(file_name) = entry.file_name().to_str() {
+                        if file_name.starts_with("card") {
+                            return Self::open(entry.path());
+                        }
+                    }
+                }
+                None
+            })
+    }
+
+    fn open<P: AsRef<Path>>(path: P) -> Option<Self> {
+        Some(Self(
+            fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(path)
+                .ok()?,
+        ))
+    }
+
+    fn connectors(&self) -> Vec<drm::control::connector::Info> {
+        self.resource_handles()
+            .ok()
+            .map_or_else(Vec::new, |handles| {
+                handles
+                    .connectors()
+                    .iter()
+                    .filter_map(|handle| self.get_connector(*handle).ok())
+                    .collect()
+            })
+    }
+
+    fn connector_mode(
+        &self,
+        connector: &drm::control::connector::Info,
+    ) -> Option<drm::control::Mode> {
+        let encoder = self.get_encoder(connector.current_encoder()?).ok()?;
+        let crtc = self.get_crtc(encoder.crtc()?).ok()?;
+        crtc.mode()
+    }
+
+    fn connector_size(&self, connector: &drm::control::connector::Info) -> Option<(u16, u16)> {
+        Some(self.connector_mode(connector)?.size())
+    }
+
+    fn connector_modes(&self) -> Vec<(u16, u16)> {
+        self.connectors()
+            .iter()
+            .filter_map(|connector| self.connector_size(connector))
+            .collect()
+    }
+}
+
+impl AsRawFd for DrmDevice {
+    fn as_raw_fd(&self) -> RawFd {
+        self.0.as_raw_fd()
+    }
+}
 
 #[repr(packed)]
 #[derive(Clone, Default, Debug, Copy)]
