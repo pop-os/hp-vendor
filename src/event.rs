@@ -98,10 +98,6 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
                     *state = State::Updated;
                 }
                 added_updated.insert(*n);
-            } else {
-                if let Some(state) = new.state_mut() {
-                    *state = State::Same;
-                }
             }
         } else {
             if let Some(state) = new.state_mut() {
