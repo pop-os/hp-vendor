@@ -2055,7 +2055,7 @@
     },
     "LinuxDriverCrash": {
       "title": "LinuxDriverCrash",
-      "description": "Based on: <a href=\"https://ubuntu.com/server/docs/kernel-crash-dump\">https://ubuntu.com/server/docs/kernel-crash-dump</a>\n\nExample of a crash dump (<a href=\"https://www.dedoimedo.com/computers/crash-analyze.html\">https://www.dedoimedo.com/computers/crash-analyze.html</a>)\n<code>\n    KERNEL: /usr/lib/debug/lib/modules/2.6.18-164.10.1.el5.centos.plus/vmlinux\n    DUMPFILE: vmcore\n        CPUS: 2\n        DATE: Tue Jan 19 20:21:19 2010\n    UPTIME: 00:00:00\nLOAD AVERAGE: 0.00, 0.04, 0.07\n    TASKS: 134\n    NODENAME: testhost2@localdomain\n    RELEASE: 2.6.18-164.10.1.el5\n    VERSION: #1 SMP Thu Jan 7 19:54:26 EST 2010\n    MACHINE: x86_64  (3000 Mhz)\n    MEMORY: 7.5 GB\n    PANIC: \"SysRq : Trigger a crashdump\"\n        PID: 0\n    COMMAND: \"swapper\"\n        TASK: ffffffff80300ae0  (1 of 2)  [THREAD_INFO: ffffffff803f2000]\n        CPU: 0\n    STATE: TASK_RUNNING (ACTIVE)\n</code>\n\nNote: This is under construction.",
+      "description": "",
       "type": "object",
       "properties": {
         "crash_time": {
