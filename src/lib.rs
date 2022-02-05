@@ -2,13 +2,12 @@ use drm::{control::Device as ControlDevice, Device};
 use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;
-
 use std::{
     collections::HashSet,
     fmt::Write,
     fs,
     os::unix::io::{AsRawFd, RawFd},
-    path::Path,
+    path::{Path, PathBuf},
     process::Command,
     str::FromStr,
 };
@@ -140,6 +139,19 @@ pub fn pcie_dsn<P: AsRef<Path>>(path: P) -> Option<String> {
     None
 }
 
+fn battery() -> Option<PathBuf> {
+    for entry in fs::read_dir("/sys/class/power_supply").ok()? {
+        let entry = entry.ok()?;
+        let path = entry.path();
+        if let Ok(type_) = fs::read(path.join("type")) {
+            if type_ == b"Battery\n" {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
 pub struct EventDesc {
     freq: ReportFreq,
     cb: fn(&mut Vec<TelemetryEvent>),
@@ -173,58 +185,63 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             );
         }),
         TelemetryEventType::HwBattery => EventDesc::new(ReportFreq::Daily, |events| {
+            let path = match battery() {
+                Some(path) => path,
+                None => return,
+            };
+
             events.push(
                 event::Battery {
                     ct_number: String::new(), // XXX,
-                    devicename: read_file("/sys/class/power_supply/BAT0/model_name"),
-                    energy_design: read_file("/sys/class/power_supply/BAT0/charge_full_design")
+                    devicename: read_file(path.join("model_name")),
+                    energy_design: read_file(path.join("charge_full_design"))
                         .map(|x: f64| x / 1000000.), // XXX divisor?
-                    manufacturer: read_file("/sys/class/power_supply/BAT0/manufacturer"),
-                    serial_number: read_file("/sys/class/power_supply/BAT0/serial_number")
-                        .unwrap_or_else(unknown),
+                    manufacturer: read_file(path.join("manufacturer")),
+                    serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
                     state: event::State::Added,
-                    voltage_design: read_file("/sys/class/power_supply/BAT0/voltage_min_design")
+                    voltage_design: read_file(path.join("voltage_min_design"))
                         .map(|x: f64| x / 1000.),
                 }
                 .into(),
             );
         }),
         TelemetryEventType::HwBatteryUsage => EventDesc::new(ReportFreq::Daily, |events| {
+            let path = match battery() {
+                Some(path) => path,
+                None => return,
+            };
+
             // XXX: Division? Integers?
-            fn energy_rate() -> Option<i64> {
-                let current: i64 = read_file("/sys/class/power_supply/BAT0/current_now")?;
-                let voltage: i64 = read_file("/sys/class/power_supply/BAT0/voltage_now")?;
+            let energy_rate = || -> Option<i64> {
+                let current: i64 = read_file(path.join("current_now"))?;
+                let voltage: i64 = read_file(path.join("voltage_now"))?;
                 Some(current * voltage / 1000000)
-            }
+            };
             let timestamp = OffsetDateTime::now_utc()
                 .format(&Rfc3339)
                 .ok()
                 .unwrap_or_else(unknown);
             events.push(
                 event::BatteryUsage {
-                    battery_state: read_file("/sys/class/power_supply/BAT0/status")
-                        .unwrap_or_else(unknown),
+                    battery_state: read_file(path.join("status")).unwrap_or_else(unknown),
                     cell_voltage: None,       // XXX
                     ct_number: String::new(), // XXX
-                    cycle_count: read_file("/sys/class/power_supply/BAT0/cycle_count")
-                        .unwrap_or(-1),
+                    cycle_count: read_file(path.join("cycle_count")).unwrap_or(-1),
                     eletric_current: None, // XXX
-                    energy_full: read_file("/sys/class/power_supply/BAT0/charge_full")
+                    energy_full: read_file(path.join("charge_full"))
                         .map(|x: f64| x / 1000000.)
                         .unwrap_or(-1.),
                     energy_rate: energy_rate(),
-                    energy_remaining: read_file("/sys/class/power_supply/BAT0/charge_now")
+                    energy_remaining: read_file(path.join("charge_now"))
                         .map(|x: f64| x / 1000000.)
                         .unwrap_or(-1.),
                     max_error: None, // XXX
-                    serial_number: read_file("/sys/class/power_supply/BAT0/serial_number")
-                        .unwrap_or_else(unknown),
+                    serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
                     status_register: None, // XXX
                     temperature: None,     // XXX
                     time_to_empty: None,   // XXX
                     timestamp,
-                    voltage: read_file("/sys/class/power_supply/BAT0/voltage_now")
-                        .map(|x: i64| x / 1000000),
+                    voltage: read_file(path.join("voltage_now")).map(|x: i64| x / 1000000),
                 }
                 .into(),
             );
