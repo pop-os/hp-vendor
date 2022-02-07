@@ -3,7 +3,7 @@ use nix::{
     sys::stat::Mode,
     unistd,
 };
-use std::str;
+use std::{collections::HashMap, str};
 
 // https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
 fn parse_kmsg(buf: &[u8]) -> Option<()> {
@@ -55,13 +55,24 @@ fn main() {
         .register(&mut kmsg_source, mio::Token(1), mio::Interest::READABLE)
         .unwrap();
 
+    let mut udev_devices = HashMap::new();
     loop {
         poll.poll(&mut events, None).unwrap();
 
         for event in &events {
             if event.token() == mio::Token(0) && event.is_writable() {
                 socket.clone().for_each(|x| {
-                    println!("{:?}: {:?}", x.event_type(), x.syspath());
+                    if x.event_type() == udev::EventType::Add {
+                        if let Some(event) = hp_vendor::peripheral_usb_type_a_event(x.syspath()) {
+                            println!("{:#?}", event);
+                            udev_devices.insert(x.syspath().to_owned(), event);
+                        }
+                    } else if x.event_type() == udev::EventType::Remove {
+                        if let Some(mut event) = udev_devices.remove(x.syspath()) {
+                            hp_vendor::event::remove_event(&mut event);
+                            println!("{:#?}", event);
+                        }
+                    }
                 });
             } else if event.token() == mio::Token(1) {
                 let mut buf = [0; 1024];
