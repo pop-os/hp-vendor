@@ -11,13 +11,12 @@ use std::{
     process::Command,
     str::FromStr,
 };
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 pub mod api;
 pub mod event;
 pub mod report;
 
-use event::{read_file, unknown, TelemetryEvent, TelemetryEventType};
+use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};
 use report::ReportFreq;
 
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
@@ -198,7 +197,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         .map(|x: f64| x / 1000000.), // XXX divisor?
                     manufacturer: read_file(path.join("manufacturer")),
                     serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
-                    state: event::State::Added,
+                    state: State::Added,
                     voltage_design: read_file(path.join("voltage_min_design"))
                         .map(|x: f64| x / 1000.),
                 }
@@ -217,10 +216,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 let voltage: i64 = read_file(path.join("voltage_now"))?;
                 Some(current * voltage / 1000000)
             };
-            let timestamp = OffsetDateTime::now_utc()
-                .format(&Rfc3339)
-                .ok()
-                .unwrap_or_else(unknown);
             events.push(
                 event::BatteryUsage {
                     battery_state: read_file(path.join("status")).unwrap_or_else(unknown),
@@ -240,7 +235,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     status_register: None, // XXX
                     temperature: None,     // XXX
                     time_to_empty: None,   // XXX
-                    timestamp,
+                    timestamp: event::date_time(),
                     voltage: read_file(path.join("voltage_now")).map(|x: i64| x / 1000000),
                 }
                 .into(),
@@ -252,7 +247,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     base_board_id: read_file("/sys/class/dmi/id/board_name"),
                     ct_number: String::new(), // XXX
                     manufacturer: read_file("/sys/class/dmi/id/board_vendor"),
-                    state: event::State::Added,
+                    state: State::Added,
                     version: read_file("/sys/class/dmi/id/board_version"),
                 }
                 .into(),
@@ -297,7 +292,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     serialnumber: read_file("/sys/class/dmi/id/product_serial")
                         .unwrap_or_else(unknown),
                     sku: read_file("/sys/class/dmi/id/product_sku"),
-                    state: event::State::Added,
+                    state: State::Added,
                     uuid: read_file("/sys/class/dmi/id/product_uuid").unwrap_or_else(unknown),
                     version: read_file("/sys/class/dmi/id/product_version"),
                     width: None, // XXX
@@ -368,7 +363,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         firmware_revision: read_file(path.join("firmware_rev")),
                         model: read_file(path.join("model")),
                         serial_number: read_file(path.join("serial")).unwrap_or_else(unknown),
-                        state: event::State::Added,
+                        state: State::Added,
                         sub_system_id: read_file(path.join("device/subsystem_vendor")),
                         total_capacity: None, // XXX
                         vendor_id: read_file(path.join("device/vendor")),
@@ -430,31 +425,12 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
         }),
         TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(ReportFreq::Daily, |events| {
             // XXX limit to type A?
+            // XXX should be trigger-based
             let entries = fs::read_dir("/sys/bus/usb/devices");
-            let timestamp = OffsetDateTime::now_utc()
-                .format(&Rfc3339)
-                .ok()
-                .unwrap_or_else(unknown);
             for i in entries.into_iter().flatten().filter_map(Result::ok) {
-                let path = i.path();
-                if !path.join("idProduct").exists() {
-                    continue;
+                if let Some(event) = peripheral_usb_type_a_event(&i.path()) {
+                    events.push(event);
                 }
-                events.push(
-                    event::PeripheralUSBTypeA {
-                        device_version: None, // XXX
-                        manufacturer: read_file(path.join("manufacturer")),
-                        manufacturer_id: read_file(path.join("idVendor")),
-                        message: None, // XXX
-                        product: read_file(path.join("product")),
-                        product_id: read_file(path.join("idProduct")),
-                        state: event::State::Added,
-                        timestamp: timestamp.clone(), // XXX
-                        usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
-                        usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
-                    }
-                    .into(),
-                );
             }
         }),
         TelemetryEventType::HwMemoryPhysical => EventDesc::new(ReportFreq::Daily, |events| {
@@ -528,7 +504,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 .unwrap_or_else(unknown),
                             size: Some(info.size.into()),
                             speed: Some(info.speed.into()),
-                            state: event::State::Added,
+                            state: State::Added,
                             type_: Some(type_),
                         }
                         .into(),
@@ -606,7 +582,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             processor_id: format!("{:X}", processor_id), // XXX: correct?
                             signature: None, // XXX where does dmidecocode get this?
                             socket: i.get_str(processor.socket_designation).cloned(),
-                            state: event::State::Added,
+                            state: State::Added,
                             thread_count: Some(processor.thread_count.into()),
                             voltage: Some(f64::from(processor.voltage) / 10.),
                         }
@@ -630,7 +606,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             connected,
                             display_name,
                             pixel_size,
-                            state: event::State::Added,
+                            state: State::Added,
                         }
                         .into(),
                     );
@@ -649,4 +625,26 @@ pub fn all_events() -> Vec<event::TelemetryEvent> {
         }
     }
     events
+}
+
+pub fn peripheral_usb_type_a_event(path: &Path) -> Option<TelemetryEvent> {
+    if !path.join("idProduct").exists() {
+        return None;
+    }
+
+    Some(
+        event::PeripheralUSBTypeA {
+            device_version: None, // XXX
+            manufacturer: read_file(path.join("manufacturer")),
+            manufacturer_id: read_file(path.join("idVendor")),
+            message: None, // XXX
+            product: read_file(path.join("product")),
+            product_id: read_file(path.join("idProduct")),
+            state: State::Added,
+            timestamp: event::date_time(),
+            usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
+            usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
+        }
+        .into(),
+    )
 }

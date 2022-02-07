@@ -23,16 +23,19 @@ pub(crate) fn unknown() -> String {
     "unknown".to_string()
 }
 
+pub(crate) fn date_time() -> String {
+    // XXX "unknown" will cause schema parse error? Does that ever happen?
+    OffsetDateTime::now_utc()
+        .format(&Rfc3339)
+        .ok()
+        .unwrap_or_else(unknown)
+}
+
 pub fn data_header() -> TelemetryHeaderModel {
     let (os_name, os_version) = match OsRelease::new() {
         Ok(OsRelease { name, version, .. }) => (name, version),
         Err(_) => (unknown(), unknown()),
     };
-
-    let timestamp = OffsetDateTime::now_utc()
-        .format(&Rfc3339)
-        .ok()
-        .unwrap_or_else(unknown);
 
     TelemetryHeaderModel {
         consent: DataCollectionConsent {
@@ -50,7 +53,7 @@ pub fn data_header() -> TelemetryHeaderModel {
             device_id: "XXXXXXXXXX".to_string(), // TODO
             os_install_id: String::new(),        // TODO
         },
-        timestamp,
+        timestamp: date_time(),
     }
 }
 
@@ -75,6 +78,18 @@ impl Events {
     pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(self).unwrap()
     }
+}
+
+pub fn remove_event(event: &mut TelemetryEvent) {
+    if let Some(state) = event.state_mut() {
+        *state = State::Removed;
+    }
+    event.clear_options();
+
+    if let TelemetryEvent::HwPeripheralUsbTypeA(event) = event {
+        event.timestamp = date_time();
+    }
+    // TODO: any other types with timestamp, etc.
 }
 
 pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
@@ -111,10 +126,7 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     for (k, old) in m2.iter_mut() {
         if !m1.contains_key(k) {
             let mut new = (**old).clone();
-            if let Some(state) = new.state_mut() {
-                *state = State::Removed;
-            }
-            new.clear_options();
+            remove_event(&mut new);
             new_events.push(new);
         }
     }
