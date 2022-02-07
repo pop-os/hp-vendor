@@ -5,6 +5,26 @@ use nix::{
 };
 use std::str;
 
+// https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
+fn parse_kmsg(buf: &[u8]) -> Option<()> {
+    let record = str::from_utf8(buf).ok()?;
+    let mut lines = record.lines();
+
+    let (_props, message) = lines.next()?.split_once(';')?;
+
+    let mut subsystem = None;
+    let mut device = None;
+    for i in lines {
+        if let Some(value) = i.strip_prefix(" SUBSYSTEM=") {
+            subsystem = Some(value);
+        } else if let Some(value) = i.strip_prefix(" DEVICE=") {
+            device = Some(value);
+        }
+    }
+    println!("RECORD({:?}, {:?}): {}", subsystem, device, message);
+    Some(()) // XXX
+}
+
 fn main() {
     let mut poll = mio::Poll::new().unwrap();
     let mut events = mio::Events::with_capacity(1024);
@@ -46,8 +66,7 @@ fn main() {
             } else if event.token() == mio::Token(1) {
                 let mut buf = [0; 1024];
                 while let Ok(len) = unistd::read(fd, &mut buf) {
-                    let record = str::from_utf8(&buf[..len]).unwrap();
-                    println!("RECORD: {}", record);
+                    parse_kmsg(&buf[..len]);
                 }
             }
         }
