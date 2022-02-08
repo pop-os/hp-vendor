@@ -1,9 +1,13 @@
 use nix::{
     fcntl::{self, OFlag},
-    sys::stat::Mode,
+    sys::{
+        stat::Mode,
+        time::TimeSpec,
+        timerfd::{ClockId, Expiration, TimerFd, TimerFlags, TimerSetTimeFlags},
+    },
     unistd,
 };
-use std::{collections::HashMap, str};
+use std::{collections::HashMap, os::unix::io::AsRawFd, str, time::Duration};
 
 // https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
 fn parse_kmsg(buf: &[u8]) -> Option<()> {
@@ -29,6 +33,7 @@ fn main() {
     let mut poll = mio::Poll::new().unwrap();
     let mut events = mio::Events::with_capacity(1024);
 
+    // Register polling for udev usb events
     let mut socket = udev::MonitorBuilder::new()
         .unwrap()
         .match_subsystem_devtype("usb", "usb_device")
@@ -43,6 +48,7 @@ fn main() {
         )
         .unwrap();
 
+    // Register polling for kmsg/dmesg events
     let fd = fcntl::open(
         "/dev/kmsg",
         OFlag::O_RDONLY | OFlag::O_NONBLOCK,
@@ -53,6 +59,20 @@ fn main() {
     let mut kmsg_source = mio::unix::SourceFd(&fd);
     poll.registry()
         .register(&mut kmsg_source, mio::Token(1), mio::Interest::READABLE)
+        .unwrap();
+
+    // Register polling for a timer, for thermal sampling
+    let timer = TimerFd::new(ClockId::CLOCK_MONOTONIC, TimerFlags::empty()).unwrap();
+    timer
+        .set(
+            Expiration::Interval(TimeSpec::from_duration(Duration::from_secs(10))),
+            TimerSetTimeFlags::empty(),
+        )
+        .unwrap();
+    let timer_fd = timer.as_raw_fd();
+    let mut timer_source = mio::unix::SourceFd(&timer_fd);
+    poll.registry()
+        .register(&mut timer_source, mio::Token(2), mio::Interest::READABLE)
         .unwrap();
 
     let mut udev_devices = HashMap::new();
@@ -79,6 +99,10 @@ fn main() {
                 while let Ok(len) = unistd::read(fd, &mut buf) {
                     parse_kmsg(&buf[..len]);
                 }
+            } else if event.token() == mio::Token(2) {
+                let mut buf = [0; 8];
+                let _ = unistd::read(timer_fd, &mut buf);
+                println!("timer");
             }
         }
     }
