@@ -1,13 +1,10 @@
 [Unit]
 Description=
 Documentation=
-After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/libexec/hp-vendor
+ExecStart=/usr/libexec/hp-vendor daemon
 
 [Install]
 WantedBy=graphical.target
-
