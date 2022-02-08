@@ -1,4 +1,4 @@
-use lm_sensors::prelude::*;
+use lm_sensors::{prelude::*, value::Kind as SensorKind};
 use mio::{unix::SourceFd, Token};
 use nix::{
     sys::{
@@ -151,8 +151,10 @@ fn main() {
                                     continue;
                                 }
                             };
-                            for sub_feature in feature.sub_feature_iter() {
-                                if let Ok(value) = sub_feature.value() {
+                            if let Ok(sub_feature) =
+                                feature.sub_feature_by_kind(SensorKind::TemperatureInput)
+                            {
+                                if let Ok(value) = sub_feature.raw_value() {
                                     println!("{} {} {} {}", chip, feature, sub_feature, value);
                                 }
                             }
