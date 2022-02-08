@@ -1,15 +1,10 @@
-use nix::{
-    errno::Errno,
-    fcntl::{fcntl, FcntlArg},
-};
-use std::{
-    fs, io,
-    os::unix::{fs::PermissionsExt, io::AsRawFd},
-};
+use nix::errno::Errno;
+use std::{fs, io, os::unix::fs::PermissionsExt};
 
 use crate::{
     all_events,
     event::{self, TelemetryEvent},
+    util,
 };
 
 pub fn run() {
@@ -21,16 +16,7 @@ pub fn run() {
 
     // Get unique lock
     let lock_file = fs::File::create("/var/hp-vendor/lock").unwrap();
-    if let Err(err) = fcntl(
-        lock_file.as_raw_fd(),
-        FcntlArg::F_SETLK(&libc::flock {
-            l_type: libc::F_WRLCK as _,
-            l_whence: libc::SEEK_SET as _,
-            l_start: 0,
-            l_len: 0,
-            l_pid: 0,
-        }),
-    ) {
+    if let Err(err) = util::setlk(&lock_file) {
         if err == Errno::EACCES || err == Errno::EAGAIN {
             panic!("Lock already held on `/var/hp-vendor/lock`");
         } else {
