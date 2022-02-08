@@ -17,6 +17,7 @@ pub mod daemon;
 pub mod daily;
 pub mod event;
 pub mod report;
+mod util;
 
 use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};
 use report::ReportFreq;
