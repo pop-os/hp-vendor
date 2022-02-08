@@ -1,15 +1,20 @@
 use nix::{
-    fcntl::{self, OFlag},
     sys::{
         signal::{self, SigSet},
         signalfd::SignalFd,
-        stat::Mode,
         time::TimeSpec,
         timerfd::{ClockId, Expiration, TimerFd, TimerFlags, TimerSetTimeFlags},
     },
     unistd,
 };
-use std::{collections::HashMap, os::unix::io::AsRawFd, str, time::Duration};
+use std::{
+    collections::HashMap,
+    fs::OpenOptions,
+    io::{Seek, SeekFrom},
+    os::unix::{fs::OpenOptionsExt, io::AsRawFd},
+    str,
+    time::Duration,
+};
 
 // https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
 fn parse_kmsg(buf: &[u8]) -> Option<()> {
@@ -61,14 +66,14 @@ fn main() {
         .unwrap();
 
     // Register polling for kmsg/dmesg events
-    let fd = fcntl::open(
-        "/dev/kmsg",
-        OFlag::O_RDONLY | OFlag::O_NONBLOCK,
-        Mode::empty(),
-    )
-    .unwrap();
-    unistd::lseek(fd, 0, unistd::Whence::SeekEnd).unwrap();
-    let mut kmsg_source = mio::unix::SourceFd(&fd);
+    let mut kmsg_file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NONBLOCK)
+        .open("/dev/kmsg")
+        .unwrap();
+    kmsg_file.seek(SeekFrom::End(0)).unwrap();
+    let kmsg_fd = kmsg_file.as_raw_fd();
+    let mut kmsg_source = mio::unix::SourceFd(&kmsg_fd);
     poll.registry()
         .register(&mut kmsg_source, mio::Token(2), mio::Interest::READABLE)
         .unwrap();
@@ -112,7 +117,7 @@ fn main() {
                 });
             } else if event.token() == mio::Token(2) {
                 let mut buf = [0; 1024];
-                while let Ok(len) = unistd::read(fd, &mut buf) {
+                while let Ok(len) = unistd::read(kmsg_fd, &mut buf) {
                     parse_kmsg(&buf[..len]);
                 }
             } else if event.token() == mio::Token(3) {
