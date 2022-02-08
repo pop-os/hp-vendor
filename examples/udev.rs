@@ -1,3 +1,4 @@
+use lm_sensors::prelude::*;
 use mio::unix::SourceFd;
 use nix::{
     sys::{
@@ -99,6 +100,8 @@ fn main() {
         )
         .unwrap();
 
+    let sensors = lm_sensors::Initializer::default().initialize().unwrap();
+
     let mut events = mio::Events::with_capacity(1024);
     let mut udev_devices = HashMap::new();
     loop {
@@ -130,6 +133,21 @@ fn main() {
             } else if event.token() == mio::Token(3) {
                 let mut buf = [0; 8];
                 let _ = unistd::read(timer.as_raw_fd(), &mut buf);
+                for chip in sensors.chip_iter(None) {
+                    for feature in chip.feature_iter() {
+                        let label = match feature.label() {
+                            Ok(label) => label,
+                            Err(_) => {
+                                continue;
+                            }
+                        };
+                        for sub_feature in feature.sub_feature_iter() {
+                            if let Ok(value) = sub_feature.value() {
+                                println!("{} {} {} {}", chip, feature, sub_feature, value);
+                            }
+                        }
+                    }
+                }
                 println!("timer");
             }
         }
