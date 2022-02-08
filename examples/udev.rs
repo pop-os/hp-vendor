@@ -1,6 +1,8 @@
 use nix::{
     fcntl::{self, OFlag},
     sys::{
+        signal::{self, SigSet},
+        signalfd::SignalFd,
         stat::Mode,
         time::TimeSpec,
         timerfd::{ClockId, Expiration, TimerFd, TimerFlags, TimerSetTimeFlags},
@@ -31,7 +33,17 @@ fn parse_kmsg(buf: &[u8]) -> Option<()> {
 
 fn main() {
     let mut poll = mio::Poll::new().unwrap();
-    let mut events = mio::Events::with_capacity(1024);
+
+    // Register polling for signals
+    let mut mask = SigSet::empty();
+    mask.add(signal::SIGTERM);
+    mask.thread_block().unwrap();
+    let signal = SignalFd::new(&mask).unwrap();
+    let signal_fd = signal.as_raw_fd();
+    let mut signal_source = mio::unix::SourceFd(&signal_fd);
+    poll.registry()
+        .register(&mut signal_source, mio::Token(0), mio::Interest::READABLE)
+        .unwrap();
 
     // Register polling for udev usb events
     let mut socket = udev::MonitorBuilder::new()
@@ -43,7 +55,7 @@ fn main() {
     poll.registry()
         .register(
             &mut socket,
-            mio::Token(0),
+            mio::Token(1),
             mio::Interest::READABLE | mio::Interest::WRITABLE,
         )
         .unwrap();
@@ -58,7 +70,7 @@ fn main() {
     unistd::lseek(fd, 0, unistd::Whence::SeekEnd).unwrap();
     let mut kmsg_source = mio::unix::SourceFd(&fd);
     poll.registry()
-        .register(&mut kmsg_source, mio::Token(1), mio::Interest::READABLE)
+        .register(&mut kmsg_source, mio::Token(2), mio::Interest::READABLE)
         .unwrap();
 
     // Register polling for a timer, for thermal sampling
@@ -72,15 +84,19 @@ fn main() {
     let timer_fd = timer.as_raw_fd();
     let mut timer_source = mio::unix::SourceFd(&timer_fd);
     poll.registry()
-        .register(&mut timer_source, mio::Token(2), mio::Interest::READABLE)
+        .register(&mut timer_source, mio::Token(3), mio::Interest::READABLE)
         .unwrap();
 
+    let mut events = mio::Events::with_capacity(1024);
     let mut udev_devices = HashMap::new();
     loop {
         poll.poll(&mut events, None).unwrap();
 
         for event in &events {
-            if event.token() == mio::Token(0) && event.is_writable() {
+            if event.token() == mio::Token(0) {
+                println!("SIGTERM");
+                return;
+            } else if event.token() == mio::Token(1) && event.is_writable() {
                 socket.clone().for_each(|x| {
                     if x.event_type() == udev::EventType::Add {
                         if let Some(event) = hp_vendor::peripheral_usb_type_a_event(x.syspath()) {
@@ -94,12 +110,12 @@ fn main() {
                         }
                     }
                 });
-            } else if event.token() == mio::Token(1) {
+            } else if event.token() == mio::Token(2) {
                 let mut buf = [0; 1024];
                 while let Ok(len) = unistd::read(fd, &mut buf) {
                     parse_kmsg(&buf[..len]);
                 }
-            } else if event.token() == mio::Token(2) {
+            } else if event.token() == mio::Token(3) {
                 let mut buf = [0; 8];
                 let _ = unistd::read(timer_fd, &mut buf);
                 println!("timer");
