@@ -1,5 +1,5 @@
 use lm_sensors::prelude::*;
-use mio::unix::SourceFd;
+use mio::{unix::SourceFd, Token};
 use nix::{
     sys::{
         signal::{self, SigSet},
@@ -17,6 +17,11 @@ use std::{
     str,
     time::Duration,
 };
+
+const TOKEN_SIGNAL: Token = Token(0);
+const TOKEN_UDEV: Token = Token(1);
+const TOKEN_KMSG: Token = Token(2);
+const TOKEN_TIMER: Token = Token(3);
 
 // https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
 fn parse_kmsg(buf: &[u8]) -> Option<()> {
@@ -49,7 +54,7 @@ fn main() {
     poll.registry()
         .register(
             &mut SourceFd(&signal.as_raw_fd()),
-            mio::Token(0),
+            TOKEN_SIGNAL,
             mio::Interest::READABLE,
         )
         .unwrap();
@@ -64,7 +69,7 @@ fn main() {
     poll.registry()
         .register(
             &mut socket,
-            mio::Token(1),
+            TOKEN_UDEV,
             mio::Interest::READABLE | mio::Interest::WRITABLE,
         )
         .unwrap();
@@ -79,7 +84,7 @@ fn main() {
     poll.registry()
         .register(
             &mut SourceFd(&kmsg_file.as_raw_fd()),
-            mio::Token(2),
+            TOKEN_KMSG,
             mio::Interest::READABLE,
         )
         .unwrap();
@@ -95,7 +100,7 @@ fn main() {
     poll.registry()
         .register(
             &mut mio::unix::SourceFd(&timer.as_raw_fd()),
-            mio::Token(3),
+            TOKEN_TIMER,
             mio::Interest::READABLE,
         )
         .unwrap();
@@ -108,47 +113,54 @@ fn main() {
         poll.poll(&mut events, None).unwrap();
 
         for event in &events {
-            if event.token() == mio::Token(0) {
-                println!("SIGTERM");
-                return;
-            } else if event.token() == mio::Token(1) && event.is_writable() {
-                socket.clone().for_each(|x| {
-                    if x.event_type() == udev::EventType::Add {
-                        if let Some(event) = hp_vendor::peripheral_usb_type_a_event(x.syspath()) {
-                            println!("{:#?}", event);
-                            udev_devices.insert(x.syspath().to_owned(), event);
-                        }
-                    } else if x.event_type() == udev::EventType::Remove {
-                        if let Some(mut event) = udev_devices.remove(x.syspath()) {
-                            hp_vendor::event::remove_event(&mut event);
-                            println!("{:#?}", event);
-                        }
-                    }
-                });
-            } else if event.token() == mio::Token(2) {
-                let mut buf = [0; 1024];
-                while let Ok(len) = unistd::read(kmsg_file.as_raw_fd(), &mut buf) {
-                    parse_kmsg(&buf[..len]);
+            match event.token() {
+                TOKEN_SIGNAL => {
+                    println!("SIGTERM");
+                    return;
                 }
-            } else if event.token() == mio::Token(3) {
-                let mut buf = [0; 8];
-                let _ = unistd::read(timer.as_raw_fd(), &mut buf);
-                for chip in sensors.chip_iter(None) {
-                    for feature in chip.feature_iter() {
-                        let label = match feature.label() {
-                            Ok(label) => label,
-                            Err(_) => {
-                                continue;
+                TOKEN_UDEV => {
+                    socket.clone().for_each(|x| {
+                        if x.event_type() == udev::EventType::Add {
+                            if let Some(event) = hp_vendor::peripheral_usb_type_a_event(x.syspath())
+                            {
+                                println!("{:#?}", event);
+                                udev_devices.insert(x.syspath().to_owned(), event);
                             }
-                        };
-                        for sub_feature in feature.sub_feature_iter() {
-                            if let Ok(value) = sub_feature.value() {
-                                println!("{} {} {} {}", chip, feature, sub_feature, value);
+                        } else if x.event_type() == udev::EventType::Remove {
+                            if let Some(mut event) = udev_devices.remove(x.syspath()) {
+                                hp_vendor::event::remove_event(&mut event);
+                                println!("{:#?}", event);
                             }
                         }
+                    });
+                }
+                TOKEN_KMSG => {
+                    let mut buf = [0; 1024];
+                    while let Ok(len) = unistd::read(kmsg_file.as_raw_fd(), &mut buf) {
+                        parse_kmsg(&buf[..len]);
                     }
                 }
-                println!("timer");
+                TOKEN_TIMER => {
+                    let mut buf = [0; 8];
+                    let _ = unistd::read(timer.as_raw_fd(), &mut buf);
+                    for chip in sensors.chip_iter(None) {
+                        for feature in chip.feature_iter() {
+                            let label = match feature.label() {
+                                Ok(label) => label,
+                                Err(_) => {
+                                    continue;
+                                }
+                            };
+                            for sub_feature in feature.sub_feature_iter() {
+                                if let Ok(value) = sub_feature.value() {
+                                    println!("{} {} {} {}", chip, feature, sub_feature, value);
+                                }
+                            }
+                        }
+                    }
+                    println!("timer");
+                }
+                _ => unreachable!(),
             }
         }
     }
