@@ -5,6 +5,9 @@ Maintainer: System76 <info@system76.com>
 Build-Depends:
   debhelper-compat (= 11),
   cargo,
+  clang,
+  libclang1,
+  libsensors-dev,
   libssl-dev,
   libudev-dev,
 Standards-Version: 4.1.1
