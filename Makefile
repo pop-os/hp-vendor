@@ -36,10 +36,15 @@ distclean:
 install: all
 	install -D -m 0755 "target/release/$(BIN)" "$(DESTDIR)$(libexecdir)/$(BIN)"
 	install -D -m 0644 "$(BIN).service" "$(DESTDIR)$(libdir)/systemd/system/$(BIN).service"
+	install -D -m 0644 "$(BIN).service" "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.service"
+	install -D -m 0644 "$(BIN)-daily.service" "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.service"
+	install -D -m 0644 "$(BIN)-daily.timer" "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.timer"
 
 uninstall:
 	rm -f "$(DESTDIR)$(libexecdir)/$(BIN)"
 	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN).service"
+	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.service"
+	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.timer"
 
 update:
 	cargo update
