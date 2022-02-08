@@ -31,6 +31,14 @@ pub(crate) fn date_time() -> String {
         .unwrap_or_else(unknown)
 }
 
+pub(crate) fn device_os_ids() -> DeviceOSIds {
+    DeviceOSIds {
+        bios_uuid: "0123456789".to_string(),           // TODO
+        device_id: "01234567890123456789".to_string(), // TODO
+        os_install_id: "test".to_string(),             // TODO
+    }
+}
+
 pub fn data_header() -> TelemetryHeaderModel {
     let (os_name, os_version) = match OsRelease::new() {
         Ok(OsRelease { name, version, .. }) => (name, version),
@@ -48,11 +56,7 @@ pub fn data_header() -> TelemetryHeaderModel {
             os_name,
             os_version,
         },
-        ids: DeviceOSIds {
-            bios_uuid: String::new(),            // TODO
-            device_id: "XXXXXXXXXX".to_string(), // TODO
-            os_install_id: String::new(),        // TODO
-        },
+        ids: device_os_ids(),
         timestamp: date_time(),
     }
 }

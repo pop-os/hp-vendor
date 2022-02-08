@@ -82,8 +82,10 @@ fn main() {
 
     /*
     let client = reqwest::blocking::Client::new();
-    let req = hp_vendor::api::TokenRequest::new("0123456789".to_string(), "01234567890123456789".to_string(), "test".to_string());
-    let token = req.send(&client).unwrap().token;
+    let token = hp_vendor::api::TokenRequest::new()
+        .send(&client)
+        .unwrap()
+        .token;
     println!("{:#?}", events.send(&client, &token).unwrap());
     */
 
