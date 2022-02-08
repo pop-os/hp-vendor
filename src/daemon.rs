@@ -43,7 +43,7 @@ fn parse_kmsg(buf: &[u8]) -> Option<()> {
     Some(()) // XXX
 }
 
-fn main() {
+pub fn run() {
     let mut poll = mio::Poll::new().unwrap();
 
     // Register polling for signals
@@ -121,14 +121,13 @@ fn main() {
                 TOKEN_UDEV => {
                     socket.clone().for_each(|x| {
                         if x.event_type() == udev::EventType::Add {
-                            if let Some(event) = hp_vendor::peripheral_usb_type_a_event(x.syspath())
-                            {
+                            if let Some(event) = crate::peripheral_usb_type_a_event(x.syspath()) {
                                 println!("{:#?}", event);
                                 udev_devices.insert(x.syspath().to_owned(), event);
                             }
                         } else if x.event_type() == udev::EventType::Remove {
                             if let Some(mut event) = udev_devices.remove(x.syspath()) {
-                                hp_vendor::event::remove_event(&mut event);
+                                crate::event::remove_event(&mut event);
                                 println!("{:#?}", event);
                             }
                         }
