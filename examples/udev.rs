@@ -1,3 +1,4 @@
+use mio::unix::SourceFd;
 use nix::{
     sys::{
         signal::{self, SigSet},
@@ -44,10 +45,12 @@ fn main() {
     mask.add(signal::SIGTERM);
     mask.thread_block().unwrap();
     let signal = SignalFd::new(&mask).unwrap();
-    let signal_fd = signal.as_raw_fd();
-    let mut signal_source = mio::unix::SourceFd(&signal_fd);
     poll.registry()
-        .register(&mut signal_source, mio::Token(0), mio::Interest::READABLE)
+        .register(
+            &mut SourceFd(&signal.as_raw_fd()),
+            mio::Token(0),
+            mio::Interest::READABLE,
+        )
         .unwrap();
 
     // Register polling for udev usb events
@@ -72,10 +75,12 @@ fn main() {
         .open("/dev/kmsg")
         .unwrap();
     kmsg_file.seek(SeekFrom::End(0)).unwrap();
-    let kmsg_fd = kmsg_file.as_raw_fd();
-    let mut kmsg_source = mio::unix::SourceFd(&kmsg_fd);
     poll.registry()
-        .register(&mut kmsg_source, mio::Token(2), mio::Interest::READABLE)
+        .register(
+            &mut SourceFd(&kmsg_file.as_raw_fd()),
+            mio::Token(2),
+            mio::Interest::READABLE,
+        )
         .unwrap();
 
     // Register polling for a timer, for thermal sampling
@@ -86,10 +91,12 @@ fn main() {
             TimerSetTimeFlags::empty(),
         )
         .unwrap();
-    let timer_fd = timer.as_raw_fd();
-    let mut timer_source = mio::unix::SourceFd(&timer_fd);
     poll.registry()
-        .register(&mut timer_source, mio::Token(3), mio::Interest::READABLE)
+        .register(
+            &mut mio::unix::SourceFd(&timer.as_raw_fd()),
+            mio::Token(3),
+            mio::Interest::READABLE,
+        )
         .unwrap();
 
     let mut events = mio::Events::with_capacity(1024);
@@ -117,12 +124,12 @@ fn main() {
                 });
             } else if event.token() == mio::Token(2) {
                 let mut buf = [0; 1024];
-                while let Ok(len) = unistd::read(kmsg_fd, &mut buf) {
+                while let Ok(len) = unistd::read(kmsg_file.as_raw_fd(), &mut buf) {
                     parse_kmsg(&buf[..len]);
                 }
             } else if event.token() == mio::Token(3) {
                 let mut buf = [0; 8];
-                let _ = unistd::read(timer_fd, &mut buf);
+                let _ = unistd::read(timer.as_raw_fd(), &mut buf);
                 println!("timer");
             }
         }
