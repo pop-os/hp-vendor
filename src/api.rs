@@ -1,6 +1,6 @@
 use reqwest::blocking::Client;
 
-use crate::event::{DeviceOSIds, Events};
+use crate::event::{self, DeviceOSIds, Events};
 
 const TOKEN_URL: &str = "API_URL";
 const UPLOAD_URL: &str =
@@ -29,12 +29,8 @@ pub struct EventsResponse {
 }
 
 impl TokenRequest {
-    pub fn new(device_id: String, bios_uuid: String, os_install_id: String) -> Self {
-        Self(DeviceOSIds {
-            device_id,
-            bios_uuid,
-            os_install_id,
-        })
+    pub fn new() -> Self {
+        Self(event::device_os_ids())
     }
 
     pub fn send(&self, client: &Client) -> reqwest::Result<TokenResponse> {
