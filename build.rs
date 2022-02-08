@@ -141,9 +141,9 @@ fn main() {
             mut_states.push(quote! { None });
         };
 
-        primaries.push(gen_primary(&properties_obj));
-        diffs.push(gen_diff(&properties_obj, &required));
-        clear_options.push(gen_clear_options(&properties_obj, &required));
+        primaries.push(gen_primary(properties_obj));
+        diffs.push(gen_diff(properties_obj, &required));
+        clear_options.push(gen_clear_options(properties_obj, &required));
     }
 
     let tokens = quote! {
@@ -202,7 +202,7 @@ fn main() {
             }
 
             // Panics if objects are of different variants
-            #[allow(unused_variables)]
+            #[allow(unused_variables, clippy::suspicious_else_formatting)]
             fn diff(&mut self, old: &Self) -> bool {
                 match (self, old) {
                     #((TelemetryEvent::#variants(new), TelemetryEvent::#variants(old)) => #diffs),*
