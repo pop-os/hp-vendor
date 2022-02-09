@@ -618,8 +618,9 @@ dependencies = [
 
 [[package]]
 name = "lm-sensors"
-version = "0.1.3"
-source = "git+https://github.com/ids1024/lm-sensors?branch=raw_value#6bd37eff9c3fbb86f68d09c694d5a49777b75903"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f278ae1f83ba659fa7eb5aa9ac6d350cf26c7a9a4f281c5da666382fa65545a3"
 dependencies = [
  "bitflags",
  "libc",
