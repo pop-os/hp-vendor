@@ -28,8 +28,6 @@ fn main() {
         }
     }
 
-    // hp_vendor::db::DB::open().unwrap();
-
     match env::args().nth(1).as_deref() {
         Some("daemon") => hp_vendor::daemon::run(),
         Some("daily") => hp_vendor::daily::run(),

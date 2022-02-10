@@ -1,26 +1,7 @@
 use nix::errno::Errno;
-use serde_json::Deserializer;
-use std::{fs, io, os::unix::fs::PermissionsExt};
+use std::fs;
 
-use crate::{
-    all_events,
-    event::{self, TelemetryEvent},
-    util,
-};
-
-fn trigger_events() {
-    let mut trigger_events_file = fs::File::open("/var/hp-vendor/trigger-events.jsonl").ok();
-    if let Some(file) = &mut trigger_events_file {
-        util::setlk_wait(&file).unwrap();
-        for i in Deserializer::from_reader(file).into_iter::<event::TelemetryEvent>() {
-            // XXX
-        }
-    }
-
-    if let Some(file) = &mut trigger_events_file {
-        file.set_len(0);
-    }
-}
+use crate::{all_events, db::DB, event, util};
 
 pub fn run() {
     // Get unique lock
@@ -33,28 +14,19 @@ pub fn run() {
         }
     }
 
-    let old: Option<Vec<TelemetryEvent>> = match fs::File::open("/var/hp-vendor/daily.json") {
-        Ok(file) => Some(serde_json::from_reader(file).unwrap()),
-        Err(err) if err.kind() == io::ErrorKind::NotFound => None,
-        Err(err) => {
-            panic!("Failed to open `/var/hp-vendor/daily.json`: {}", err);
-        }
-    };
+    // XXX handle db errors?
+    let db = DB::open().unwrap();
+    db.update_event_types().unwrap();
+
+    // TODO: handle frequencies other than daily
+    let old = db.get_state_with_freq("daily").unwrap();
 
     // TODO: only handle daily events, etc.
-    let mut new = all_events();
+    let new = all_events();
+    let mut diff = new.clone();
+    event::diff(&mut diff, &old);
 
-    let new_file = fs::File::create("/var/hp-vendor/daily-updated.json").unwrap();
-    new_file
-        .set_permissions(fs::Permissions::from_mode(0o600))
-        .unwrap();
-    serde_json::to_writer(new_file, &new).unwrap();
-
-    if let Some(old) = old {
-        event::diff(&mut new, &old);
-    }
-
-    let events = event::Events::new(new);
+    let events = event::Events::new(diff);
     println!("{}", events.to_json_pretty());
 
     /*
@@ -66,9 +38,5 @@ pub fn run() {
     println!("{:#?}", events.send(&client, &token).unwrap());
     */
 
-    fs::rename(
-        "/var/hp-vendor/daily-updated.json",
-        "/var/hp-vendor/daily.json",
-    )
-    .unwrap();
+    db.replace_state_with_freq("daily", &new).unwrap();
 }

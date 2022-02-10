@@ -190,7 +190,7 @@ fn main() {
 
         // Generate function from `TelemetryEvent` to `TelemetryEvent`
         impl TelemetryEvent {
-            fn type_(&self) -> TelemetryEventType {
+            pub fn type_(&self) -> TelemetryEventType {
                 match self {
                     #(TelemetryEvent::#variants(_) => TelemetryEventType::#variants),*
                 }

@@ -1,6 +1,7 @@
 use rusqlite::{
+    params,
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef},
-    Connection, Error, OptionalExtension, Result, Statement,
+    Connection, OptionalExtension, Result, Statement,
 };
 
 use crate::event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType};
@@ -39,14 +40,14 @@ impl DB {
         Ok(Self(conn))
     }
 
-    fn prepare_queue_insert(&self) -> Result<QueueInsert> {
+    pub fn prepare_queue_insert(&self) -> Result<QueueInsert> {
         self.0
             .prepare("INSERT INTO queued_events (value) VALUES (?)")
             .map(QueueInsert)
     }
 
     // Should be checked before upload, etc.
-    fn get_consent(&self) -> Result<Option<DataCollectionConsent>> {
+    pub fn get_consent(&self) -> Result<Option<DataCollectionConsent>> {
         self.0
             .query_row("SELECT opted_in_level, version from consent", [], |row| {
                 Ok(DataCollectionConsent {
@@ -57,7 +58,7 @@ impl DB {
             .optional()
     }
 
-    fn set_consent(&self, consent: &DataCollectionConsent) -> Result<()> {
+    pub fn set_consent(&self, consent: &DataCollectionConsent) -> Result<()> {
         self.0
             .execute(
                 "REPLACE INTO consent (id, opted_in_level, version) VALUES (0, ?, ?)",
@@ -66,28 +67,51 @@ impl DB {
             .map(|_| ())
     }
 
-    fn update_event_types(&self) -> Result<()> {
-        // TODO: remove from `state` and `queued_events` if removing a `type`
-        // TODO: take argument
+    pub fn update_event_types(&self) -> Result<()> {
+        // TODO: take argument; when/show should this be initialized? Include default with package,
+        // or query server first?
 
         let mut insert_statement = self
             .0
-            .prepare("INSERT into event_types (type, frequency) VALUES (?, ?)")?;
+            .prepare("INSERT into event_types (type, frequency) VALUES (?, ?) ON CONFLICT(type) DO UPDATE SET frequency=excluded.frequency")?;
 
-        self.0.execute("BEGIN", [])?;
+        let tx = self.0.unchecked_transaction()?;
         for i in TelemetryEventType::iter() {
-            insert_statement.execute([i.name(), "daily"])?;
+            let frequency = match i.name() {
+                "hw_peripheral_usb_type_a" | "hw_thermal_context" => "trigger",
+                _ => "daily",
+            };
+            insert_statement.execute([i.name(), frequency])?;
         }
-        self.0.execute("END", [])?;
+        tx.commit()
+    }
 
-        Ok(())
+    pub fn get_state_with_freq(&self, freq: &str) -> Result<Vec<TelemetryEvent>> {
+        let mut statement = self.0.prepare("SELECT state.value from state INNER JOIN event_types USING(type) WHERE event_types.frequency = ?")?;
+        let rows = statement.query_map([freq], |row| {
+            row.get(0)
+        })?;
+        Ok(rows.filter_map(Result::ok).collect())
+    }
+
+    pub fn replace_state_with_freq(&self, freq: &str, events: &[TelemetryEvent]) -> Result<()> {
+        let mut insert_statement = self
+            .0
+            .prepare("INSERT into state (type, value) VALUES (?, ?)")?;
+
+        let tx = self.0.unchecked_transaction()?;
+        self.0.execute("DELETE from state where ROWID IN (SELECT state.ROWID from state INNER JOIN event_types USING(type) WHERE event_types.frequency = ?)", [freq])?;
+        for i in events {
+            insert_statement.execute(params!(i.type_().name(), i))?;
+        }
+        tx.commit()
     }
 }
 
 pub struct QueueInsert<'a>(Statement<'a>);
 
 impl<'a> QueueInsert<'a> {
-    fn execute(&mut self, event: &TelemetryEvent) -> Result<()> {
+    pub fn execute(&mut self, event: &TelemetryEvent) -> Result<()> {
         self.0.execute([event]).map(|_| ())
     }
 }
