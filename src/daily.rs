@@ -26,6 +26,8 @@ pub fn run() {
     let mut diff = new.clone();
     event::diff(&mut diff, &old);
 
+    diff.extend_from_slice(&db.get_queued().unwrap());
+
     let events = event::Events::new(diff);
     println!("{}", events.to_json_pretty());
 
@@ -38,5 +40,6 @@ pub fn run() {
     println!("{:#?}", events.send(&client, &token).unwrap());
     */
 
+    db.clear_queued().unwrap();
     db.replace_state_with_freq("daily", &new).unwrap();
 }
