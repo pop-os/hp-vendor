@@ -1,7 +1,7 @@
 use rusqlite::{
     params,
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef},
-    Connection, OptionalExtension, Result, Statement,
+    Connection, Result, Statement,
 };
 
 use crate::event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType};
@@ -50,19 +50,22 @@ impl DB {
     pub fn get_consent(&self) -> Result<Option<DataCollectionConsent>> {
         self.0
             .query_row("SELECT opted_in_level, version from consent", [], |row| {
-                Ok(DataCollectionConsent {
-                    opted_in_level: row.get(0)?,
-                    version: row.get(1)?,
-                })
+                Ok((|| {
+                    Some(DataCollectionConsent {
+                        opted_in_level: row.get(0).ok()?,
+                        version: row.get(1).ok()?,
+                    })
+                })())
             })
-            .optional()
     }
 
-    pub fn set_consent(&self, consent: &DataCollectionConsent) -> Result<()> {
+    pub fn set_consent(&self, consent: Option<&DataCollectionConsent>) -> Result<()> {
+        let opted_in_level = consent.map(|x| &x.opted_in_level);
+        let version = consent.map(|x| &x.version);
         self.0
             .execute(
                 "REPLACE INTO consent (id, opted_in_level, version) VALUES (0, ?, ?)",
-                [&consent.opted_in_level, &consent.version],
+                [opted_in_level, version],
             )
             .map(|_| ())
     }

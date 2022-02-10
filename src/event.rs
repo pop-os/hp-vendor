@@ -39,17 +39,14 @@ pub(crate) fn device_os_ids() -> DeviceOSIds {
     }
 }
 
-pub fn data_header() -> TelemetryHeaderModel {
+fn data_header(consent: DataCollectionConsent) -> TelemetryHeaderModel {
     let (os_name, os_version) = match OsRelease::new() {
         Ok(OsRelease { name, version, .. }) => (name, version),
         Err(_) => (unknown(), unknown()),
     };
 
     TelemetryHeaderModel {
-        consent: DataCollectionConsent {
-            opted_in_level: String::new(), // XXX
-            version: String::new(),        // XXX
-        },
+        consent,
         data_provider: DataProviderInfo {
             app_name: env!("CARGO_PKG_NAME").to_string(),
             app_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -68,10 +65,10 @@ pub struct Events {
 }
 
 impl Events {
-    pub fn new(data: Vec<TelemetryEvent>) -> Self {
+    pub fn new(consent: DataCollectionConsent, data: Vec<TelemetryEvent>) -> Self {
         Self {
             data,
-            data_header: data_header(),
+            data_header: data_header(consent),
         }
     }
 
