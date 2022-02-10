@@ -15,7 +15,7 @@ use std::{
 pub mod api;
 pub mod daemon;
 pub mod daily;
-pub mod db;
+mod db;
 pub mod event;
 pub mod report;
 mod util;
@@ -427,16 +427,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(ReportFreq::Daily, |events| {
-            // XXX limit to type A?
-            // XXX should be trigger-based
-            let entries = fs::read_dir("/sys/bus/usb/devices");
-            for i in entries.into_iter().flatten().filter_map(Result::ok) {
-                if let Some(event) = peripheral_usb_type_a_event(&i.path()) {
-                    events.push(event);
-                }
-            }
-        }),
+        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(ReportFreq::Trigger, |_| {}),
         TelemetryEventType::HwMemoryPhysical => EventDesc::new(ReportFreq::Daily, |events| {
             for i in dmi() {
                 if let Some(info) = i.get::<dmi::MemoryDevice>() {

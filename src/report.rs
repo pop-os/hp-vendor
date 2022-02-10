@@ -6,4 +6,6 @@ pub enum ReportFreq {
     Hourly,
     /// One update per day, or on each boot
     Daily,
+    /// Updated on some trigger
+    Trigger,
 }

@@ -1,4 +1,3 @@
-use crate::{event, util};
 use lm_sensors::{prelude::*, value::Kind as SensorKind};
 use mio::{unix::SourceFd, Token};
 use nix::{
@@ -12,15 +11,14 @@ use nix::{
 };
 use std::{
     collections::HashMap,
-    fs::{self, OpenOptions},
-    io::{self, Seek, SeekFrom, Write},
-    os::unix::{
-        fs::{OpenOptionsExt, PermissionsExt},
-        io::AsRawFd,
-    },
+    fs::OpenOptions,
+    io::{Seek, SeekFrom},
+    os::unix::{fs::OpenOptionsExt, io::AsRawFd},
     str,
     time::Duration,
 };
+
+use crate::db::DB;
 
 const TOKEN_SIGNAL: Token = Token(0);
 const TOKEN_UDEV: Token = Token(1);
@@ -28,20 +26,6 @@ const TOKEN_KMSG: Token = Token(2);
 const TOKEN_TIMER: Token = Token(3);
 
 // XXX lock for exclusivity?
-
-fn write_event(file: &mut fs::File, event: &event::TelemetryEvent) -> io::Result<()> {
-    // Attempts write json then newline as atomically as possible.
-    // https://doc.rust-lang.org/stable/std/fs/struct.OpenOptions.html#method.append
-
-    let mut line = serde_json::to_vec(event)?;
-    line.push(b'\n');
-
-    util::setlk_wait(file)?;
-    let res = file.write_all(&line);
-    util::unlck(file)?;
-
-    res
-}
 
 // https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
 fn parse_kmsg(buf: &[u8]) -> Option<()> {
@@ -64,6 +48,10 @@ fn parse_kmsg(buf: &[u8]) -> Option<()> {
 }
 
 pub fn run() {
+    let db = DB::open().unwrap();
+    db.update_event_types().unwrap();
+    let mut insert_statement = db.prepare_queue_insert().unwrap();
+
     let mut poll = mio::Poll::new().unwrap();
 
     // Register polling for signals
@@ -127,15 +115,6 @@ pub fn run() {
 
     let sensors = lm_sensors::Initializer::default().initialize().unwrap();
 
-    let mut events_file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("/var/hp-vendor/trigger-events.jsonl")
-        .unwrap(); // XXX name? unwrap?
-    events_file
-        .set_permissions(fs::Permissions::from_mode(0o600))
-        .unwrap();
-
     let mut events = mio::Events::with_capacity(1024);
     let mut udev_devices = HashMap::new();
     loop {
@@ -152,14 +131,14 @@ pub fn run() {
                         if x.event_type() == udev::EventType::Add {
                             if let Some(event) = crate::peripheral_usb_type_a_event(x.syspath()) {
                                 println!("{:#?}", event);
-                                write_event(&mut events_file, &event);
+                                insert_statement.execute(&event);
                                 udev_devices.insert(x.syspath().to_owned(), event);
                             }
                         } else if x.event_type() == udev::EventType::Remove {
                             if let Some(mut event) = udev_devices.remove(x.syspath()) {
                                 crate::event::remove_event(&mut event);
                                 println!("{:#?}", event);
-                                write_event(&mut events_file, &event);
+                                insert_statement.execute(&event);
                             }
                         }
                     });
