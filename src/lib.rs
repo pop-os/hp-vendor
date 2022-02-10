@@ -15,6 +15,7 @@ use std::{
 pub mod api;
 pub mod daemon;
 pub mod daily;
+pub mod db;
 pub mod event;
 pub mod report;
 mod util;
