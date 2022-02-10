@@ -1,4 +1,10 @@
-use std::{env, fs, io, process};
+use std::{env, fs, io, os::unix::fs::PermissionsExt, process};
+
+fn create_var_dir() -> io::Result<()> {
+    fs::create_dir("/var/hp-vendor")?;
+    fs::set_permissions("/var/hp-vendor", fs::Permissions::from_mode(0o700))?;
+    Ok(())
+}
 
 fn main() {
     if unsafe { libc::geteuid() } != 0 {
@@ -16,7 +22,7 @@ fn main() {
         }
     }
 
-    if let Err(err) = fs::create_dir("/var/hp-vendor") {
+    if let Err(err) = create_var_dir() {
         if err.kind() != io::ErrorKind::AlreadyExists {
             panic!("Failed to create `/var/hp-vendor`: {}", err);
         }

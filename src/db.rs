@@ -9,7 +9,6 @@ pub struct DB(Connection);
 
 impl DB {
     pub fn open() -> Result<Self> {
-        // XXX create with permissions
         let conn = Connection::open("/var/hp-vendor/db.sqlite3")?;
         conn.execute_batch(
             "
