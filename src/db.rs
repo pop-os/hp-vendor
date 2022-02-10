@@ -9,6 +9,7 @@ pub struct DB(Connection);
 
 impl DB {
     pub fn open() -> Result<Self> {
+        // XXX create with permissions
         let conn = Connection::open("/var/hp-vendor/db.sqlite3")?;
         conn.execute_batch(
             "
@@ -18,22 +19,24 @@ impl DB {
                 frequency TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS state (
-                FOREIGN_KEY(type) NOT NULL REFERENCES event_types(type),
-                value TEXT NOT NULL
+                type TEXT NOT NULL,
+                value TEXT NOT NULL,
+                FOREIGN KEY(type) REFERENCES event_types(type) ON DELETE CASCADE
             );
             CREATE TABLE IF NOT EXISTS queued_events (
                 value TEXT NOT NULL,
                 seen INTEGER DEFAULT 0 NOT NULL
             );
-            );
             CREATE TABLE IF NOT EXISTS consent (
-                id INTEGER PRIMARY KEY CHECK (id = 0),
+                id INTEGER PRIMARY KEY,
                 opted_in_level TEXT,
                 version TEXT,
+                CHECK (id = 0)
             );
             INSERT OR IGNORE INTO consent (id, opted_in_level, version) VALUES (0, NULL, NULL);
         ",
         )?;
+        // Migrate here if schema changes are made
         Ok(Self(conn))
     }
 
