@@ -1,4 +1,4 @@
-use std::{env, process};
+use std::{env, fs, io, process};
 
 fn main() {
     if unsafe { libc::geteuid() } != 0 {
@@ -13,6 +13,12 @@ fn main() {
         if product_name != "HP EliteBook 845 G8 Notebook PC" {
             eprintln!("hp-vendor: unknown product '{}'", product_name);
             process::exit(1);
+        }
+    }
+
+    if let Err(err) = fs::create_dir("/var/hp-vendor") {
+        if err.kind() != io::ErrorKind::AlreadyExists {
+            panic!("Failed to create `/var/hp-vendor`: {}", err);
         }
     }
 
