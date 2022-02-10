@@ -18,6 +18,19 @@ pub fn run() {
     let db = DB::open().unwrap();
     db.update_event_types().unwrap();
 
+    // TODO set consent correctly, and check its value
+    let consent = match db.get_consent().unwrap() {
+        Some(consent) => consent,
+        None => {
+            let consent = event::DataCollectionConsent {
+                opted_in_level: String::new(),
+                version: String::new(),
+            };
+            db.set_consent(Some(&consent)).unwrap();
+            consent
+        }
+    };
+
     // TODO: handle frequencies other than daily
     let old = db.get_state_with_freq("daily").unwrap();
 
@@ -28,7 +41,7 @@ pub fn run() {
 
     diff.extend_from_slice(&db.get_queued().unwrap());
 
-    let events = event::Events::new(diff);
+    let events = event::Events::new(consent, diff);
     println!("{}", events.to_json_pretty());
 
     /*
