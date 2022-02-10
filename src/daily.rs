@@ -1,4 +1,5 @@
 use nix::errno::Errno;
+use serde_json::Deserializer;
 use std::{fs, io, os::unix::fs::PermissionsExt};
 
 use crate::{
@@ -7,13 +8,21 @@ use crate::{
     util,
 };
 
-pub fn run() {
-    if let Err(err) = fs::create_dir("/var/hp-vendor") {
-        if err.kind() != io::ErrorKind::AlreadyExists {
-            panic!("Failed to create `/var/hp-vendor`: {}", err);
+fn trigger_events() {
+    let mut trigger_events_file = fs::File::open("/var/hp-vendor/trigger-events.jsonl").ok();
+    if let Some(file) = &mut trigger_events_file {
+        util::setlk_wait(&file).unwrap();
+        for i in Deserializer::from_reader(file).into_iter::<event::TelemetryEvent>() {
+            // XXX
         }
     }
 
+    if let Some(file) = &mut trigger_events_file {
+        file.set_len(0);
+    }
+}
+
+pub fn run() {
     // Get unique lock
     let lock_file = fs::File::create("/var/hp-vendor/lock").unwrap();
     if let Err(err) = util::setlk(&lock_file) {
