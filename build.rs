@@ -96,6 +96,7 @@ fn main() {
 
     let json_str = fs::read_to_string("UploadEventPackageRequestModel.json").unwrap();
     let root: Value = serde_json::from_str(&json_str).unwrap();
+    let mut names = Vec::new();
     let mut variants = Vec::new();
     let mut structs = Vec::new();
     let mut states = Vec::new();
@@ -109,6 +110,8 @@ fn main() {
         .as_object()
         .unwrap()
     {
+        names.push(k);
+
         let variant = k.to_case(Case::UpperCamel);
         variants.push(Ident::new(&variant, Span::call_site()));
 
@@ -176,6 +179,12 @@ fn main() {
                     #(TelemetryEventType::#variants),*
                 ];
                 VARIANTS.iter().copied()
+            }
+
+            pub fn name(&self) -> &'static str {
+                match self {
+                    #(TelemetryEventType::#variants => #names),*
+                }
             }
         }
 
