@@ -18,7 +18,7 @@ use std::{
     time::Duration,
 };
 
-use crate::db::DB;
+use crate::{db::DB, util};
 
 const TOKEN_SIGNAL: Token = Token(0);
 const TOKEN_UDEV: Token = Token(1);
@@ -48,6 +48,9 @@ fn parse_kmsg(buf: &[u8]) -> Option<()> {
 }
 
 pub fn run() {
+    // Get unique lock
+    let _lock = util::lock_file_or_panic("/var/hp-vendor/daemon.lock");
+
     let db = DB::open().unwrap();
     db.update_event_types().unwrap();
     let mut insert_statement = db.prepare_queue_insert().unwrap();

@@ -1,9 +1,12 @@
-use nix::fcntl::{fcntl, FcntlArg};
+use nix::{
+    errno::Errno,
+    fcntl::{fcntl, FcntlArg},
+};
 use std::{fs, os::unix::io::AsRawFd};
 
 /// Set unique advisory lock on whole file Returns `EACCESS` or `EAGAIN` if
 /// already locked.
-pub fn setlk(file: &fs::File) -> nix::Result<()> {
+fn setlk(file: &fs::File) -> nix::Result<()> {
     fcntl(
         file.as_raw_fd(),
         FcntlArg::F_SETLK(&libc::flock {
@@ -16,3 +19,21 @@ pub fn setlk(file: &fs::File) -> nix::Result<()> {
     )
     .map(|_| ())
 }
+
+// Panics if file can't be opened or lock is held
+pub fn lock_file_or_panic(path: &str) -> Lock {
+    let file = match fs::File::create(path) {
+        Ok(file) => file,
+        Err(err) => panic!("Failed to open `{}`: {}", path, err),
+    };
+    if let Err(err) = setlk(&file) {
+        if err == Errno::EACCES || err == Errno::EAGAIN {
+            panic!("Lock already held on `{}`", path);
+        } else {
+            panic!("Error locking `{}`: {}", path, err);
+        }
+    }
+    Lock(file)
+}
+
+pub struct Lock(fs::File);
