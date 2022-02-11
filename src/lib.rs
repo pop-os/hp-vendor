@@ -18,12 +18,10 @@ pub mod daily;
 mod db;
 pub mod event;
 mod frequency;
-pub mod report;
 mod util;
 
 use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};
 use frequency::{Frequencies, Frequency};
-use report::ReportFreq;
 
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
 
@@ -159,17 +157,12 @@ fn battery() -> Option<PathBuf> {
 }
 
 pub struct EventDesc {
-    freq: ReportFreq,
     cb: fn(&mut Vec<TelemetryEvent>),
 }
 
 impl EventDesc {
-    fn new(freq: ReportFreq, cb: fn(&mut Vec<TelemetryEvent>)) -> Self {
-        Self { freq, cb }
-    }
-
-    pub fn freq(&self) -> ReportFreq {
-        self.freq
+    fn new(cb: fn(&mut Vec<TelemetryEvent>)) -> Self {
+        Self { cb }
     }
 
     pub fn generate(&self, events: &mut Vec<TelemetryEvent>) {
@@ -179,7 +172,7 @@ impl EventDesc {
 
 pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
     Some(match type_ {
-        TelemetryEventType::SwLinuxKernel => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::SwLinuxKernel => EventDesc::new(|events| {
             let utsname = uname();
             events.push(
                 event::LinuxKernel {
@@ -190,7 +183,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::HwBattery => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwBattery => EventDesc::new(|events| {
             let path = match battery() {
                 Some(path) => path,
                 None => return,
@@ -211,7 +204,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::HwBatteryUsage => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwBatteryUsage => EventDesc::new(|events| {
             let path = match battery() {
                 Some(path) => path,
                 None => return,
@@ -248,7 +241,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::HwBaseBoard => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwBaseBoard => EventDesc::new(|events| {
             events.push(
                 event::BaseBoard {
                     base_board_id: read_file("/sys/class/dmi/id/board_name"),
@@ -260,7 +253,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::SwFirmware => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::SwFirmware => EventDesc::new(|events| {
             fn bios_date() -> Option<String> {
                 let date: String = read_file("/sys/class/dmi/id/bios_date")?;
                 let mut parts = date.split('/');
@@ -287,7 +280,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::HwSystem => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwSystem => EventDesc::new(|events| {
             events.push(
                 event::System {
                     capabilities: None, // XXX
@@ -307,7 +300,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::SwOperatingSystem => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::SwOperatingSystem => EventDesc::new(|events| {
             let os_release = OS_RELEASE.as_ref().ok();
             events.push(
                 event::OperatingSystem {
@@ -323,7 +316,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        TelemetryEventType::SwDriver => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::SwDriver => EventDesc::new(|events| {
             if let Some(modules) = read_file::<_, String>("/proc/modules") {
                 for line in modules.lines() {
                     let mut cols = line.split(' ');
@@ -360,7 +353,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwNvmeStoragePhysical => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwNvmeStoragePhysical => EventDesc::new(|events| {
             let entries = fs::read_dir("/sys/class/nvme");
             for i in entries.into_iter().flatten().filter_map(Result::ok) {
                 let path = i.path();
@@ -379,7 +372,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 );
             }
         }),
-        TelemetryEventType::HwNvmeStorageLogical => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwNvmeStorageLogical => EventDesc::new(|events| {
             let entries = fs::read_dir("/sys/class/block");
             for i in entries.into_iter().flatten().filter_map(Result::ok) {
                 if let Some(name) = i.file_name().to_str() {
@@ -430,8 +423,8 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(ReportFreq::Trigger, |_| {}),
-        TelemetryEventType::HwMemoryPhysical => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(|_| {}),
+        TelemetryEventType::HwMemoryPhysical => EventDesc::new(|events| {
             for i in dmi() {
                 if let Some(info) = i.get::<dmi::MemoryDevice>() {
                     let form_factor = match info.form_factor {
@@ -510,7 +503,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwProcessor => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwProcessor => EventDesc::new(|events| {
             let dmi = dmi();
             for i in &dmi {
                 if let Some(processor) = i.get::<dmi::ProcessorInfo>() {
@@ -589,7 +582,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwDisplay => EventDesc::new(ReportFreq::Daily, |events| {
+        TelemetryEventType::HwDisplay => EventDesc::new(|events| {
             for device in DrmDevice::all() {
                 for connector in device.connectors() {
                     let connected = connector.state() == drm::control::connector::State::Connected;
