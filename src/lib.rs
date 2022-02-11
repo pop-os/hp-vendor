@@ -147,7 +147,8 @@ fn battery() -> Option<PathBuf> {
         let entry = entry.ok()?;
         let path = entry.path();
         if let Ok(type_) = fs::read(path.join("type")) {
-            if type_ == b"Battery\n" {
+            let scope = fs::read(path.join("scope")).ok();
+            if type_ == b"Battery\n" && scope.as_deref() != Some(b"Device\n") {
                 return Some(path);
             }
         }
