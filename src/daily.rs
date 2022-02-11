@@ -1,18 +1,8 @@
-use nix::errno::Errno;
-use std::fs;
-
 use crate::{db::DB, event, frequency::Frequency, util};
 
 pub fn run() {
     // Get unique lock
-    let lock_file = fs::File::create("/var/hp-vendor/lock").unwrap();
-    if let Err(err) = util::setlk(&lock_file) {
-        if err == Errno::EACCES || err == Errno::EAGAIN {
-            panic!("Lock already held on `/var/hp-vendor/lock`");
-        } else {
-            panic!("Error locking `/var/hp-vendor/lock`: {}", err);
-        }
-    }
+    let _lock = util::lock_file_or_panic("/var/hp-vendor/daily.lock");
 
     // XXX handle db errors?
     let db = DB::open().unwrap();
