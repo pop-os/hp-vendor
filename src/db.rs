@@ -33,7 +33,8 @@ impl DB {
                 version TEXT,
                 CHECK (id = 0)
             );
-            INSERT OR IGNORE INTO consent (id, opted_in_level, version) VALUES (0, NULL, NULL);
+            INSERT OR IGNORE INTO consent (id, opted_in_level, version)
+            VALUES (0, NULL, NULL);
         ",
         )?;
         // Migrate here if schema changes are made
@@ -42,7 +43,10 @@ impl DB {
 
     pub fn prepare_queue_insert(&self) -> Result<QueueInsert> {
         self.0
-            .prepare("INSERT INTO queued_events (value) VALUES (?)")
+            .prepare(
+                "INSERT INTO queued_events (value)
+                 VALUES (?)",
+            )
             .map(QueueInsert)
     }
 
@@ -64,7 +68,8 @@ impl DB {
         let version = consent.map(|x| &x.version);
         self.0
             .execute(
-                "REPLACE INTO consent (id, opted_in_level, version) VALUES (0, ?, ?)",
+                "REPLACE INTO consent (id, opted_in_level, version)
+                 VALUES (0, ?, ?)",
                 [opted_in_level, version],
             )
             .map(|_| ())
@@ -74,9 +79,12 @@ impl DB {
         // TODO: take argument; when/show should this be initialized? Include default with package,
         // or query server first?
 
-        let mut insert_statement = self
-            .0
-            .prepare("INSERT into event_types (type, frequency) VALUES (?, ?) ON CONFLICT(type) DO UPDATE SET frequency=excluded.frequency")?;
+        let mut insert_statement = self.0.prepare(
+            "INSERT into event_types (type, frequency)
+             VALUES (?, ?)
+             ON CONFLICT(type) DO
+                 UPDATE SET frequency=excluded.frequency",
+        )?;
 
         let tx = self.0.unchecked_transaction()?;
         for i in TelemetryEventType::iter() {
@@ -90,18 +98,32 @@ impl DB {
     }
 
     pub fn get_state_with_freq(&self, freq: &str) -> Result<Vec<TelemetryEvent>> {
-        let mut stmt = self.0.prepare("SELECT state.value from state INNER JOIN event_types USING(type) WHERE event_types.frequency = ?")?;
+        let mut stmt = self.0.prepare(
+            "SELECT state.value from state
+                 INNER JOIN event_types
+                 USING(type)
+                 WHERE event_types.frequency = ?",
+        )?;
         let rows = stmt.query_map([freq], |row| row.get(0))?;
         Ok(rows.filter_map(Result::ok).collect())
     }
 
     pub fn replace_state_with_freq(&self, freq: &str, events: &[TelemetryEvent]) -> Result<()> {
-        let mut insert_statement = self
-            .0
-            .prepare("INSERT into state (type, value) VALUES (?, ?)")?;
+        let mut insert_statement = self.0.prepare(
+            "INSERT into state (type, value)
+             VALUES (?, ?)",
+        )?;
 
         let tx = self.0.unchecked_transaction()?;
-        self.0.execute("DELETE from state where ROWID IN (SELECT state.ROWID from state INNER JOIN event_types USING(type) WHERE event_types.frequency = ?)", [freq])?;
+        self.0.execute(
+            "DELETE from state
+             WHERE ROWID IN
+                 (SELECT state.ROWID from state
+                      INNER JOIN event_types
+                      USING(type)
+                      WHERE event_types.frequency = ?)",
+            [freq],
+        )?;
         for i in events {
             insert_statement.execute(params!(i.type_().name(), i))?;
         }
