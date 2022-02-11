@@ -28,11 +28,13 @@ fn main() {
         }
     }
 
-    match env::args().nth(1).as_deref() {
+    let mut args = env::args().skip(1);
+    match args.next().as_deref() {
         Some("daemon") => hp_vendor::daemon::run(),
         Some("daily") => hp_vendor::daily::run(),
+        Some("print") => hp_vendor::print::run(args.next().as_deref()),
         _ => {
-            eprintln!("Usage: hp-vendor (daemon|daily)");
+            eprintln!("Usage: hp-vendor (daemon|daily|print)");
             process::exit(1);
         }
     }

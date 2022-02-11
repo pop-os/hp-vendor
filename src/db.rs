@@ -106,6 +106,12 @@ impl DB {
         ))
     }
 
+    pub fn get_state(&self) -> Result<Vec<TelemetryEvent>> {
+        let mut stmt = self.0.prepare("SELECT state.value from state")?;
+        let rows = stmt.query_map([], |row| row.get(0))?;
+        Ok(rows.filter_map(Result::ok).collect())
+    }
+
     pub fn get_state_with_freq(&self, freq: Frequency) -> Result<Vec<TelemetryEvent>> {
         let mut stmt = self.0.prepare(
             "SELECT state.value from state
@@ -144,9 +150,11 @@ impl DB {
     }
 
     // Uses `seen` property so `clear_queued` doesn't delete things added after this
-    pub fn get_queued(&self) -> Result<Vec<TelemetryEvent>> {
+    pub fn get_queued(&self, mark_seen: bool) -> Result<Vec<TelemetryEvent>> {
         let tx = self.0.unchecked_transaction()?;
-        self.0.execute("UPDATE queued_events SET seen = 1", [])?;
+        if mark_seen {
+            self.0.execute("UPDATE queued_events SET seen = 1", [])?;
+        }
         let mut stmt = self.0.prepare("SELECT value from queued_events")?;
         let rows = stmt.query_map([], |row| row.get(0))?;
         tx.commit()?;

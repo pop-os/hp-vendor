@@ -2,7 +2,7 @@ use std::{collections::HashMap, iter::FromIterator};
 
 use crate::event::TelemetryEventType;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Frequency {
     Daily,
     Trigger,
@@ -25,6 +25,7 @@ impl Frequency {
     }
 }
 
+#[derive(Debug)]
 pub struct Frequencies(HashMap<TelemetryEventType, Frequency>);
 
 impl Frequencies {
