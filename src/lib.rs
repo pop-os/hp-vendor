@@ -17,10 +17,12 @@ pub mod daemon;
 pub mod daily;
 mod db;
 pub mod event;
+mod frequency;
 pub mod report;
 mod util;
 
 use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};
+use frequency::{Frequencies, Frequency};
 use report::ReportFreq;
 
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
@@ -616,6 +618,19 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
 pub fn all_events() -> Vec<event::TelemetryEvent> {
     let mut events = Vec::new();
     for i in event::TelemetryEventType::iter() {
+        if let Some(event) = event(i) {
+            event.generate(&mut events);
+        }
+    }
+    events
+}
+
+pub fn events(freqs: &Frequencies, freq: Frequency) -> Vec<event::TelemetryEvent> {
+    let mut events = Vec::new();
+    for i in event::TelemetryEventType::iter() {
+        if freqs.get(i) != freq {
+            continue;
+        }
         if let Some(event) = event(i) {
             event.generate(&mut events);
         }
