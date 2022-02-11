@@ -186,6 +186,13 @@ fn main() {
                     #(TelemetryEventType::#variants => #names),*
                 }
             }
+
+            pub fn from_str(s: &str) -> Option<Self> {
+                match s {
+                    #(#names => Some(TelemetryEventType::#variants),)*
+                    _ => None,
+                }
+            }
         }
 
         // Generate function from `TelemetryEvent` to `TelemetryEvent`

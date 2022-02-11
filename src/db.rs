@@ -3,8 +3,12 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef},
     Connection, Result, Statement,
 };
+use std::{error::Error, fmt, str};
 
-use crate::event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType};
+use crate::{
+    event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType},
+    frequency::{Frequencies, Frequency},
+};
 
 pub struct DB(Connection);
 
@@ -87,17 +91,22 @@ impl DB {
         )?;
 
         let tx = self.0.unchecked_transaction()?;
-        for i in TelemetryEventType::iter() {
-            let frequency = match i.name() {
-                "hw_peripheral_usb_type_a" | "hw_thermal_context" => "trigger",
-                _ => "daily",
-            };
-            insert_statement.execute([i.name(), frequency])?;
+        for (type_, frequency) in Frequencies::default().iter() {
+            insert_statement.execute(params![type_, frequency])?;
         }
         tx.commit()
     }
 
-    pub fn get_state_with_freq(&self, freq: &str) -> Result<Vec<TelemetryEvent>> {
+    pub fn get_event_frequencies(&self) -> Result<Frequencies> {
+        let mut stmt = self.0.prepare("SELECT type, frequency from event_types")?;
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        // Ignore invalid types, and use default if somehow it doesn't exist
+        Ok(Frequencies::from_iter_or_default(
+            rows.filter_map(Result::ok),
+        ))
+    }
+
+    pub fn get_state_with_freq(&self, freq: Frequency) -> Result<Vec<TelemetryEvent>> {
         let mut stmt = self.0.prepare(
             "SELECT state.value from state
                  INNER JOIN event_types
@@ -108,7 +117,11 @@ impl DB {
         Ok(rows.filter_map(Result::ok).collect())
     }
 
-    pub fn replace_state_with_freq(&self, freq: &str, events: &[TelemetryEvent]) -> Result<()> {
+    pub fn replace_state_with_freq(
+        &self,
+        freq: Frequency,
+        events: &[TelemetryEvent],
+    ) -> Result<()> {
         let mut insert_statement = self.0.prepare(
             "INSERT into state (type, value)
              VALUES (?, ?)",
@@ -155,6 +168,21 @@ impl<'a> QueueInsert<'a> {
     }
 }
 
+fn other_err<E: Error + Send + Sync + 'static>(err: E) -> FromSqlError {
+    FromSqlError::Other(Box::new(err))
+}
+
+#[derive(Debug)]
+struct InvalidEnum(String);
+
+impl fmt::Display for InvalidEnum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "'{}' is not a valid enum variant", self.0)
+    }
+}
+
+impl Error for InvalidEnum {}
+
 impl ToSql for TelemetryEvent {
     fn to_sql(&self) -> Result<ToSqlOutput> {
         Ok(ToSqlOutput::Owned(Value::Text(
@@ -166,7 +194,42 @@ impl ToSql for TelemetryEvent {
 impl FromSql for TelemetryEvent {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         if let ValueRef::Text(text) = value {
-            serde_json::from_slice(text).map_err(|err| FromSqlError::Other(Box::new(err)))
+            serde_json::from_slice(text).map_err(other_err)
+        } else {
+            Err(FromSqlError::InvalidType)
+        }
+    }
+}
+
+impl ToSql for TelemetryEventType {
+    fn to_sql(&self) -> Result<ToSqlOutput<'static>> {
+        self.name().to_sql()
+    }
+}
+
+impl FromSql for TelemetryEventType {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        if let ValueRef::Text(text) = value {
+            let text = str::from_utf8(text).map_err(other_err)?;
+            TelemetryEventType::from_str(text)
+                .ok_or_else(|| other_err(InvalidEnum(text.to_string())))
+        } else {
+            Err(FromSqlError::InvalidType)
+        }
+    }
+}
+
+impl ToSql for Frequency {
+    fn to_sql(&self) -> Result<ToSqlOutput<'static>> {
+        self.to_str().to_sql()
+    }
+}
+
+impl FromSql for Frequency {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        if let ValueRef::Text(text) = value {
+            let text = str::from_utf8(text).map_err(other_err)?;
+            Frequency::from_str(text).ok_or_else(|| other_err(InvalidEnum(text.to_string())))
         } else {
             Err(FromSqlError::InvalidType)
         }

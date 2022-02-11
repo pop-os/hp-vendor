@@ -1,7 +1,7 @@
 use nix::errno::Errno;
 use std::fs;
 
-use crate::{all_events, db::DB, event, util};
+use crate::{db::DB, event, frequency::Frequency, util};
 
 pub fn run() {
     // Get unique lock
@@ -30,12 +30,12 @@ pub fn run() {
             consent
         }
     };
+    let freqs = db.get_event_frequencies().unwrap();
 
     // TODO: handle frequencies other than daily
-    let old = db.get_state_with_freq("daily").unwrap();
+    let old = db.get_state_with_freq(Frequency::Daily).unwrap();
 
-    // TODO: only handle daily events, etc.
-    let new = all_events();
+    let new = crate::events(&freqs, Frequency::Daily);
     let mut diff = new.clone();
     event::diff(&mut diff, &old);
 
@@ -54,5 +54,5 @@ pub fn run() {
     */
 
     db.clear_queued().unwrap();
-    db.replace_state_with_freq("daily", &new).unwrap();
+    db.replace_state_with_freq(Frequency::Daily, &new).unwrap();
 }
