@@ -18,6 +18,7 @@ pub mod daily;
 mod db;
 pub mod event;
 mod frequency;
+pub mod print;
 mod util;
 
 use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};

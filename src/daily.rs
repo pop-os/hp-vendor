@@ -29,7 +29,7 @@ pub fn run() {
     let mut diff = new.clone();
     event::diff(&mut diff, &old);
 
-    diff.extend_from_slice(&db.get_queued().unwrap());
+    diff.extend_from_slice(&db.get_queued(true).unwrap());
 
     let events = event::Events::new(consent, diff);
     println!("{}", events.to_json_pretty());
