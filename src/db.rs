@@ -10,6 +10,12 @@ use crate::{
     frequency::{Frequencies, Frequency},
 };
 
+pub enum State {
+    All,
+    Frequency(Frequency),
+    Type(TelemetryEventType),
+}
+
 pub struct DB(Connection);
 
 impl DB {
@@ -106,43 +112,57 @@ impl DB {
         ))
     }
 
-    pub fn get_state(&self) -> Result<Vec<TelemetryEvent>> {
-        let mut stmt = self.0.prepare("SELECT state.value from state")?;
-        let rows = stmt.query_map([], |row| row.get(0))?;
+    pub fn get_state(&self, filter: State) -> Result<Vec<TelemetryEvent>> {
+        let (mut stmt, params) = match &filter {
+            State::All => {
+                let stmt = self.0.prepare("SELECT value from state")?;
+                (stmt, vec![])
+            }
+            State::Frequency(freq) => {
+                let stmt = self.0.prepare(
+                    "SELECT state.value from state
+                         INNER JOIN event_types
+                         USING(type)
+                         WHERE event_types.frequency = ?",
+                )?;
+                (stmt, vec![freq as &dyn ToSql])
+            }
+            State::Type(type_) => {
+                let stmt = self.0.prepare("SELECT value from state WHERE type = ?")?;
+                (stmt, vec![type_ as &dyn ToSql])
+            }
+        };
+        let rows = stmt.query_map(&*params, |row| row.get(0))?;
         Ok(rows.filter_map(Result::ok).collect())
     }
 
-    pub fn get_state_with_freq(&self, freq: Frequency) -> Result<Vec<TelemetryEvent>> {
-        let mut stmt = self.0.prepare(
-            "SELECT state.value from state
-                 INNER JOIN event_types
-                 USING(type)
-                 WHERE event_types.frequency = ?",
-        )?;
-        let rows = stmt.query_map([freq], |row| row.get(0))?;
-        Ok(rows.filter_map(Result::ok).collect())
-    }
-
-    pub fn replace_state_with_freq(
-        &self,
-        freq: Frequency,
-        events: &[TelemetryEvent],
-    ) -> Result<()> {
+    pub fn replace_state(&self, filter: State, events: &[TelemetryEvent]) -> Result<()> {
         let mut insert_statement = self.0.prepare(
             "INSERT into state (type, value)
              VALUES (?, ?)",
         )?;
 
         let tx = self.0.unchecked_transaction()?;
-        self.0.execute(
-            "DELETE from state
-             WHERE ROWID IN
-                 (SELECT state.ROWID from state
-                      INNER JOIN event_types
-                      USING(type)
-                      WHERE event_types.frequency = ?)",
-            [freq],
-        )?;
+        match filter {
+            State::All => {
+                self.0.execute("DELETE from state", [])?;
+            }
+            State::Frequency(freq) => {
+                self.0.execute(
+                    "DELETE from state
+                     WHERE ROWID IN
+                         (SELECT state.ROWID from state
+                              INNER JOIN event_types
+                              USING(type)
+                              WHERE event_types.frequency = ?)",
+                    [freq],
+                )?;
+            }
+            State::Type(type_) => {
+                self.0
+                    .execute("DELETE from state WHERE type = ?", [type_])?;
+            }
+        }
         for i in events {
             insert_statement.execute(params!(i.type_().name(), i))?;
         }

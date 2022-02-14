@@ -1,4 +1,9 @@
-use crate::{db::DB, event, frequency::Frequency, util};
+use crate::{
+    db::{self, DB},
+    event,
+    frequency::Frequency,
+    util,
+};
 
 pub fn run() {
     // Get unique lock
@@ -23,7 +28,9 @@ pub fn run() {
     let freqs = db.get_event_frequencies().unwrap();
 
     // TODO: handle frequencies other than daily
-    let old = db.get_state_with_freq(Frequency::Daily).unwrap();
+    let old = db
+        .get_state(db::State::Frequency(Frequency::Daily))
+        .unwrap();
 
     let new = crate::events(&freqs, Frequency::Daily);
     let mut diff = new.clone();
@@ -44,5 +51,6 @@ pub fn run() {
     */
 
     db.clear_queued().unwrap();
-    db.replace_state_with_freq(Frequency::Daily, &new).unwrap();
+    db.replace_state(db::State::Frequency(Frequency::Daily), &new)
+        .unwrap();
 }
