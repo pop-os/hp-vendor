@@ -307,11 +307,9 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 event::OperatingSystem {
                     boot_device: String::new(), // XXX
                     codename: os_release.as_ref().map(|x| x.version_codename.to_owned()),
-                    manufacturer: None, // XXX
                     name: os_release
                         .as_ref()
                         .map_or_else(unknown, |x| x.name.to_owned()),
-                    sku: None, // XXX
                     version: os_release.map(|x| x.version.clone()),
                 }
                 .into(),
@@ -567,9 +565,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             cores_enabled: Some(processor.core_enabled.into()),
                             device_id: String::new(), // XXX
                             manufacturer: i.get_str(processor.processor_manufacturer).cloned(),
-                            max_clock_speed: Some(
-                                (u64::from(processor.max_speed) * 1000).to_string(),
-                            ), // XXX why string?
+                            max_clock_speed: Some(i64::from(processor.max_speed)),
                             name: i.get_str(processor.processor_version).cloned(),
                             processor_id: format!("{:X}", processor_id), // XXX: correct?
                             signature: None, // XXX where does dmidecocode get this?
@@ -589,15 +585,13 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     let connected = connector.state() == drm::control::connector::State::Connected;
                     let display_name =
                         format!("{:?}{}", connector.interface(), connector.interface_id()); // XXX probably should depend on gpu
-                    let pixel_size = device.connector_mode(&connector).map_or(0, |mode| {
-                        let (width, height) = mode.size();
-                        width as i64 * height as i64
-                    }); // XXX ?
+                    let pixel_size = device.connector_mode(&connector).map(|mode| mode.size());
                     events.push(
                         event::Display {
                             connected,
                             display_name,
-                            pixel_size,
+                            pixel_width: pixel_size.map(|x| x.0 as i64),
+                            pixel_height: pixel_size.map(|x| x.1 as i64),
                             state: State::Added,
                         }
                         .into(),
