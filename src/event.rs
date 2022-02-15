@@ -24,11 +24,7 @@ pub(crate) fn unknown() -> String {
 }
 
 pub(crate) fn date_time() -> String {
-    // XXX "unknown" will cause schema parse error? Does that ever happen?
-    OffsetDateTime::now_utc()
-        .format(&Rfc3339)
-        .ok()
-        .unwrap_or_else(unknown)
+    OffsetDateTime::now_utc().format(&Rfc3339).unwrap()
 }
 
 pub(crate) fn device_os_ids() -> DeviceOSIds {
