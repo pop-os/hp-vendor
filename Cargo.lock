@@ -438,18 +438,14 @@ version = "0.1.0"
 dependencies = [
  "convert_case",
  "drm",
- "indexmap",
  "libc",
  "lm-sensors",
- "log",
  "mio 0.8.0",
  "nix 0.23.1",
  "os-release",
  "plain",
  "proc-macro2",
- "protobuf",
  "quote",
- "raw-cpuid",
  "redox_dmi",
  "reqwest",
  "rusqlite",
@@ -1023,12 +1019,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protobuf"
-version = "2.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40361836defdd5871ff7e84096c6f6444af7fc157f8ef1789f54f147687caa20"
-
-[[package]]
 name = "publicsuffix"
 version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1096,15 +1086,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core",
-]
-
-[[package]]
-name = "raw-cpuid"
-version = "10.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "929f54e29691d4e6a9cc558479de70db7aa3d98cd6fe7ab86d7507aa2886b9d2"
-dependencies = [
- "bitflags",
 ]
 
 [[package]]
