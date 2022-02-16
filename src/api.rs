@@ -43,7 +43,7 @@ impl TokenRequest {
     }
 }
 
-impl Events {
+impl<'a> Events<'a> {
     pub fn send(&self, client: &Client, token: &str) -> reqwest::Result<serde_json::Value> {
         client
             .post(UPLOAD_URL)

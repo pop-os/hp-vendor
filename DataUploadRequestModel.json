@@ -1,0 +1,2522 @@
+{
+    "title": "DataUploadRequestModel",
+    "description": "A package of events",
+    "type": "object",
+    "properties": {
+        "data_header": {
+            "$ref": "#/definitions/TelemetryHeaderModel"
+        },
+        "data": {
+            "title": "Data",
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/AnyTelemetryEvent"
+            }
+        }
+    },
+    "required": [
+        "data_header",
+        "data"
+    ],
+    "definitions": {
+        "DeviceOSIds": {
+            "title": "DeviceOSIds",
+            "type": "object",
+            "properties": {
+                "device_sku": {
+                    "title": "Device Sku",
+                    "description": "Device SKU or Product ID",
+                    "pattern": "^[A-Z0-9]{7}#[A-Z]{3}$",
+                    "examples": [
+                        "3F0D5AA#ABA"
+                    ],
+                    "type": "string"
+                },
+                "device_sn": {
+                    "title": "Device Sn",
+                    "description": "Device Serial Number",
+                    "pattern": "^[A-Z0-9]{10}$",
+                    "type": "string"
+                },
+                "device_bios_uuid": {
+                    "title": "Device Bios Uuid",
+                    "description": "Device Firmware Unique and Universal Identifier (UUID v4 - RFC4122)",
+                    "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+                    "type": "string"
+                },
+                "os_install_uuid": {
+                    "title": "Os Install Uuid",
+                    "description": "OS Installation Unique and Universal Identifier (UUID v4 - RFC4122)",
+                    "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "device_sku",
+                "device_sn",
+                "device_bios_uuid",
+                "os_install_uuid"
+            ]
+        },
+        "DataProviderInfo": {
+            "title": "DataProviderInfo",
+            "type": "object",
+            "properties": {
+                "app_name": {
+                    "title": "App Name",
+                    "type": "string"
+                },
+                "app_version": {
+                    "title": "App Version",
+                    "type": "string"
+                },
+                "os_name": {
+                    "title": "Os Name",
+                    "type": "string"
+                },
+                "os_version": {
+                    "title": "Os Version",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "app_name",
+                "app_version",
+                "os_name",
+                "os_version"
+            ]
+        },
+        "DataCollectionConsent": {
+            "title": "DataCollectionConsent",
+            "type": "object",
+            "properties": {
+                "opted_in_level": {
+                    "title": "Opted In Level",
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "opted_in_level",
+                "version"
+            ]
+        },
+        "TelemetryHeaderModel": {
+            "title": "TelemetryHeaderModel",
+            "description": "A base model for Telemetry Data",
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "$ref": "#/definitions/DeviceOSIds"
+                },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "data_provider": {
+                    "$ref": "#/definitions/DataProviderInfo"
+                },
+                "consent": {
+                    "$ref": "#/definitions/DataCollectionConsent"
+                }
+            },
+            "required": [
+                "ids",
+                "timestamp",
+                "data_provider",
+                "consent"
+            ]
+        },
+        "State": {
+            "title": "State",
+            "description": "State defines the possible states of a SW/HW component (i.e. Application, Firmware, OS)\nand what data should be captured/uploaded\n\n* ADDED - HW/SW component was added (populate all data fields)\n* REMOVED - HW/SW component was removed (populate PKs only)\n* UPDATED - HW/SW component was updated (populate PKs and changed fields)",
+            "enum": [
+                "added",
+                "removed",
+                "updated"
+            ],
+            "type": "string"
+        },
+        "BaseBoard": {
+            "title": "BaseBoard",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "ct_number": {
+                    "title": "Ct Number",
+                    "description": "\n        CT Number of the base board - HP-specific identifier (PRIMARY KEY)\n        ",
+                    "examples": [
+                        "PLETU00WBFF0CX"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "base_board_id": {
+                    "title": "Base Board Id",
+                    "description": "\n        Base board identifier\n        ",
+                    "examples": [
+                        "8895"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/board_name"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "System manufacturer",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/board_vendor"
+                    },
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "description": "Base Board version",
+                    "examples": [
+                        "KBC Version 43.1B.00"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/board_version"
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "state",
+                "ct_number"
+            ]
+        },
+        "Battery": {
+            "title": "Battery",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Battery Serial Number (PRIMARY KEY)",
+                    "examples": [
+                        "22536 2021/05/26"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/serial_number"
+                    },
+                    "type": "string"
+                },
+                "ct_number": {
+                    "title": "Ct Number",
+                    "description": "Battery CT Number - HP-specific format (PRIMARY KEY) ",
+                    "examples": [
+                        "6DJGHNBGW8Y6IP"
+                    ],
+                    "source": {
+                        "Linux": "HP WMI"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Battery Manufacturer (encoded values)",
+                    "examples": [
+                        "33-42"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/manufacturer"
+                    },
+                    "type": "string"
+                },
+                "devicename": {
+                    "title": "Devicename",
+                    "description": "Device Name",
+                    "examples": [
+                        "battery_BAT0"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/model_name"
+                    },
+                    "type": "string"
+                },
+                "energy_design": {
+                    "title": "Energy Design",
+                    "description": "Battery Design Charge Capacity (in Wh)",
+                    "examples": [
+                        "4450"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/charge_full_design  divided by 1000000"
+                    },
+                    "type": "number"
+                },
+                "voltage_design": {
+                    "title": "Voltage Design",
+                    "description": "Battery Design Voltage (in mV)",
+                    "examples": [
+                        "11400"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/voltage_min_design divided by 1000"
+                    },
+                    "type": "number"
+                }
+            },
+            "required": [
+                "state",
+                "serial_number",
+                "ct_number"
+            ]
+        },
+        "BatteryUsage": {
+            "title": "BatteryUsage",
+            "description": "Battery Events captured on a frequency defined by the Battery Usage trigger\nThis may mean weekly, daily, or listening to certain events\n\nMost fields are available in upower",
+            "type": "object",
+            "properties": {
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Battery Serial Number",
+                    "examples": [
+                        "22536 2021/05/26"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/serial_number"
+                    },
+                    "type": "string"
+                },
+                "ct_number": {
+                    "title": "Ct Number",
+                    "description": "Battery CT Number (HP-specific format)",
+                    "examples": [
+                        "6DJGHNBGW8Y6IP"
+                    ],
+                    "source": {
+                        "Linux": "HP WMI"
+                    },
+                    "type": "string"
+                },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "battery_state": {
+                    "title": "Battery State",
+                    "description": "State of the battery",
+                    "examples": [
+                        "CHARGING",
+                        "DISCHARGING"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/status"
+                    },
+                    "type": "string"
+                },
+                "cycle_count": {
+                    "title": "Cycle Count",
+                    "description": "Number of full discharge cycles of the battery",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/cycle_count"
+                    },
+                    "type": "integer"
+                },
+                "energy_full": {
+                    "title": "Energy Full",
+                    "description": "\n    Total Energy when the battery is at its full capacity (in Wh) \n    This value is the main indicator of the expected life of a battery \n    ",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/charge_full divided by 1000000"
+                    },
+                    "type": "number"
+                },
+                "energy_remaining": {
+                    "title": "Energy Remaining",
+                    "description": "Remaining energy (in Wh) of the battery before reaching zero in this discharge cycle ",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/charge_now divided by 1000000"
+                    },
+                    "type": "number"
+                },
+                "energy_rate": {
+                    "title": "Energy Rate",
+                    "description": "Charge or Discharge energy rate (in W)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/current_now divided by 1000000 times battery voltage"
+                    },
+                    "type": "integer"
+                },
+                "voltage": {
+                    "title": "Voltage",
+                    "description": "Current battery Voltage (in V)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/power_supply/BAT0/voltage_now divided by 1000000"
+                    },
+                    "type": "integer"
+                },
+                "time_to_empty": {
+                    "title": "Time To Empty",
+                    "description": "Time to empty (seconds)",
+                    "examples": [
+                        "102"
+                    ],
+                    "source": {
+                        "Linux": "upower -d"
+                    },
+                    "type": "integer"
+                },
+                "eletric_current": {
+                    "title": "Eletric Current",
+                    "description": "Eletric Current - mA",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "temperature": {
+                    "title": "Temperature",
+                    "description": "Temperature - \u00baC",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "max_error": {
+                    "title": "Max Error",
+                    "description": "Max Error (Battery Spec) - 0 to 100",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "status_register": {
+                    "title": "Status Register",
+                    "description": "Status Register - Bit encoded battery status",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "cell_voltage": {
+                    "title": "Cell Voltage",
+                    "description": "Cell Voltages (ordered list of voltages, mV) - Most devices have 3 cells, but 4 and 2 are also found.",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "required": [
+                "serial_number",
+                "ct_number",
+                "timestamp",
+                "battery_state",
+                "cycle_count",
+                "energy_full",
+                "energy_remaining"
+            ]
+        },
+        "Display": {
+            "title": "Display",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "display_name": {
+                    "title": "Display Name",
+                    "description": "Port type",
+                    "examples": [
+                        "Screen 0",
+                        "HDMI-A-0",
+                        "DisplayPort-0"
+                    ],
+                    "source": {
+                        "Linux": "xrandr --query"
+                    },
+                    "type": "string"
+                },
+                "pixel_width": {
+                    "title": "Pixel Width",
+                    "description": "Current Pixel Size",
+                    "examples": [
+                        "1920",
+                        "1280"
+                    ],
+                    "source": {
+                        "Linux": "xrandr --query"
+                    },
+                    "type": "integer"
+                },
+                "pixel_height": {
+                    "title": "Pixel Height",
+                    "description": "Current Pixel Size",
+                    "examples": [
+                        "1080",
+                        "1024"
+                    ],
+                    "source": {
+                        "Linux": "xrandr --query"
+                    },
+                    "type": "integer"
+                },
+                "connected": {
+                    "title": "Connected",
+                    "description": "Display is connected or not",
+                    "examples": [],
+                    "source": {
+                        "Linux": "xrandr --query"
+                    },
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "state",
+                "display_name",
+                "connected"
+            ]
+        },
+        "GraphicsCard": {
+            "title": "GraphicsCard",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "bus_info": {
+                    "title": "Bus Info",
+                    "description": "\n        Graphic Card Bus Info\n        ID of the device connected to the bus. This field forms a compound key with serial_number\n        ",
+                    "examples": [
+                        "pci@0000:04:00.0"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "type": {
+                    "title": "Type",
+                    "description": "Graphic Card Type",
+                    "examples": [
+                        "Integrated",
+                        "UMA",
+                        "Internal",
+                        "Discrete"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Graphic Card Manufacturer",
+                    "examples": [
+                        "Nvidia",
+                        "AMD",
+                        "Intel"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "model": {
+                    "title": "Model",
+                    "description": "Graphic Card Model",
+                    "examples": [
+                        "NVIDIA Quadro M1000M"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "chip_name": {
+                    "title": "Chip Name",
+                    "description": "Graphic Card Chip Name",
+                    "examples": [
+                        "GM107",
+                        "HD Graphics 530",
+                        "Ellesmere"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "memory_size": {
+                    "title": "Memory Size",
+                    "description": "Memory Size (in MBs) - Available memory in the graphic card.",
+                    "examples": [
+                        "8192"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "number"
+                },
+                "cores_count": {
+                    "title": "Cores Count",
+                    "description": "Number of Cores",
+                    "examples": [
+                        "512"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "state",
+                "bus_info",
+                "type",
+                "manufacturer",
+                "model"
+            ]
+        },
+        "MemoryPhysical": {
+            "title": "MemoryPhysical",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Serial Number of the Chip (PRIMARY KEY)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "part_number": {
+                    "title": "Part Number",
+                    "description": "Part Number of the Chip (PRIMARY KEY)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Chip Manufacturer",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "form_factor": {
+                    "title": "Form Factor",
+                    "description": "Chip Form Factor",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "type": {
+                    "title": "Type",
+                    "description": "Chip Type",
+                    "examples": [
+                        "DDR4"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "size": {
+                    "title": "Size",
+                    "description": "Chip Size (in MBs)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "integer"
+                },
+                "speed": {
+                    "title": "Speed",
+                    "description": "Memory Chip Speed (in Nanoseconds)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "integer"
+                },
+                "data_width": {
+                    "title": "Data Width",
+                    "description": "Chip Data Width",
+                    "examples": [
+                        "64 (bits)"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "integer"
+                },
+                "bank_label": {
+                    "title": "Bank Label",
+                    "description": "Bank Label",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "locator": {
+                    "title": "Locator",
+                    "description": "Locator - Label of the socket or circuit board that holds the memory",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "string"
+                },
+                "rank": {
+                    "title": "Rank",
+                    "description": "Rank - Number of DIMM ranks in the memory array.",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t memory"
+                    },
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "state",
+                "serial_number",
+                "part_number"
+            ]
+        },
+        "NetworkCard": {
+            "title": "NetworkCard",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Card Serial Number",
+                    "examples": [
+                        "20:1e:88:db:72:11"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "description": {
+                    "title": "Description",
+                    "description": "Card Description",
+                    "examples": [
+                        "Wireless interface"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "product_id": {
+                    "title": "Product Id",
+                    "description": "Network Card Product ID (as specified by PCIE)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "vendor_id": {
+                    "title": "Vendor Id",
+                    "description": "Vendor/Manufacturer Id of the Network card / interface (as specified by PCIE)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "interface_type": {
+                    "title": "Interface Type",
+                    "description": "Network Interface Types",
+                    "examples": [
+                        "Ethernet",
+                        "Wireless80211"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "bus_info": {
+                    "title": "Bus Info",
+                    "description": "BUS Information",
+                    "examples": [
+                        "pci@0000:02:00.0"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "clock_speed": {
+                    "title": "Clock Speed",
+                    "description": "Card Clock Speed (in MHz)",
+                    "examples": [
+                        "33"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "width": {
+                    "title": "Width",
+                    "description": "Card Bit Width",
+                    "examples": [
+                        "64 (bits)"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "capabilities": {
+                    "title": "Capabilities",
+                    "description": "Network Card Capabilities",
+                    "examples": [
+                        "bus_master",
+                        "cap_list",
+                        "ethernet",
+                        "physical wireless"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "state"
+            ]
+        },
+        "PeripheralAudioPort": {
+            "title": "PeripheralAudioPort",
+            "description": "PeripheralAudioPort - TODO",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ]
+        },
+        "PeripheralHDMI": {
+            "title": "PeripheralHDMI",
+            "description": "PeripheralHDMIPort - TODO",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ]
+        },
+        "PeripheralSIMCard": {
+            "title": "PeripheralSIMCard",
+            "description": "PeripheralSIMCardPort - TODO",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ]
+        },
+        "PeripheralUSBTypeA": {
+            "title": "PeripheralUSBTypeA",
+            "description": "PeripheralUSBTypeA is any gadget that is plugged/unplugged from one of the USB type A ports\nIncluding: External Mic, External Camera, USB Flash Drive, etc.\n\nLinux source will be a combination of dmesg, /proc/kmesg, journalctl, udev, lsusb\n\nPrimary keys are the DEVICE ID and the BUS ID telling where it was added/removed",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "description": "Time of the event",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "usb_bus_id": {
+                    "title": "Usb Bus Id",
+                    "description": "USB Bus Id (PRIMARY KEY)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "usb_device_id": {
+                    "title": "Usb Device Id",
+                    "description": "USB Device Id (PRIMARY KEY)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "manufacturer_id": {
+                    "title": "Manufacturer Id",
+                    "description": "Manufacturer Id",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "product_id": {
+                    "title": "Product Id",
+                    "description": "Product Id",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "device_version": {
+                    "title": "Device Version",
+                    "description": "Device Version",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Manufacturer name",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "product": {
+                    "title": "Product",
+                    "description": "Product name",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "message": {
+                    "title": "Message",
+                    "description": "Any extra Warning or Critical messages shown in the log",
+                    "examples": [
+                        "[multi-line class extracted from dmesg -Hw after adding a headset: Jabra UC VOICE 750a MS]\n        usb 3-2: Warning! Unlikely big volume range (=4096), cval->res is probably wrong.\n        usb 3-2: [11] FU [Sidetone Playback Volume] ch: 1, val: 0/4096/1"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "state",
+                "timestamp",
+                "usb_bus_id",
+                "usb_device_id"
+            ]
+        },
+        "PeripheralUSBTypeC": {
+            "title": "PeripheralUSBTypeC",
+            "description": "Peripheral USB Type-C used in SuperSpeed mode - TODO",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ]
+        },
+        "PeripheralUSBTypeCDisplayPort": {
+            "title": "PeripheralUSBTypeCDisplayPort",
+            "description": "Peripheral USB Type-C used in DisplayPort mode - TODO",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ]
+        },
+        "ProcessorCache": {
+            "title": "ProcessorCache",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "Cache Name",
+                    "examples": [
+                        "L1",
+                        "L2"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t cache"
+                    },
+                    "type": "string"
+                },
+                "size": {
+                    "title": "Size",
+                    "description": "Cache Size (in KiB)",
+                    "examples": [
+                        "32"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t cache"
+                    },
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "name",
+                "size"
+            ]
+        },
+        "Processor": {
+            "title": "Processor",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "device_id": {
+                    "title": "Device Id",
+                    "description": "Device Id (PRIMARY KEY) - The DeviceID property contains a str uniquely identifying the processor with other devices on the system.",
+                    "examples": [
+                        "CPU0",
+                        "CPU1",
+                        "cpu@0"
+                    ],
+                    "source": {
+                        "Linux": "* * Linux: TBD"
+                    },
+                    "type": "string"
+                },
+                "processor_id": {
+                    "title": "Processor Id",
+                    "description": "Processor Id (PRIMARY KEY) - Processor information that describes the processor features.",
+                    "examples": [
+                        "BFEBFBFF000506E3"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "socket": {
+                    "title": "Socket",
+                    "description": "Processor Socket",
+                    "examples": [
+                        "FP6"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "description": "Processor Name (also known as version)",
+                    "examples": [
+                        "AMD Ryzen 7 PRO 5850U with Radeon Graphics"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Processor Manufacturer",
+                    "examples": [
+                        "Advanced Micro Devices, Inc."
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "signature": {
+                    "title": "Signature",
+                    "description": "Processor Signature",
+                    "examples": [
+                        "Family 25, Model 80, Stepping 0",
+                        "Intel64 Family 6 Model 94 Stepping 3"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "voltage": {
+                    "title": "Voltage",
+                    "description": "CPU Voltage (in V)",
+                    "examples": [
+                        "1.2V"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "number"
+                },
+                "max_clock_speed": {
+                    "title": "Max Clock Speed",
+                    "description": "CPU Max Clock Speed (in MHz)",
+                    "examples": [
+                        "4450"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "cores_count": {
+                    "title": "Cores Count",
+                    "description": "CPU Cores Count - Number of cores for the current instance of the processor.",
+                    "examples": [
+                        "16"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "cores_enabled": {
+                    "title": "Cores Enabled",
+                    "description": "CPU Cores Enabled - The number of enabled cores per processor socket.",
+                    "examples": [
+                        "16"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "thread_count": {
+                    "title": "Thread Count",
+                    "description": "CPU Thread Count",
+                    "examples": [
+                        "16",
+                        "32"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "capabilities": {
+                    "title": "Capabilities",
+                    "description": "CPU Capabilities",
+                    "examples": [
+                        "x86-64 fpu fpu_exception wp vme de pse tsc msr pae mce cx8"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "caches": {
+                    "title": "Caches",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProcessorCache"
+                    }
+                }
+            },
+            "required": [
+                "state",
+                "device_id",
+                "processor_id"
+            ]
+        },
+        "NVMEStoragePhysical": {
+            "title": "NVMEStoragePhysical",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
+                    "examples": [
+                        "S4P4NF0M522988Y"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/serial"
+                    },
+                    "type": "string"
+                },
+                "model": {
+                    "title": "Model",
+                    "description": "Drive Model - Model of the NVM subsystem that is assigned by the vendor.",
+                    "examples": [
+                        "Samsung SSD 970 EVO Plus 1TB"
+                    ],
+                    "source": {
+                        "Linux": "sys/class/block/nvme0n1/device/model"
+                    },
+                    "type": "string"
+                },
+                "firmware_revision": {
+                    "title": "Firmware Revision",
+                    "description": "Drive Firmware Revision",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/firmware_rev"
+                    },
+                    "type": "string"
+                },
+                "vendor_id": {
+                    "title": "Vendor Id",
+                    "description": "Vendor ID",
+                    "examples": [
+                        "0x144d"
+                    ],
+                    "source": {
+                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "sub_system_id": {
+                    "title": "Sub System Id",
+                    "description": "Sub-System Id",
+                    "examples": [
+                        "0x144d"
+                    ],
+                    "source": {
+                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "total_capacity": {
+                    "title": "Total Capacity",
+                    "description": "Drive Capacity (in GBs)",
+                    "examples": [
+                        "931 (GB)"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "bus_info": {
+                    "title": "Bus Info",
+                    "description": "BUS Information",
+                    "examples": [
+                        "pci@0000:04:00.0"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/address"
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "state",
+                "serial_number"
+            ]
+        },
+        "StoragePartition": {
+            "title": "StoragePartition",
+            "type": "object",
+            "properties": {
+                "number": {
+                    "title": "Number",
+                    "type": "integer"
+                },
+                "size": {
+                    "title": "Size",
+                    "type": "integer"
+                },
+                "file_system": {
+                    "title": "File System",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "flags": {
+                    "title": "Flags",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "number",
+                "size",
+                "file_system",
+                "name",
+                "flags"
+            ]
+        },
+        "NVMEStorageLogical": {
+            "title": "NVMEStorageLogical",
+            "type": "object",
+            "properties": {
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
+                    "examples": [
+                        "S4P4NF0M522988Y"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/serial"
+                    },
+                    "type": "string"
+                },
+                "node_id": {
+                    "title": "Node Id",
+                    "description": "Drive Node Id (PRIMARY KEY)",
+                    "examples": [
+                        "/dev/nvme0n1"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "used_capacity": {
+                    "title": "Used Capacity",
+                    "description": "Used Drive Capacity (in GBs, rounded up to the nearest Giga)",
+                    "examples": [
+                        "102 (GB)"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "integer"
+                },
+                "lba_size": {
+                    "title": "Lba Size",
+                    "description": "LBA Size",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "integer"
+                },
+                "partitions": {
+                    "title": "Partitions",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StoragePartition"
+                    }
+                }
+            },
+            "required": [
+                "serial_number",
+                "node_id"
+            ]
+        },
+        "NVMESmartLog": {
+            "title": "NVMESmartLog",
+            "description": "NVME SMART Log\n\nExample of Smart Log\n> nvme smart-log /dev/nvme0n1\n    Smart Log for NVME device:nvme0n1 namespace-id:ffffffff\n    critical_warning                                        : 0\n    temperature                                                 : 43 C\n    available_spare                                         : 100%\n    available_spare_threshold                           : 5%\n    percentage_used                                         : 0%\n    endurance group critical warning summary    : 0\n    data_units_read                                         : 1,272,801\n    data_units_written                                      : 1,487,259\n    host_read_commands                                      : 8,453,724\n    host_write_commands                                     : 8,829,396\n    controller_busy_time                                : 41\n    power_cycles                                            : 203\n    power_on_hours                                          : 39\n    unsafe_shutdowns                                        : 87\n    media_errors                                            : 0\n    num_err_log_entries                                     : 280\n    Warning Temperature Time                            : 0\n    Critical Composite Temperature Time             : 0\n    Temperature Sensor 1                        : 43 C\n    Temperature Sensor 2                        : 40 C\n    Thermal Management T1 Trans Count               : 0\n    Thermal Management T2 Trans Count               : 0\n    Thermal Management T1 Total Time                : 0\n    Thermal Management T2 Total Time                : 0",
+            "type": "object",
+            "properties": {
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
+                    "examples": [
+                        "S4P4NF0M522988Y"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "nvme_version": {
+                    "title": "Nvme Version",
+                    "description": "NVME Specification version",
+                    "examples": [
+                        "1.3"
+                    ],
+                    "source": {
+                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "critical_warning": {
+                    "title": "Critical Warning",
+                    "type": "integer"
+                },
+                "endurance_critical_warning": {
+                    "title": "Endurance Critical Warning",
+                    "type": "integer"
+                },
+                "available_spare": {
+                    "title": "Available Spare",
+                    "type": "integer"
+                },
+                "available_spare_threshold": {
+                    "title": "Available Spare Threshold",
+                    "type": "integer"
+                },
+                "percentage_used": {
+                    "title": "Percentage Used",
+                    "type": "integer"
+                },
+                "data_units_read": {
+                    "title": "Data Units Read",
+                    "type": "integer"
+                },
+                "data_units_written": {
+                    "title": "Data Units Written",
+                    "type": "integer"
+                },
+                "host_read_commands": {
+                    "title": "Host Read Commands",
+                    "type": "integer"
+                },
+                "host_write_commands": {
+                    "title": "Host Write Commands",
+                    "type": "integer"
+                },
+                "controller_busy_time": {
+                    "title": "Controller Busy Time",
+                    "type": "integer"
+                },
+                "power_cycles": {
+                    "title": "Power Cycles",
+                    "type": "integer"
+                },
+                "power_on_hours": {
+                    "title": "Power On Hours",
+                    "type": "integer"
+                },
+                "unsafe_shutdowns": {
+                    "title": "Unsafe Shutdowns",
+                    "type": "integer"
+                },
+                "media_errors": {
+                    "title": "Media Errors",
+                    "type": "integer"
+                },
+                "num_err_log_entries": {
+                    "title": "Num Err Log Entries",
+                    "type": "integer"
+                },
+                "warning_temperature_threshold": {
+                    "title": "Warning Temperature Threshold",
+                    "type": "integer"
+                },
+                "critical_composite_temperature_threshold": {
+                    "title": "Critical Composite Temperature Threshold",
+                    "type": "integer"
+                },
+                "warning_temperature_time": {
+                    "title": "Warning Temperature Time",
+                    "type": "integer"
+                },
+                "critical_composite_temperature_time": {
+                    "title": "Critical Composite Temperature Time",
+                    "type": "integer"
+                },
+                "temperature_sensor": {
+                    "title": "Temperature Sensor",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "thermal_management_trans_count": {
+                    "title": "Thermal Management Trans Count",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "thermal_management_total_time": {
+                    "title": "Thermal Management Total Time",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "required": [
+                "serial_number",
+                "nvme_version",
+                "critical_warning",
+                "endurance_critical_warning",
+                "available_spare",
+                "available_spare_threshold",
+                "percentage_used",
+                "data_units_read",
+                "data_units_written",
+                "host_read_commands",
+                "host_write_commands",
+                "controller_busy_time",
+                "power_cycles",
+                "power_on_hours",
+                "unsafe_shutdowns",
+                "media_errors",
+                "num_err_log_entries",
+                "warning_temperature_threshold",
+                "critical_composite_temperature_threshold",
+                "warning_temperature_time",
+                "critical_composite_temperature_time",
+                "temperature_sensor",
+                "thermal_management_trans_count",
+                "thermal_management_total_time"
+            ]
+        },
+        "System": {
+            "title": "System",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "serialnumber": {
+                    "title": "Serialnumber",
+                    "description": "\n        System Serial Number (PRIMARY KEY)\n        Contains encoded information that represents serial number of system or device.\n        Format: \n        * CCC = supplier code (encoded)\n        * YMM = week of manufacture (encoded)\n        * RRRR = random values\n        ",
+                    "examples": [
+                        "5CG4441ZNV",
+                        "CND8127SCP"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_serial"
+                    },
+                    "type": "string"
+                },
+                "uuid": {
+                    "title": "Uuid",
+                    "description": "System UUID (PRIMARY KEY) - Universally Unique Identifier is a 16-octet (128-bit) number ",
+                    "examples": [
+                        "550E8400-E29B-41D4-A716-446655440000",
+                        "7F57D02D-7314-E311-A9BD-F7757856691A"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_uuid"
+                    },
+                    "type": "string"
+                },
+                "chassis": {
+                    "title": "Chassis",
+                    "description": "System Chassis",
+                    "examples": [
+                        "Laptop, notebook, desktop"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/chassis_type (converted from number to str if desired)"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "System Manufacturer",
+                    "examples": [
+                        "Hewlett-Packard"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/sys_vendor"
+                    },
+                    "type": "string"
+                },
+                "model": {
+                    "title": "Model",
+                    "description": "System Model",
+                    "examples": [
+                        "HP EliteBook 820 G1 (G4T88LT#AC4)"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_name"
+                    },
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "description": "System Version",
+                    "examples": [
+                        "A3009DD10303"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_version"
+                    },
+                    "type": "string"
+                },
+                "family": {
+                    "title": "Family",
+                    "description": "System Family",
+                    "examples": [
+                        "103C_5336AN"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_family"
+                    },
+                    "type": "string"
+                },
+                "sku": {
+                    "title": "Sku",
+                    "description": "System SKU",
+                    "examples": [
+                        "3F0D5AA#ABA",
+                        "G4T88LT#AC4"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_sku"
+                    },
+                    "type": "string"
+                },
+                "width": {
+                    "title": "Width",
+                    "description": "System Bit Width",
+                    "examples": [
+                        "64-bit"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "capabilities": {
+                    "title": "Capabilities",
+                    "description": "System Capabilities",
+                    "examples": [
+                        "smbios-2.7",
+                        "dmi-2.7",
+                        "smp",
+                        "vsyscall32"
+                    ],
+                    "source": {
+                        "Linux": "lshw - capabilities"
+                    },
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "feature_byte": {
+                    "title": "Feature Byte",
+                    "description": "Feature byte contains a series of flags that indicates whether a software or hardware component is pre-installed.",
+                    "examples": [
+                        "3K3Q6b7K7M7WaBaNapaqasawbhbzcbdUdXdpdq.mD ( The 'cb' in the middle means '30 days McAfee trial')"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "state",
+                "serialnumber",
+                "uuid"
+            ]
+        },
+        "ThermalSummary": {
+            "title": "ThermalSummary",
+            "description": "A summary of Device Temperatures on a given period\n\nHow frequent should this be sampled?\n    Every 30 seconds.",
+            "type": "object",
+            "properties": {
+                "start_time": {
+                    "title": "Start Time",
+                    "description": "Sensor sampling start time",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "end_time": {
+                    "title": "End Time",
+                    "description": "Sensor sampling end time",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "system_up_time": {
+                    "title": "System Up Time",
+                    "description": "Sum of Time that the system was up between `start_time` and `end_time`\n        This helps know when the PC has been turned off.",
+                    "type": "integer"
+                },
+                "num_samples": {
+                    "title": "Num Samples",
+                    "description": "Total number of temperature samples between `start_time` (inclusive) and `end_time` (exclusive)",
+                    "minimum": 20,
+                    "type": "integer"
+                },
+                "cpu_zone_percentile": {
+                    "title": "Cpu Zone Percentile",
+                    "description": "Percentiles of sample metric 'CPU/APU Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "chg_zone_percentile": {
+                    "title": "Chg Zone Percentile",
+                    "description": "Percentiles of sample metric 'Charging Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "bat_zone_percentile": {
+                    "title": "Bat Zone Percentile",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "ext_zone_percentile": {
+                    "title": "Ext Zone Percentile",
+                    "description": "Percentiles of sample metric 'External/Remote Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "required": [
+                "start_time",
+                "end_time",
+                "system_up_time",
+                "num_samples",
+                "cpu_zone_percentile",
+                "chg_zone_percentile",
+                "bat_zone_percentile",
+                "ext_zone_percentile"
+            ]
+        },
+        "CoolingFanCyclesSummary": {
+            "title": "CoolingFanCyclesSummary",
+            "description": "A summary of Fan Cycles on a given period\n\nWhat is a FAN Cycle?\n    A FAN Cycle starts when the CPU Thermal Zone Temperature increases to > X \u00baC (which will lead to a FAN spin up)\n    A FAN Cycle end when that Temperature decreases to < Y \u00baC (which should make FAN to reduce its speed)\n    Note: Y < X\n\nHow to calculate this summary?\n    Build up an internal database to track the metrics outlined below\n    At upload time, aggregate/summarize them into the requested values/percentiles\n\nWhich sensors are sampled to build the metrics? And how frequently?\n    Temperature Thermal Zone (the ones that drive the Fan) - sampled every 5 seconds\n    FAN RPM Thermal Zone (the ones that drive the Fan) - sampled only during Fan Cycles",
+            "type": "object",
+            "properties": {
+                "start_time": {
+                    "title": "Start Time",
+                    "description": "Time when Fan Cycles started to be measured",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "end_time": {
+                    "title": "End Time",
+                    "description": "Time when Fan Cycles stopped to be measured",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "system_up_time": {
+                    "title": "System Up Time",
+                    "description": "Sum of Time that the system was up between `start_time` and `end_time`\n        This helps know when the PC has been turned off.",
+                    "type": "integer"
+                },
+                "num_cycles": {
+                    "title": "Num Cycles",
+                    "description": "Total number of finished Fan Cycles between `start_time` (inclusive) and `end_time` (exclusive)",
+                    "minimum": 5,
+                    "type": "integer"
+                },
+                "cycle_length_percentile": {
+                    "title": "Cycle Length Percentile",
+                    "description": "Percentiles of metric 'Cycle Length (in seconds)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "time_to_max_speed_percentile": {
+                    "title": "Time To Max Speed Percentile",
+                    "description": "Percentiles of metric 'Time To Max RPM Speed (in seconds)' \n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sum_speed_percentile": {
+                    "title": "Sum Speed Percentile",
+                    "description": "Percentiles of metric 'Sum Speed in RPM (in rotations per minute)'\n        This metric accumulates the RPMs measured during the cycle.\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "required": [
+                "start_time",
+                "end_time",
+                "system_up_time",
+                "num_cycles",
+                "cycle_length_percentile",
+                "time_to_max_speed_percentile",
+                "sum_speed_percentile"
+            ]
+        },
+        "TrustedPlatformModule": {
+            "title": "TrustedPlatformModule",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "manufacturer_id": {
+                    "title": "Manufacturer Id",
+                    "description": "Manufacturer Identifier",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "manufacturer_version": {
+                    "title": "Manufacturer Version",
+                    "description": "\n            TPM Manufacturer Version\n            The version of the TPM, as specified by the manufacturer.\n            When the data is unavailable, \"Not Supported\" is returned.\n        ",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "\n        if WMI - Win32_TPM.ManufacturerVersionFull20 has a value (which is not null or empty and does not say \"Not Supported\")\n            WMI - Win32_TPM - ManufacturerVersionFull20\n        else \n            WMI - Win32_TPM - ManufacturerVersion\n        "
+                    },
+                    "type": "string"
+                },
+                "manufacturer_version_info": {
+                    "title": "Manufacturer Version Info",
+                    "description": "\n        Manufacturer Version Information \n        Other manufacturer-specific version information for the TPM.\n        When the data is unavailable, \"Not Supported\" is returned.\n        ",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "trusted_computing_group_version": {
+                    "title": "Trusted Computing Group Version",
+                    "description": "\n        TCG Specification Version \n        The version of the Trusted Computing Group (TCG) specification that the TPM supports. This value includes the major and minor TCG specification version, the specification revision level, and the errata revision level. All values are in hexadecimal. For example, a version information of \"1.2, 2, 0\" indicates that the device was implemented to TCG specification version 1.2, revision level 2, and with no errata.\n\n        When the data is unavailable, \"Not Supported\" is returned.\n        ",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "physical_presence_version": {
+                    "title": "Physical Presence Version",
+                    "description": "\n        Physical Presence Interface Version\n        A communication mechanism used to run device operations that require physical presence, that the computer supports.\n        ",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "tpm_activated": {
+                    "title": "Tpm Activated",
+                    "description": "TPM Activation - Indicates if TPM is activated or deactivated",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "boolean"
+                },
+                "tpm_enabled": {
+                    "title": "Tpm Enabled",
+                    "description": "TPM Enablement - Indicates if TPM is enabled or disabled",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "boolean"
+                },
+                "tpm_has_owner": {
+                    "title": "Tpm Has Owner",
+                    "description": "TPM Has Owner - Indicates whether the TPM (i.e. device) has an owner.",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "state",
+                "manufacturer_id",
+                "manufacturer_version",
+                "manufacturer_version_info",
+                "trusted_computing_group_version"
+            ]
+        },
+        "Driver": {
+            "title": "Driver",
+            "description": "Example of DRIVER data from Linux (with extra headers):\n<code>\n    > lsmod | sort\n    Module Name     Size      Used By\n    =============== ========  ==========================================\n    aesni_intel       372736  2\n    ahci               40960  1\n    ashmen_linux       20480  0\n    bluetooth         544768  33 btrtl,btintel,btbcm,bnep,btusb,rfcom\n</code>",
+            "type": "object",
+            "properties": {
+                "module_name": {
+                    "title": "Module Name",
+                    "description": "Driver Module Name (PRIMARY KEY)",
+                    "examples": [
+                        "ahci",
+                        "bluetooth",
+                        "3ware",
+                        "ACPI"
+                    ],
+                    "source": {
+                        "Linux": "lsmod"
+                    },
+                    "type": "string"
+                },
+                "module_path": {
+                    "title": "Module Path",
+                    "description": "Driver Module Path (PRIMARY KEY)",
+                    "examples": [
+                        "/lib/modules/5.15.8-76051508-generic/kernel/drivers/hid/hid-jabra.ko"
+                    ],
+                    "source": {
+                        "Linux": "modinfo <modulename>"
+                    },
+                    "type": "string"
+                },
+                "module_type": {
+                    "title": "Module Type",
+                    "description": "Driver Module Type (PRIMARY KEY)",
+                    "examples": [
+                        "builtin",
+                        "loadable"
+                    ],
+                    "source": {
+                        "Linux": [
+                            "lsmod",
+                            "/lib/modules/<kernel>/modules.builtin"
+                        ]
+                    },
+                    "type": "string"
+                },
+                "description": {
+                    "title": "Description",
+                    "description": "Driver Description",
+                    "examples": [
+                        "Jabra USB HID Driver"
+                    ],
+                    "source": {
+                        "Linux": "modinfo <module_name>"
+                    },
+                    "type": "string"
+                },
+                "author": {
+                    "title": "Author",
+                    "description": "Driver Author",
+                    "examples": [
+                        "John Doe <jd@jd.com>"
+                    ],
+                    "source": {
+                        "Linux": "modinfo <module_name>"
+                    },
+                    "type": "string"
+                },
+                "driver_version": {
+                    "title": "Driver Version",
+                    "description": "Driver Version",
+                    "examples": [
+                        "10.0.19041.789",
+                        "12.1.6003.5843"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "size": {
+                    "title": "Size",
+                    "description": "Driver Size (in Bytes)",
+                    "examples": [
+                        40960,
+                        20480
+                    ],
+                    "source": {
+                        "Linux": "lsmod"
+                    },
+                    "type": "integer"
+                },
+                "link_time": {
+                    "title": "Link Time",
+                    "description": "Driver Link Time",
+                    "examples": [
+                        "27/10/2020 03:55:03"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "required": [
+                "module_name",
+                "module_path",
+                "module_type"
+            ]
+        },
+        "LinuxDriverCrash": {
+            "title": "LinuxDriverCrash",
+            "description": "Based on: <a href=\"https://ubuntu.com/server/docs/kernel-crash-dump\">https://ubuntu.com/server/docs/kernel-crash-dump</a>\n\nExample of a crash dump (<a href=\"https://www.dedoimedo.com/computers/crash-analyze.html\">https://www.dedoimedo.com/computers/crash-analyze.html</a>)\n<code>\n    KERNEL: /usr/lib/debug/lib/modules/2.6.18-164.10.1.el5.centos.plus/vmlinux\n    DUMPFILE: vmcore\n        CPUS: 2\n        DATE: Tue Jan 19 20:21:19 2010\n    UPTIME: 00:00:00\nLOAD AVERAGE: 0.00, 0.04, 0.07\n    TASKS: 134\n    NODENAME: testhost2@localdomain\n    RELEASE: 2.6.18-164.10.1.el5\n    VERSION: #1 SMP Thu Jan 7 19:54:26 EST 2010\n    MACHINE: x86_64  (3000 Mhz)\n    MEMORY: 7.5 GB\n    PANIC: \"SysRq : Trigger a crashdump\"\n        PID: 0\n    COMMAND: \"swapper\"\n        TASK: ffffffff80300ae0  (1 of 2)  [THREAD_INFO: ffffffff803f2000]\n        CPU: 0\n    STATE: TASK_RUNNING (ACTIVE)\n</code>\n\nNote: This is under construction.",
+            "type": "object",
+            "properties": {
+                "crash_time": {
+                    "title": "Crash Time",
+                    "description": "Crash Time",
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "kernel": {
+                    "title": "Kernel",
+                    "description": "Kernel running at the time of the crash",
+                    "examples": [
+                        "/usr/lib/debug/lib/modules/2.6.18-164.10.1.el5.centos.plus/vmlinux"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "dump_file": {
+                    "title": "Dump File",
+                    "description": "Dump File - name of the dumped memory core",
+                    "examples": [
+                        "vmcore"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "up_time": {
+                    "title": "Up Time",
+                    "description": "OS Up Time at the time of the crash (seconds)",
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "integer"
+                },
+                "load_average": {
+                    "title": "Load Average",
+                    "description": "Average Load at the time of the crash",
+                    "examples": [
+                        "0.00, 0.04, 0.07"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "tasks_count": {
+                    "title": "Tasks Count",
+                    "description": "Count of Tasks in the memory at the time of the crash",
+                    "examples": [
+                        "134"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "integer"
+                },
+                "panic": {
+                    "title": "Panic",
+                    "description": "Panic - Specifies what kind of crash occurred on the machine",
+                    "examples": [
+                        "SysRq, Oops, Panic"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "pid": {
+                    "title": "Pid",
+                    "description": "Process Id that caused the crash",
+                    "examples": [
+                        "1902, 0 (this one is the scheduler)"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "integer"
+                },
+                "command": {
+                    "title": "Command",
+                    "description": "Name of the process that caused the crash",
+                    "examples": [
+                        "swapper"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "task": {
+                    "title": "Task",
+                    "description": "Task - Address in memory for the offending process",
+                    "examples": [
+                        "ffffffff80300ae0  (1 of 2)  [THREAD_INFO: ffffffff803f2000]"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "cpu_cores_count": {
+                    "title": "Cpu Cores Count",
+                    "description": "CPU Cores Count - Number of the CPU where the offending process was running at the time of the crash.",
+                    "examples": [
+                        "1, 2"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "integer"
+                },
+                "process_state": {
+                    "title": "Process State",
+                    "description": "State - Process State at the time of the crash",
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "crash_time",
+                "kernel"
+            ]
+        },
+        "Firmware": {
+            "title": "Firmware",
+            "type": "object",
+            "properties": {
+                "bios_vendor": {
+                    "title": "Bios Vendor",
+                    "examples": [
+                        "HP"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/bios_vendor"
+                    },
+                    "type": "string"
+                },
+                "bios_version": {
+                    "title": "Bios Version",
+                    "description": "Version of the BIOS",
+                    "examples": [
+                        "T82 Ver. 01.01.00",
+                        "R92 Ver. 01.08.02"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/bios_version"
+                    },
+                    "type": "string"
+                },
+                "bios_release_date": {
+                    "title": "Bios Release Date",
+                    "examples": [
+                        "2020-10-31"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/bios_date"
+                    },
+                    "type": "string",
+                    "format": "date"
+                },
+                "smbios_version": {
+                    "title": "Smbios Version",
+                    "description": "System Management BIOS version (Format: 'MAJOR.MINOR')",
+                    "examples": [
+                        "3.1"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "embedded_controller_version": {
+                    "title": "Embedded Controller Version",
+                    "description": "Embedded Controller Version (Format: 'MAJOR.MINOR')",
+                    "examples": [
+                        "101.48"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/ec_firmware_release"
+                    },
+                    "type": "string"
+                },
+                "rom_size": {
+                    "title": "Rom Size",
+                    "description": "ROM Size (in MB)",
+                    "examples": [
+                        "32"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "capabilities": {
+                    "title": "Capabilities",
+                    "description": "Firmware Capabilities",
+                    "examples": [
+                        "pci",
+                        "pcmcia",
+                        "upgrade",
+                        "shadowing",
+                        "cdboot",
+                        "bootselect"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "OperatingSystem": {
+            "title": "OperatingSystem",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "OS Name",
+                    "examples": [],
+                    "source": {
+                        "Linux": "/etc/os-release"
+                    },
+                    "type": "string"
+                },
+                "boot_device": {
+                    "title": "Boot Device",
+                    "description": "OS Boot Device",
+                    "examples": [
+                        "\\Device\\HarddiskVolume1"
+                    ],
+                    "source": {
+                        "Linux": "TBD"
+                    },
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "description": "OS Version",
+                    "examples": [
+                        "10.0.16299.192"
+                    ],
+                    "source": {
+                        "Linux": "/etc/os-release"
+                    },
+                    "type": "string"
+                },
+                "codename": {
+                    "title": "Codename",
+                    "description": "OS codename",
+                    "examples": [
+                        "Redstone",
+                        "Titanium",
+                        "Hirsute Hippo",
+                        "Focal Fossa",
+                        "Bionic Beaver"
+                    ],
+                    "source": {
+                        "Linux": "/etc/os-release"
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "boot_device"
+            ]
+        },
+        "LinuxKernel": {
+            "title": "LinuxKernel",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "OS Kernel",
+                    "examples": [
+                        "Linux"
+                    ],
+                    "source": {
+                        "Linux": "uname -s"
+                    },
+                    "type": "string"
+                },
+                "release": {
+                    "title": "Release",
+                    "description": "OS Kernel Release",
+                    "examples": [
+                        "5.13.0-7614-generic"
+                    ],
+                    "source": {
+                        "Linux": "uname -r"
+                    },
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "description": "OS Version",
+                    "examples": [
+                        "10.0.16299.192"
+                    ],
+                    "source": {
+                        "Linux": "uname -v"
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "release",
+                "version"
+            ]
+        },
+        "AnyTelemetryEvent": {
+            "title": "AnyTelemetryEvent",
+            "type": "object",
+            "properties": {
+                "hw_base_board": {
+                    "$ref": "#/definitions/BaseBoard"
+                },
+                "hw_battery": {
+                    "$ref": "#/definitions/Battery"
+                },
+                "hw_battery_usage": {
+                    "$ref": "#/definitions/BatteryUsage"
+                },
+                "hw_display": {
+                    "$ref": "#/definitions/Display"
+                },
+                "hw_graphics_card": {
+                    "$ref": "#/definitions/GraphicsCard"
+                },
+                "hw_memory_physical": {
+                    "$ref": "#/definitions/MemoryPhysical"
+                },
+                "hw_network_card": {
+                    "$ref": "#/definitions/NetworkCard"
+                },
+                "hw_peripheral_audio_port": {
+                    "$ref": "#/definitions/PeripheralAudioPort"
+                },
+                "hw_peripheral_hdmi": {
+                    "$ref": "#/definitions/PeripheralHDMI"
+                },
+                "hw_peripheral_sim_card": {
+                    "$ref": "#/definitions/PeripheralSIMCard"
+                },
+                "hw_peripheral_usb_type_a": {
+                    "$ref": "#/definitions/PeripheralUSBTypeA"
+                },
+                "hw_peripheral_usb_type_c": {
+                    "$ref": "#/definitions/PeripheralUSBTypeC"
+                },
+                "hw_peripheral_usb_type_c_display_port": {
+                    "$ref": "#/definitions/PeripheralUSBTypeCDisplayPort"
+                },
+                "hw_processor": {
+                    "$ref": "#/definitions/Processor"
+                },
+                "hw_nvme_storage_physical": {
+                    "$ref": "#/definitions/NVMEStoragePhysical"
+                },
+                "hw_nvme_storage_logical": {
+                    "$ref": "#/definitions/NVMEStorageLogical"
+                },
+                "hw_nvme_smart_log": {
+                    "$ref": "#/definitions/NVMESmartLog"
+                },
+                "hw_system": {
+                    "$ref": "#/definitions/System"
+                },
+                "hw_thermal_summary": {
+                    "$ref": "#/definitions/ThermalSummary"
+                },
+                "hw_cooling_fan_cycles_summary": {
+                    "$ref": "#/definitions/CoolingFanCyclesSummary"
+                },
+                "hw_tpm": {
+                    "$ref": "#/definitions/TrustedPlatformModule"
+                },
+                "sw_driver": {
+                    "$ref": "#/definitions/Driver"
+                },
+                "sw_linux_driver_crash": {
+                    "$ref": "#/definitions/LinuxDriverCrash"
+                },
+                "sw_firmware": {
+                    "$ref": "#/definitions/Firmware"
+                },
+                "sw_operating_system": {
+                    "$ref": "#/definitions/OperatingSystem"
+                },
+                "sw_linux_kernel": {
+                    "$ref": "#/definitions/LinuxKernel"
+                }
+            }
+        }
+    }
+}

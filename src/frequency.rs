@@ -67,6 +67,7 @@ fn default_frequency(type_: TelemetryEventType) -> Frequency {
         HwBaseBoard => Daily,
         HwBattery => Daily,
         HwBatteryUsage => Daily, // XXX make trigger based
+        HwCoolingFanCyclesSummary => Daily,
         HwDisplay => Daily,
         HwGraphicsCard => Daily,
         HwMemoryPhysical => Daily,
@@ -82,7 +83,7 @@ fn default_frequency(type_: TelemetryEventType) -> Frequency {
         HwPeripheralUsbTypeCDisplayPort => Daily,
         HwProcessor => Daily,
         HwSystem => Daily,
-        HwThermalContext => Trigger,
+        HwThermalSummary => Daily,
         HwTpm => Daily,
         SwDriver => Daily,
         SwFirmware => Daily,
