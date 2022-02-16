@@ -109,6 +109,27 @@ impl dmi::TableKind for CacheInfo21 {
     const KIND: u8 = 7;
 }
 
+#[repr(packed)]
+#[derive(Clone, Default, Debug, Copy)]
+#[allow(dead_code)]
+struct SystemInfo21 {
+    manufacturer: u8,
+    name: u8,
+    version: u8,
+    serial: u8,
+    uuid: u128,
+    wake_up_type: u8,
+    // SMBIOS 2.4?
+    // sku: u8,
+    // family: u8,
+}
+
+unsafe impl Plain for SystemInfo21 {}
+
+impl dmi::TableKind for SystemInfo21 {
+    const KIND: u8 = 1;
+}
+
 fn dmi() -> Vec<dmi::Table> {
     if let Ok(data) = fs::read("/sys/firmware/dmi/tables/DMI") {
         dmi::tables(&data)
