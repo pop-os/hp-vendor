@@ -8,7 +8,7 @@ use std::{
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-schemafy::schemafy!("UploadEventPackageRequestModel.json");
+schemafy::schemafy!("DataUploadRequestModel.json");
 
 // Unlike genereated binding, an `enum` rather than a `struct`
 include!(concat!(env!("OUT_DIR"), "/event_enum.rs"));
@@ -28,10 +28,12 @@ pub(crate) fn date_time() -> String {
 }
 
 pub(crate) fn device_os_ids() -> DeviceOSIds {
+    // Random UUID to make schema validate
     DeviceOSIds {
-        bios_uuid: "0123456789".to_string(),           // TODO
-        device_id: "01234567890123456789".to_string(), // TODO
-        os_install_id: "test".to_string(),             // TODO
+        device_sku: "3F0D5AA#ABA".to_string(), // TODO
+        device_bios_uuid: "1da44503-cacd-4ac8-a54e-60771f2321bf".to_string(), // TODO
+        device_sn: "0123456789".to_string(),   // TODO
+        os_install_uuid: "1da44503-cacd-4ac8-a54e-60771f2321bf".to_string(), // TODO
     }
 }
 
@@ -54,14 +56,14 @@ fn data_header(consent: DataCollectionConsent) -> TelemetryHeaderModel {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Events {
-    pub data: Vec<TelemetryEvent>,
+#[derive(Debug, Serialize)]
+pub struct Events<'a> {
+    pub data: &'a [TelemetryEvent],
     pub data_header: TelemetryHeaderModel,
 }
 
-impl Events {
-    pub fn new(consent: DataCollectionConsent, data: Vec<TelemetryEvent>) -> Self {
+impl<'a> Events<'a> {
+    pub fn new(consent: DataCollectionConsent, data: &'a [TelemetryEvent]) -> Self {
         Self {
             data,
             data_header: data_header(consent),

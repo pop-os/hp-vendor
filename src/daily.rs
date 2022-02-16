@@ -38,12 +38,12 @@ pub fn run() {
 
     diff.extend_from_slice(&db.get_queued(true).unwrap());
 
-    let events = event::Events::new(consent, diff);
+    let events = event::Events::new(consent, &diff);
     println!("{}", events.to_json_pretty());
 
     /*
     let client = reqwest::blocking::Client::new();
-    let token = hp_vendor::api::TokenRequest::new()
+    let token = crate::api::TokenRequest::new()
         .send(&client)
         .unwrap()
         .token;

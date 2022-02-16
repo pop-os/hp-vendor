@@ -92,9 +92,9 @@ fn gen_clear_options(properties_obj: &Map<String, Value>, required: &[&str]) -> 
 }
 
 fn main() {
-    println!("cargo:rerun-if-changed=UploadEventPackageRequestModel.json");
+    println!("cargo:rerun-if-changed=DataUploadRequestModel.json");
 
-    let json_str = fs::read_to_string("UploadEventPackageRequestModel.json").unwrap();
+    let json_str = fs::read_to_string("DataUploadRequestModel.json").unwrap();
     let root: Value = serde_json::from_str(&json_str).unwrap();
     let mut names = Vec::new();
     let mut variants = Vec::new();
