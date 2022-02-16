@@ -8,8 +8,10 @@ Build-Depends:
   clang,
   libclang1,
   libsensors-dev,
+  libsqlite3-dev,
   libssl-dev,
   libudev-dev,
+  pkg-config,
 Standards-Version: 4.1.1
 Homepage: https://github.com/pop-os/hp-vendor
 
