@@ -14,15 +14,16 @@ SRC = Cargo.toml Cargo.lock Makefile $(shell find src -type f -wholename '*src/*
 
 BIN=hp-vendor
 
+TARGET = debug
 DEBUG ?= 0
 ifeq ($(DEBUG),0)
-	ARGS += "--release"
 	TARGET = release
+	ARGS += --release
 endif
 
-VENDORED ?= 0
-ifeq ($(VENDORED),1)
-	ARGS += "--frozen"
+VENDOR ?= 0
+ifneq ($(VENDOR),0)
+	ARGS += --frozen
 endif
 
 all: target/release/$(BIN)
@@ -50,14 +51,19 @@ update:
 	cargo update
 
 vendor:
+	rm .cargo -rf
 	mkdir -p .cargo
 	cargo vendor | head -n -1 > .cargo/config
 	echo 'directory = "vendor"' >> .cargo/config
-	tar pcfJ vendor.tar.xz vendor
+	tar cf vendor.tar vendor
 	rm -rf vendor
 
-target/release/$(BIN): $(SRC)
-ifeq ($(VENDORED),1)
-	tar pxf vendor.tar.xz
+vendor-check:
+ifeq ($(VENDOR),1)
+	rm vendor -rf && tar xf vendor.tar
 endif
+
+target/release/$(BIN): $(SRC) vendor-check
 	cargo build --features disable-model-check $(ARGS)
+
+	cargo build $(ARGS)
