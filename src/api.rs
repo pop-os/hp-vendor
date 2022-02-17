@@ -1,9 +1,6 @@
 #![allow(non_snake_case)]
 
-use reqwest::{
-    blocking::{Client, RequestBuilder},
-    Method,
-};
+use reqwest::{blocking::Client, Method};
 use std::{collections::HashMap, str::FromStr};
 
 use crate::event::{DeviceOSIds, Events};
@@ -20,7 +17,7 @@ struct TokenResponse {
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct TokenError {
+struct ErrorResponse {
     message: String,
 }
 
@@ -61,7 +58,7 @@ impl Api {
             Err(anyhow::anyhow!(
                 "{}: {}",
                 resp.status(),
-                resp.json::<TokenError>()?.message
+                resp.json::<ErrorResponse>()?.message
             ))
         }
     }
@@ -79,16 +76,30 @@ impl Api {
         Ok((method, format!("{}{}", BASE_URL, path)))
     }
 
-    fn request(&self, name: &str) -> anyhow::Result<RequestBuilder> {
+    fn request<T: serde::Serialize, U: serde::de::DeserializeOwned>(
+        &self,
+        name: &str,
+        body: &T,
+    ) -> anyhow::Result<U> {
         let (method, url) = self.url(name)?;
-        Ok(self
+        let resp = self
             .client
             .request(method, url)
-            .header("authorizationToken", &self.token_resp.token))
+            .header("authorizationToken", &self.token_resp.token)
+            .json(body)
+            .send()?;
+        if resp.status().is_success() {
+            Ok(resp.json()?)
+        } else {
+            Err(anyhow::anyhow!(
+                "{}: {}",
+                resp.status(),
+                resp.json::<ErrorResponse>()?.message
+            ))
+        }
     }
 
     pub fn upload(&self, events: &Events) -> anyhow::Result<serde_json::Value> {
-        // TODO handle error response
-        Ok(self.request("DataUpload")?.json(events).send()?.json()?)
+        self.request("DataUpload", events)
     }
 }
