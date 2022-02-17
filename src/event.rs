@@ -6,7 +6,7 @@ use std::{
     path::Path,
     str::FromStr,
 };
-use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+use time::{format_description::well_known::Rfc3339, OffsetDateTime, Time};
 use uuid::Uuid;
 
 use crate::util::dmi::{dmi, SystemInfo24};
@@ -27,7 +27,12 @@ pub(crate) fn unknown() -> String {
 }
 
 pub(crate) fn date_time() -> String {
-    OffsetDateTime::now_utc().format(&Rfc3339).unwrap()
+    let now = OffsetDateTime::now_utc();
+    let time = now.time();
+    // Second precision, instead of nanosecond
+    now.replace_time(Time::from_hms(time.hour(), time.minute(), time.second()).unwrap())
+        .format(&Rfc3339)
+        .unwrap()
 }
 
 impl DeviceOSIds {
