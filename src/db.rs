@@ -21,6 +21,7 @@ pub struct DB(Connection);
 impl DB {
     pub fn open() -> Result<Self> {
         let conn = Connection::open("/var/hp-vendor/db.sqlite3")?;
+        let tx = conn.unchecked_transaction()?;
         conn.execute_batch(
             "
             PRAGMA foreign_keys = ON;
@@ -45,8 +46,19 @@ impl DB {
             );
             INSERT OR IGNORE INTO consent (id, opted_in_level, version)
             VALUES (0, NULL, NULL);
+            CREATE TABLE IF NOT EXISTS properties (
+                id INTEGER PRIMARY KEY,
+                os_install_id TEXT,
+                CHECK (id = 0)
+            );
         ",
         )?;
+        conn.execute(
+            "INSERT OR IGNORE into properties
+             VALUES (0, ?)",
+            [uuid::Uuid::new_v4().to_string()],
+        )?;
+        tx.commit()?;
         // Migrate here if schema changes are made
         Ok(Self(conn))
     }
@@ -83,6 +95,11 @@ impl DB {
                 [opted_in_level, version],
             )
             .map(|_| ())
+    }
+
+    pub fn get_os_install_id(&self) -> Result<String> {
+        self.0
+            .query_row("SELECT os_install_id from properties", [], |row| row.get(0))
     }
 
     pub fn update_event_types(&self) -> Result<()> {
