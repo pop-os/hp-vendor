@@ -5,7 +5,7 @@ use crate::{
     event, util,
 };
 
-pub fn run() {
+pub fn run(arg: Option<&str>) {
     // Get unique lock
     let _lock = util::lock_file_or_panic("/var/hp-vendor/daily.lock");
 
@@ -43,10 +43,10 @@ pub fn run() {
     let events = event::Events::new(consent, ids.clone(), &diff);
     println!("{}", events.to_json_pretty());
 
-    /*
-    let api = Api::new(ids).unwrap();
-    println!("{:#?}", api.upload(&events).unwrap());
-    */
+    if arg != Some("--dequeue-no-upload") {
+        let api = Api::new(ids).unwrap();
+        println!("{:#?}", api.upload(&events).unwrap());
+    }
 
     db.clear_queued().unwrap();
     db.replace_state(db::State::Frequency(SamplingFrequency::Daily), &new)
