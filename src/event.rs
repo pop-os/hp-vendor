@@ -7,7 +7,6 @@ use std::{
     str::FromStr,
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
-use uuid::Uuid;
 
 use crate::util::dmi::{dmi, SystemInfo24};
 

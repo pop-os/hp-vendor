@@ -14,6 +14,7 @@ use crate::{
 pub enum State {
     All,
     Frequency(SamplingFrequency),
+    #[allow(dead_code)]
     Type(TelemetryEventType),
 }
 
