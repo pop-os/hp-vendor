@@ -25,6 +25,7 @@ pub fn run() {
             consent
         }
     };
+    let ids = event::DeviceOSIds::new();
     let freqs = db.get_event_frequencies().unwrap();
 
     // TODO: handle frequencies other than daily
@@ -38,7 +39,7 @@ pub fn run() {
 
     diff.extend_from_slice(&db.get_queued(true).unwrap());
 
-    let events = event::Events::new(consent, &diff);
+    let events = event::Events::new(consent, ids.clone(), &diff);
     println!("{}", events.to_json_pretty());
 
     /*

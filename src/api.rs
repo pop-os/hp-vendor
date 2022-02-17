@@ -29,8 +29,8 @@ pub struct EventsResponse {
 }
 
 impl TokenRequest {
-    pub fn new() -> Self {
-        Self(event::device_os_ids())
+    pub fn new(ids: DeviceOSIds) -> Self {
+        Self(ids)
     }
 
     pub fn send(&self, client: &Client) -> reqwest::Result<TokenResponse> {
