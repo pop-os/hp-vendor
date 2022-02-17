@@ -12,6 +12,7 @@ fn main() {
         process::exit(1);
     }
 
+    /*
     #[cfg(not(feature = "disable-model-check"))]
     {
         let product_name = std::fs::read_to_string("/sys/class/dmi/id/product_name").ok();
@@ -21,6 +22,7 @@ fn main() {
             process::exit(1);
         }
     }
+    */
 
     if let Err(err) = create_var_dir() {
         if err.kind() != io::ErrorKind::AlreadyExists {

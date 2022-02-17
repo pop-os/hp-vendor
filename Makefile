@@ -64,6 +64,6 @@ ifeq ($(VENDOR),1)
 endif
 
 target/release/$(BIN): $(SRC) vendor-check
-	cargo build --features disable-model-check $(ARGS)
+	cargo build $(ARGS)
 
 	cargo build $(ARGS)
