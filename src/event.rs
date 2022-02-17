@@ -7,6 +7,7 @@ use std::{
     str::FromStr,
 };
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+use uuid::Uuid;
 
 use crate::util::dmi::{dmi, SystemInfo24};
 
@@ -30,30 +31,23 @@ pub(crate) fn date_time() -> String {
 }
 
 impl DeviceOSIds {
-    pub fn new(os_install_uuid: String) -> Self {
-        /*
+    pub fn new(os_install_uuid: String) -> anyhow::Result<Self> {
         for i in dmi() {
             if let Some(info) = i.get::<SystemInfo24>() {
-                let device_sku = i.get_str(info.sku).unwrap().to_string();
+                let device_sku = i.get_str(info.sku).cloned();
                 let device_bios_uuid = Uuid::from(&info.uuid).to_string();
-                let device_sn = i.get_str(info.serial).unwrap().to_string();
-                return DeviceOSIds {
-                    device_sku,
-                    device_bios_uuid,
-                    device_sn,
-                    os_install_uuid,
-                };
+                let device_sn = i.get_str(info.serial).cloned();
+                if let (Some(device_sku), Some(device_sn)) = (device_sku, device_sn) {
+                    return Ok(DeviceOSIds {
+                        device_sku,
+                        device_bios_uuid,
+                        device_sn,
+                        os_install_uuid,
+                    });
+                }
             }
         }
-        */
-
-        // Random UUID to make schema validate
-        DeviceOSIds {
-            device_sku: "3F0D5AA#ABA".to_string(), // TODO
-            device_bios_uuid: "1da44503-cacd-4ac8-a54e-60771f2321bf".to_string(), // TODO
-            device_sn: "0123456789".to_string(),   // TODO
-            os_install_uuid,
-        }
+        Err(anyhow::Error::msg("Unable to get sku, uuid, and serial from BIOS"))
     }
 }
 

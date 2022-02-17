@@ -6,7 +6,7 @@ fn validate() {
         opted_in_level: String::new(),
         version: String::new(),
     };
-    let ids = DeviceOSIds::new(uuid::Uuid::new_v4().to_string());
+    let ids = DeviceOSIds::new(uuid::Uuid::new_v4().to_string()).unwrap();
     let events = hp_vendor::all_events();
 
     let mut scope = valico::json_schema::Scope::new();
