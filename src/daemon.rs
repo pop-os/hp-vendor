@@ -25,8 +25,6 @@ const TOKEN_UDEV: Token = Token(1);
 const TOKEN_KMSG: Token = Token(2);
 const TOKEN_TIMER: Token = Token(3);
 
-// XXX lock for exclusivity?
-
 // https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg
 fn parse_kmsg(buf: &[u8]) -> Option<()> {
     let record = str::from_utf8(buf).ok()?;
@@ -134,14 +132,14 @@ pub fn run() {
                         if x.event_type() == udev::EventType::Add {
                             if let Some(event) = crate::peripheral_usb_type_a_event(x.syspath()) {
                                 println!("{:#?}", event);
-                                insert_statement.execute(&event);
+                                insert_statement.execute(&event).unwrap();
                                 udev_devices.insert(x.syspath().to_owned(), event);
                             }
                         } else if x.event_type() == udev::EventType::Remove {
                             if let Some(mut event) = udev_devices.remove(x.syspath()) {
                                 crate::event::remove_event(&mut event);
                                 println!("{:#?}", event);
-                                insert_statement.execute(&event);
+                                insert_statement.execute(&event).unwrap();
                             }
                         }
                     });
@@ -157,7 +155,7 @@ pub fn run() {
                     let _ = unistd::read(timer.as_raw_fd(), &mut buf);
                     for chip in sensors.chip_iter(None) {
                         for feature in chip.feature_iter() {
-                            let label = match feature.label() {
+                            let _label = match feature.label() {
                                 Ok(label) => label,
                                 Err(_) => {
                                     continue;

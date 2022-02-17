@@ -6,12 +6,13 @@ use reqwest::{
 };
 use std::{collections::HashMap, str::FromStr};
 
-use crate::event::{self, DeviceOSIds, Events};
+use crate::event::{DeviceOSIds, Events};
 
 const BASE_URL: &str = "API_URL";
 
 #[derive(Debug, serde::Deserialize)]
 struct TokenResponse {
+    #[allow(dead_code)]
     detail: String,
     token: String,
     dID: String,
