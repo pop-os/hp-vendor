@@ -31,7 +31,7 @@ pub(crate) fn date_time() -> String {
 }
 
 impl DeviceOSIds {
-    pub fn new() -> Self {
+    pub fn new(os_install_uuid: String) -> Self {
         /*
         for i in dmi() {
             if let Some(info) = i.get::<SystemInfo24>() {
@@ -42,7 +42,7 @@ impl DeviceOSIds {
                     device_sku,
                     device_bios_uuid,
                     device_sn,
-                    os_install_uuid: "1da44503-cacd-4ac8-a54e-60771f2321bf".to_string(), // TODO
+                    os_install_uuid,
                 };
             }
         }
@@ -53,7 +53,7 @@ impl DeviceOSIds {
             device_sku: "3F0D5AA#ABA".to_string(), // TODO
             device_bios_uuid: "1da44503-cacd-4ac8-a54e-60771f2321bf".to_string(), // TODO
             device_sn: "0123456789".to_string(),   // TODO
-            os_install_uuid: "1da44503-cacd-4ac8-a54e-60771f2321bf".to_string(), // TODO
+            os_install_uuid,
         }
     }
 }

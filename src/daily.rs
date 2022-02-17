@@ -25,7 +25,8 @@ pub fn run() {
             consent
         }
     };
-    let ids = event::DeviceOSIds::new();
+    let os_install_id = db.get_os_install_id().unwrap();
+    let ids = event::DeviceOSIds::new(os_install_id);
     let freqs = db.get_event_frequencies().unwrap();
 
     // TODO: handle frequencies other than daily
