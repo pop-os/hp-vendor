@@ -47,7 +47,7 @@ pub fn run(arg: Option<&str>) {
         match Api::new(ids) {
             Ok(api) => match api.upload(&events) {
                 Ok(res) => println!("{:#?}", res),
-                Err(err) => eprintln!("Failed to upload: {}", err),
+                Err(err) => panic!("Failed to upload: {}", err),
             },
             Err(err) => panic!("Failed to authenticate with server: {}", err),
         }
