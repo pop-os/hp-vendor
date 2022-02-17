@@ -20,8 +20,9 @@ mod frequency;
 pub mod print;
 mod util;
 
+use config::SamplingFrequency;
 use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};
-use frequency::{Frequencies, Frequency};
+use frequency::Frequencies;
 use util::{
     dmi::{dmi, CacheInfo21},
     drm::DrmDevice,
@@ -525,7 +526,7 @@ pub fn all_events() -> Vec<event::TelemetryEvent> {
     events
 }
 
-pub fn events(freqs: &Frequencies, freq: Frequency) -> Vec<event::TelemetryEvent> {
+pub fn events(freqs: &Frequencies, freq: SamplingFrequency) -> Vec<event::TelemetryEvent> {
     let mut events = Vec::new();
     for i in event::TelemetryEventType::iter() {
         if freqs.get(i) != freq {
