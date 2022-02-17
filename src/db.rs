@@ -6,13 +6,14 @@ use rusqlite::{
 use std::{error::Error, fmt, str};
 
 use crate::{
+    config::SamplingFrequency,
     event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType},
-    frequency::{Frequencies, Frequency},
+    frequency::Frequencies,
 };
 
 pub enum State {
     All,
-    Frequency(Frequency),
+    Frequency(SamplingFrequency),
     Type(TelemetryEventType),
 }
 
@@ -264,17 +265,18 @@ impl FromSql for TelemetryEventType {
     }
 }
 
-impl ToSql for Frequency {
+impl ToSql for SamplingFrequency {
     fn to_sql(&self) -> Result<ToSqlOutput<'static>> {
         self.to_str().to_sql()
     }
 }
 
-impl FromSql for Frequency {
+impl FromSql for SamplingFrequency {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         if let ValueRef::Text(text) = value {
             let text = str::from_utf8(text).map_err(other_err)?;
-            Frequency::from_str(text).ok_or_else(|| other_err(InvalidEnum(text.to_string())))
+            SamplingFrequency::from_str(text)
+                .ok_or_else(|| other_err(InvalidEnum(text.to_string())))
         } else {
             Err(FromSqlError::InvalidType)
         }

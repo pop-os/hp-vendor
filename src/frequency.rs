@@ -1,39 +1,39 @@
 use std::{collections::HashMap, iter::FromIterator};
 
-use crate::event::TelemetryEventType;
+use crate::{config::SamplingFrequency, event::TelemetryEventType};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Frequency {
-    Daily,
-    Trigger,
-}
-
-impl Frequency {
+impl SamplingFrequency {
     pub fn to_str(self) -> &'static str {
         match self {
+            Self::OnTrigger => "on_trigger",
+            Self::OnChange => "on_change",
             Self::Daily => "daily",
-            Self::Trigger => "trigger",
+            Self::Weeky => "weekly", // XXX weekly
         }
     }
 
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
+            "on_trigger" => Some(Self::OnTrigger),
+            "on_change" => Some(Self::OnChange),
             "daily" => Some(Self::Daily),
-            "trigger" => Some(Self::Trigger),
+            "weekly" => Some(Self::Weeky), // XXX weekly
             _ => None,
         }
     }
 }
 
 #[derive(Debug)]
-pub struct Frequencies(HashMap<TelemetryEventType, Frequency>);
+pub struct Frequencies(HashMap<TelemetryEventType, SamplingFrequency>);
 
 impl Frequencies {
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (TelemetryEventType, Frequency)> + 'a {
+    pub fn iter<'a>(
+        &'a self,
+    ) -> impl Iterator<Item = (TelemetryEventType, SamplingFrequency)> + 'a {
         self.0.iter().map(|(k, v)| (k.clone(), v.clone()))
     }
 
-    pub fn from_iter_or_default<T: Iterator<Item = (TelemetryEventType, Frequency)>>(
+    pub fn from_iter_or_default<T: Iterator<Item = (TelemetryEventType, SamplingFrequency)>>(
         iter: T,
     ) -> Self {
         let mut freqs = HashMap::from_iter(iter);
@@ -43,7 +43,7 @@ impl Frequencies {
         Self(freqs)
     }
 
-    pub fn get(&self, type_: TelemetryEventType) -> Frequency {
+    pub fn get(&self, type_: TelemetryEventType) -> SamplingFrequency {
         // NOTE: must statically ensure every variant is in this
         self.0.get(&type_).unwrap().clone()
     }
@@ -59,8 +59,8 @@ impl Default for Frequencies {
     }
 }
 
-fn default_frequency(type_: TelemetryEventType) -> Frequency {
-    use Frequency::*;
+fn default_frequency(type_: TelemetryEventType) -> SamplingFrequency {
+    use SamplingFrequency::*;
     use TelemetryEventType::*;
 
     match type_ {
@@ -78,7 +78,7 @@ fn default_frequency(type_: TelemetryEventType) -> Frequency {
         HwPeripheralAudioPort => Daily,
         HwPeripheralHdmi => Daily,
         HwPeripheralSimCard => Daily,
-        HwPeripheralUsbTypeA => Trigger,
+        HwPeripheralUsbTypeA => OnChange,
         HwPeripheralUsbTypeC => Daily,
         HwPeripheralUsbTypeCDisplayPort => Daily,
         HwProcessor => Daily,

@@ -1,8 +1,7 @@
 use crate::{
+    config::SamplingFrequency,
     db::{self, DB},
-    event,
-    frequency::Frequency,
-    util,
+    event, util,
 };
 
 pub fn run() {
@@ -31,10 +30,10 @@ pub fn run() {
 
     // TODO: handle frequencies other than daily
     let old = db
-        .get_state(db::State::Frequency(Frequency::Daily))
+        .get_state(db::State::Frequency(SamplingFrequency::Daily))
         .unwrap();
 
-    let new = crate::events(&freqs, Frequency::Daily);
+    let new = crate::events(&freqs, SamplingFrequency::Daily);
     let mut diff = new.clone();
     event::diff(&mut diff, &old);
 
@@ -53,6 +52,6 @@ pub fn run() {
     */
 
     db.clear_queued().unwrap();
-    db.replace_state(db::State::Frequency(Frequency::Daily), &new)
+    db.replace_state(db::State::Frequency(SamplingFrequency::Daily), &new)
         .unwrap();
 }
