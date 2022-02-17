@@ -1,4 +1,5 @@
 use crate::{
+    api::Api,
     config::SamplingFrequency,
     db::{self, DB},
     event, util,
@@ -43,12 +44,8 @@ pub fn run() {
     println!("{}", events.to_json_pretty());
 
     /*
-    let client = reqwest::blocking::Client::new();
-    let token = crate::api::TokenRequest::new()
-        .send(&client)
-        .unwrap()
-        .token;
-    println!("{:#?}", events.send(&client, &token).unwrap());
+    let api = Api::new(ids).unwrap();
+    println!("{:#?}", api.upload(&events).unwrap());
     */
 
     db.clear_queued().unwrap();
