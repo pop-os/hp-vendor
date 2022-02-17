@@ -1,6 +1,9 @@
 #![allow(non_snake_case)]
 
-use reqwest::{blocking::Client, Method};
+use reqwest::{
+    blocking::{Client, Response},
+    Method,
+};
 use std::{collections::HashMap, str::FromStr};
 
 use crate::event::{DeviceOSIds, Events};
@@ -55,11 +58,7 @@ impl Api {
                 token_resp: resp.json()?,
             })
         } else {
-            Err(anyhow::anyhow!(
-                "{}: {}",
-                resp.status(),
-                resp.json::<ErrorResponse>()?.message
-            ))
+            Err(err_from_resp(resp))
         }
     }
 
@@ -91,15 +90,20 @@ impl Api {
         if resp.status().is_success() {
             Ok(resp.json()?)
         } else {
-            Err(anyhow::anyhow!(
-                "{}: {}",
-                resp.status(),
-                resp.json::<ErrorResponse>()?.message
-            ))
+            Err(err_from_resp(resp))
         }
     }
 
     pub fn upload(&self, events: &Events) -> anyhow::Result<serde_json::Value> {
         self.request("DataUpload", events)
+    }
+}
+
+fn err_from_resp(resp: Response) -> anyhow::Error {
+    let status = resp.status();
+    if let Ok(error) = resp.json::<ErrorResponse>() {
+        anyhow::anyhow!("{}: {}", status, error.message)
+    } else {
+        anyhow::anyhow!("{}", status)
     }
 }
