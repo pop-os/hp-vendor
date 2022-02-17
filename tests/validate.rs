@@ -1,4 +1,4 @@
-use hp_vendor::event::{DataCollectionConsent, Events};
+use hp_vendor::event::{DataCollectionConsent, DeviceOSIds, Events};
 
 #[test]
 fn validate() {
@@ -6,6 +6,7 @@ fn validate() {
         opted_in_level: String::new(),
         version: String::new(),
     };
+    let ids = DeviceOSIds::new(uuid::Uuid::new_v4().to_string());
     let events = hp_vendor::all_events();
 
     let mut scope = valico::json_schema::Scope::new();
@@ -13,7 +14,7 @@ fn validate() {
         serde_json::from_str(include_str!("../DataUploadRequestModel.json")).unwrap();
     let schema = scope.compile_and_return(schema_json, false).unwrap();
     for chunk in events.chunks(100) {
-        let value = serde_json::to_value(Events::new(consent.clone(), chunk)).unwrap();
+        let value = serde_json::to_value(Events::new(consent.clone(), ids.clone(), chunk)).unwrap();
         let result = schema.validate(&value);
         assert!(result.is_valid(), "{:#?}", result);
     }
