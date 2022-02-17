@@ -454,6 +454,7 @@ dependencies = [
  "serde_json",
  "time 0.3.7",
  "udev",
+ "uuid",
  "valico",
 ]
 

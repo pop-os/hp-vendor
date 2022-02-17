@@ -33,21 +33,37 @@ impl dmi::TableKind for CacheInfo21 {
 
 #[repr(packed)]
 #[derive(Clone, Default, Debug, Copy)]
+pub struct DmiUuid {
+    d1: u32,
+    d2: u16,
+    d3: u16,
+    d4: [u8; 8],
+}
+
+impl From<&DmiUuid> for uuid::Uuid {
+    fn from(uuid: &DmiUuid) -> Self {
+        Self::from_fields(uuid.d1, uuid.d2, uuid.d3, &uuid.d4)
+            .ok()
+            .unwrap_or_else(Self::nil)
+    }
+}
+
+#[repr(packed)]
+#[derive(Clone, Default, Debug, Copy)]
 #[allow(dead_code)]
-struct SystemInfo21 {
+pub struct SystemInfo24 {
     pub manufacturer: u8,
     pub name: u8,
     pub version: u8,
     pub serial: u8,
-    pub uuid: u128,
+    pub uuid: DmiUuid,
     pub wake_up_type: u8,
-    // SMBIOS 2.4?
-    // sku: u8,
-    // family: u8,
+    pub sku: u8,
+    pub family: u8,
 }
 
-unsafe impl Plain for SystemInfo21 {}
+unsafe impl Plain for SystemInfo24 {}
 
-impl dmi::TableKind for SystemInfo21 {
+impl dmi::TableKind for SystemInfo24 {
     const KIND: u8 = 1;
 }
