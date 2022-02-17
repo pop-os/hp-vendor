@@ -1,4 +1,3 @@
-use drm::{control::Device as ControlDevice, Device};
 use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;
@@ -6,7 +5,6 @@ use std::{
     collections::HashSet,
     fmt::Write,
     fs,
-    os::unix::io::{AsRawFd, RawFd},
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
@@ -23,120 +21,12 @@ mod util;
 
 use event::{read_file, unknown, State, TelemetryEvent, TelemetryEventType};
 use frequency::{Frequencies, Frequency};
+use util::{
+    dmi::{dmi, CacheInfo21},
+    drm::DrmDevice,
+};
 
 const PCI_EXT_CAP_ID_DSN: u16 = 0x03;
-
-struct DrmDevice(fs::File);
-
-impl Device for DrmDevice {}
-impl ControlDevice for DrmDevice {}
-
-impl DrmDevice {
-    fn all() -> impl Iterator<Item = Self> {
-        fs::read_dir("/dev/dri")
-            .into_iter()
-            .flatten()
-            .filter_map(|entry| {
-                if let Ok(entry) = entry {
-                    if let Some(file_name) = entry.file_name().to_str() {
-                        if file_name.starts_with("card") {
-                            return Self::open(entry.path());
-                        }
-                    }
-                }
-                None
-            })
-    }
-
-    fn open<P: AsRef<Path>>(path: P) -> Option<Self> {
-        Some(Self(
-            fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(path)
-                .ok()?,
-        ))
-    }
-
-    fn connectors(&self) -> Vec<drm::control::connector::Info> {
-        self.resource_handles()
-            .ok()
-            .map_or_else(Vec::new, |handles| {
-                handles
-                    .connectors()
-                    .iter()
-                    .filter_map(|handle| self.get_connector(*handle).ok())
-                    .collect()
-            })
-    }
-
-    fn connector_mode(
-        &self,
-        connector: &drm::control::connector::Info,
-    ) -> Option<drm::control::Mode> {
-        // NOTE: doesn't work on Nvidia without `nvidia-drm.modeset`
-        let encoder = self.get_encoder(connector.current_encoder()?).ok()?;
-        let crtc = self.get_crtc(encoder.crtc()?).ok()?;
-        crtc.mode()
-    }
-}
-
-impl AsRawFd for DrmDevice {
-    fn as_raw_fd(&self) -> RawFd {
-        self.0.as_raw_fd()
-    }
-}
-
-#[repr(packed)]
-#[derive(Clone, Default, Debug, Copy)]
-#[allow(dead_code)]
-struct CacheInfo21 {
-    socket: u8,
-    configuration: u16,
-    maximum_size: u16,
-    installed_size: u16,
-    supported_sram_type: u16,
-    current_sram_type: u16,
-    cache_speed: u8,
-    error_correction_type: u8,
-    system_cache_type: u8,
-    associativity: u8,
-}
-
-unsafe impl Plain for CacheInfo21 {}
-
-impl dmi::TableKind for CacheInfo21 {
-    const KIND: u8 = 7;
-}
-
-#[repr(packed)]
-#[derive(Clone, Default, Debug, Copy)]
-#[allow(dead_code)]
-struct SystemInfo21 {
-    manufacturer: u8,
-    name: u8,
-    version: u8,
-    serial: u8,
-    uuid: u128,
-    wake_up_type: u8,
-    // SMBIOS 2.4?
-    // sku: u8,
-    // family: u8,
-}
-
-unsafe impl Plain for SystemInfo21 {}
-
-impl dmi::TableKind for SystemInfo21 {
-    const KIND: u8 = 1;
-}
-
-fn dmi() -> Vec<dmi::Table> {
-    if let Ok(data) = fs::read("/sys/firmware/dmi/tables/DMI") {
-        dmi::tables(&data)
-    } else {
-        Vec::new()
-    }
-}
 
 pub fn pcie_dsn<P: AsRef<Path>>(path: P) -> Option<String> {
     let data = std::fs::read(path.as_ref()).ok()?;

@@ -4,6 +4,9 @@ use nix::{
 };
 use std::{fs, os::unix::io::AsRawFd};
 
+pub mod dmi;
+pub mod drm;
+
 /// Set unique advisory lock on whole file Returns `EACCESS` or `EAGAIN` if
 /// already locked.
 fn setlk(file: &fs::File) -> nix::Result<()> {
