@@ -20,6 +20,11 @@ struct TokenResponse {
 }
 
 #[derive(Debug, serde::Deserialize)]
+struct TokenError {
+    message: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
 pub struct EventsResponseDetail {
     pub loc: (String, String, u32, String, String),
     pub msg: String,
@@ -41,17 +46,24 @@ pub struct Api {
 impl Api {
     pub fn new(ids: DeviceOSIds) -> anyhow::Result<Self> {
         let client = Client::new();
-        // TODO Handle error response from server?
-        let token_resp = client
+        let resp = client
             .post(format!("{}/data/token", BASE_URL))
             .json(&ids)
-            .send()?
-            .json()?;
-        Ok(Self {
-            client,
-            ids,
-            token_resp,
-        })
+            .send()?;
+
+        if resp.status().is_success() {
+            Ok(Self {
+                client,
+                ids,
+                token_resp: resp.json()?,
+            })
+        } else {
+            Err(anyhow::anyhow!(
+                "{}: {}",
+                resp.status(),
+                resp.json::<TokenError>()?.message
+            ))
+        }
     }
 
     fn url(&self, name: &str) -> anyhow::Result<(Method, String)> {

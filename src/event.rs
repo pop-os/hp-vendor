@@ -47,7 +47,9 @@ impl DeviceOSIds {
                 }
             }
         }
-        Err(anyhow::Error::msg("Unable to get sku, uuid, and serial from BIOS"))
+        Err(anyhow::Error::msg(
+            "Unable to get sku, uuid, and serial from BIOS",
+        ))
     }
 }
 
