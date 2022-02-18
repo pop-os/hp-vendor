@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 
+use base64::read::DecoderReader;
 use reqwest::{
     blocking::{Client, Response},
     Method,
 };
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, io::Read, str::FromStr};
 
 use crate::event::{DeviceOSIds, Events};
 
@@ -75,27 +76,43 @@ impl Api {
         Ok((method, format!("{}{}", BASE_URL, path)))
     }
 
-    fn request<T: serde::Serialize, U: serde::de::DeserializeOwned>(
+    fn request<T: serde::Serialize>(
         &self,
         name: &str,
-        body: &T,
-    ) -> anyhow::Result<U> {
+        query: &[(&str, &str)],
+        body: Option<&T>,
+    ) -> anyhow::Result<Response> {
         let (method, url) = self.url(name)?;
-        let resp = self
+        let mut req = self
             .client
             .request(method, url)
             .header("authorizationToken", &self.token_resp.token)
-            .json(body)
-            .send()?;
+            .query(query);
+        if let Some(body) = body {
+            req = req.json(body);
+        }
+        let resp = req.send()?;
         if resp.status().is_success() {
-            Ok(resp.json()?)
+            Ok(resp)
         } else {
             Err(err_from_resp(resp))
         }
     }
 
     pub fn upload(&self, events: &Events) -> anyhow::Result<serde_json::Value> {
-        self.request("DataUpload", events)
+        Ok(self.request("DataUpload", &[], Some(events))?.json()?)
+    }
+
+    pub fn download(&self, zip: bool) -> anyhow::Result<Vec<u8>> {
+        let format = if zip { "ZIP" } else { "JSON" };
+        let mut res = self.request("DataDownload", &[("fileFormat", format)], None::<&u8>)?;
+        let mut bytes = Vec::new();
+        if zip {
+            DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
+        } else {
+            res.read_to_end(&mut bytes)?;
+        }
+        Ok(bytes)
     }
 }
 
