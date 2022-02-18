@@ -34,10 +34,11 @@ fn main() {
     match args.next().as_deref() {
         Some("daemon") => hp_vendor::daemon::run(),
         Some("daily") => hp_vendor::daily::run(args.next().as_deref()),
+        Some("delete") => hp_vendor::delete::run(),
         Some("download") => hp_vendor::download::run(args.next().as_deref()),
         Some("print") => hp_vendor::print::run(args.next().as_deref()),
         _ => {
-            eprintln!("Usage: hp-vendor (daemon|daily|print)");
+            eprintln!("Usage: hp-vendor (daemon|daily|delete|download|print)");
             process::exit(1);
         }
     }
