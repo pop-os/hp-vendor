@@ -6,7 +6,7 @@ Build-Depends:
   debhelper-compat (= 11),
   cargo,
   clang,
-  libclang1,
+  libclang-dev,
   libsensors-dev,
   libsqlite3-dev,
   libssl-dev,
