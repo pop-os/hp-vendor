@@ -443,6 +443,7 @@ name = "hp-vendor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64",
  "convert_case",
  "drm",
  "libc",
