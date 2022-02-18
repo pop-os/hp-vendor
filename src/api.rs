@@ -105,7 +105,7 @@ impl Api {
 
     pub fn download(&self, zip: bool) -> anyhow::Result<Vec<u8>> {
         let format = if zip { "ZIP" } else { "JSON" };
-        let mut res = self.request("DataDownload", &[("fileFormat", format)], None::<&u8>)?;
+        let mut res = self.request("DataDownload", &[("fileFormat", format)], None::<&()>)?;
         let mut bytes = Vec::new();
         if zip {
             DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
@@ -113,6 +113,11 @@ impl Api {
             res.read_to_end(&mut bytes)?;
         }
         Ok(bytes)
+    }
+
+    pub fn delete(&self) -> anyhow::Result<()> {
+        self.request("DataDelete", &[], None::<&()>)?;
+        Ok(())
     }
 }
 

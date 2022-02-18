@@ -15,6 +15,7 @@ pub mod config;
 pub mod daemon;
 pub mod daily;
 mod db;
+pub mod delete;
 pub mod download;
 pub mod event;
 mod frequency;
