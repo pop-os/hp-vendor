@@ -18,50 +18,91 @@ pub enum State {
     Type(TelemetryEventType),
 }
 
+fn create_tables(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "CREATE TABLE event_types (
+             type TEXT NOT NULL PRIMARY KEY,
+             frequency TEXT NOT NULL
+         );
+         CREATE TABLE state (
+             type TEXT NOT NULL,
+             value TEXT NOT NULL,
+             FOREIGN KEY(type) REFERENCES event_types(type) ON DELETE CASCADE
+         );
+         CREATE TABLE queued_events (
+             value TEXT NOT NULL,
+             seen INTEGER DEFAULT 0 NOT NULL
+         );
+         CREATE TABLE consent (
+             id INTEGER PRIMARY KEY,
+             opted_in_level TEXT,
+             version TEXT,
+             CHECK (id = 0)
+         );
+         INSERT INTO consent (id, opted_in_level, version)
+         VALUES (0, NULL, NULL);
+         CREATE TABLE properties (
+             id INTEGER PRIMARY KEY,
+             os_install_id TEXT,
+             CHECK (id = 0)
+         );",
+    )?;
+    conn.execute(
+        "INSERT into properties
+         VALUES (0, ?)",
+        [uuid::Uuid::new_v4().to_string()],
+    )?;
+    Ok(())
+}
+
+fn migrate_0_to_1(conn: &Connection) -> Result<()> {
+    // Add explicit integer primary keys; same as rowid, but if not explicitly
+    // defined it can change.
+    conn.execute_batch(
+        "CREATE TABLE state_new (
+             id INTEGER PRIMARY KEY,
+             type TEXT NOT NULL,
+             value TEXT NOT NULL,
+             FOREIGN KEY(type) REFERENCES event_types(type) ON DELETE CASCADE
+         );
+         CREATE TABLE queued_events_new (
+             id INTEGER PRIMARY KEY,
+             value TEXT NOT NULL,
+             seen INTEGER DEFAULT 0 NOT NULL
+         );
+         INSERT INTO state_new (type, value)
+             SELECT type, value FROM state;
+         INSERT INTO queued_events_new (value, seen)
+             SELECT value, seen FROM queued_events;
+         DROP TABLE state;
+         DROP TABLE queued_events;
+         ALTER TABLE state_new RENAME TO state;
+         ALTER TABLE queued_events_new RENAME TO queued_events;
+        ",
+    )
+}
+
 pub struct DB(Connection);
 
 impl DB {
     pub fn open() -> Result<Self> {
         let conn = Connection::open("/var/hp-vendor/db.sqlite3")?;
+
         let tx = conn.unchecked_transaction()?;
-        conn.execute_batch(
-            "
-            PRAGMA foreign_keys = ON;
-            CREATE TABLE IF NOT EXISTS event_types (
-                type TEXT NOT NULL PRIMARY KEY,
-                frequency TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS state (
-                type TEXT NOT NULL,
-                value TEXT NOT NULL,
-                FOREIGN KEY(type) REFERENCES event_types(type) ON DELETE CASCADE
-            );
-            CREATE TABLE IF NOT EXISTS queued_events (
-                value TEXT NOT NULL,
-                seen INTEGER DEFAULT 0 NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS consent (
-                id INTEGER PRIMARY KEY,
-                opted_in_level TEXT,
-                version TEXT,
-                CHECK (id = 0)
-            );
-            INSERT OR IGNORE INTO consent (id, opted_in_level, version)
-            VALUES (0, NULL, NULL);
-            CREATE TABLE IF NOT EXISTS properties (
-                id INTEGER PRIMARY KEY,
-                os_install_id TEXT,
-                CHECK (id = 0)
-            );
-        ",
-        )?;
-        conn.execute(
-            "INSERT OR IGNORE into properties
-             VALUES (0, ?)",
-            [uuid::Uuid::new_v4().to_string()],
-        )?;
+        let user_version: i32 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        let empty = !conn
+            .prepare("SELECT 1 FROM sqlite_schema where type='table'")?
+            .exists([])?;
+        if empty {
+            create_tables(&conn)?;
+        } else if user_version == 0 {
+            migrate_0_to_1(&conn)?;
+        }
+        conn.execute("PRAGMA user_version = 1", [])?;
         tx.commit()?;
-        // Migrate here if schema changes are made
+
+        conn.execute("PRAGMA foreign_keys = ON", [])?;
+
         Ok(Self(conn))
     }
 
