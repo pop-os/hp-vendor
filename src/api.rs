@@ -119,6 +119,53 @@ impl Api {
         self.request("DataDelete", &[], None::<&()>)?;
         Ok(())
     }
+
+    // XXX WIP
+    pub fn purposes(&self, locale: &str) -> anyhow::Result<serde_json::Value> {
+        Ok(self
+            .request(
+                "DataCollectionPurposes",
+                &[("locale", locale), ("latest", "true")],
+                None::<&()>,
+            )?
+            .json()?)
+    }
+
+    // XXX WIP
+    pub fn consent(&self, locale: &str, version: &str) -> anyhow::Result<serde_json::Value> {
+        Ok(self
+            .request(
+                "DataCollectionConsent",
+                &[("optIn", "true"), ("locale", locale), ("version", version)],
+                None::<&()>,
+            )?
+            .json()?)
+    }
+
+    // XXX WIP
+    pub fn exists(&self) -> anyhow::Result<serde_json::Value> {
+        Ok(self.request("DataExists", &[], None::<&()>)?.json()?)
+    }
+
+    // XXX WIP
+    pub fn config(&self) -> anyhow::Result<crate::config::Config> {
+        let app_name = "";
+        let app_version = "";
+        let os_name = "";
+        let os_version = "";
+        Ok(self
+            .request(
+                "DataConfig",
+                &[
+                    ("appName", app_name),
+                    ("appVersion", app_version),
+                    ("osName", os_name),
+                    ("osVersion", os_version),
+                ],
+                None::<&()>,
+            )?
+            .json()?)
+    }
 }
 
 fn err_from_resp(resp: Response) -> anyhow::Error {
