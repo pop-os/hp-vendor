@@ -2,7 +2,8 @@ use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
+    ffi::OsStr,
     fmt::Write,
     fs,
     path::{Path, PathBuf},
@@ -72,17 +73,39 @@ fn battery() -> Option<PathBuf> {
     None
 }
 
-pub struct EventDesc {
+pub struct PeriodicEventDesc {
     cb: fn(&mut Vec<TelemetryEvent>),
+}
+
+impl PeriodicEventDesc {
+    pub fn generate(&self, events: &mut Vec<TelemetryEvent>) {
+        (self.cb)(events);
+    }
+}
+
+pub struct UdevEventDesc {
+    subsystem: &'static str,
+    cb: fn(&mut Vec<TelemetryEvent>, &udev::Device),
+}
+
+impl UdevEventDesc {
+    pub fn generate(&self, events: &mut Vec<TelemetryEvent>, device: &udev::Device) {
+        (self.cb)(events, device);
+    }
+}
+
+pub enum EventDesc {
+    Periodic(PeriodicEventDesc),
+    Udev(UdevEventDesc),
 }
 
 impl EventDesc {
     fn new(cb: fn(&mut Vec<TelemetryEvent>)) -> Self {
-        Self { cb }
+        Self::Periodic(PeriodicEventDesc { cb })
     }
 
-    pub fn generate(&self, events: &mut Vec<TelemetryEvent>) {
-        (self.cb)(events)
+    fn new_udev(subsystem: &'static str, cb: fn(&mut Vec<TelemetryEvent>, &udev::Device)) -> Self {
+        Self::Udev(UdevEventDesc { subsystem, cb })
     }
 }
 
@@ -267,10 +290,10 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwNvmeStoragePhysical => EventDesc::new(|events| {
-            let entries = fs::read_dir("/sys/class/nvme");
-            for i in entries.into_iter().flatten().filter_map(Result::ok) {
-                let path = i.path();
+        TelemetryEventType::HwNvmeStoragePhysical => {
+            EventDesc::new_udev("nvme", |events, device| {
+                let path = device.syspath();
+                println!("Foo: {:?}", path);
                 events.push(
                     event::NvmestoragePhysical {
                         bus_info: read_file(path.join("address")),
@@ -284,14 +307,13 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     }
                     .into(),
                 );
-            }
-        }),
-        TelemetryEventType::HwNvmeStorageLogical => EventDesc::new(|events| {
-            let entries = fs::read_dir("/sys/class/block");
-            for i in entries.into_iter().flatten().filter_map(Result::ok) {
-                if let Some(name) = i.file_name().to_str() {
+            })
+        }
+        TelemetryEventType::HwNvmeStorageLogical => {
+            EventDesc::new_udev("block", |events, device| {
+                if let Some(name) = device.sysname().to_str() {
                     if name.starts_with("nvme") && !name.contains('p') {
-                        let path = i.path();
+                        let path = device.syspath();
 
                         let entries = fs::read_dir("/sys/class/block");
                         let partitions = entries
@@ -335,9 +357,15 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         );
                     }
                 }
+            })
+        }
+        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new_udev("usb", |events, device| {
+            if device.devtype().and_then(OsStr::to_str) == Some("usb_device") {
+                if let Some(event) = peripheral_usb_type_a_event(device.syspath()) {
+                    events.push(event);
+                }
             }
         }),
-        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new(|_| {}),
         TelemetryEventType::HwMemoryPhysical => EventDesc::new(|events| {
             for i in dmi() {
                 if let Some(info) = i.get::<dmi::MemoryDevice>() {
@@ -518,27 +546,45 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
     })
 }
 
-pub fn all_events() -> Vec<event::TelemetryEvent> {
+pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
+    types: I,
+) -> Vec<event::TelemetryEvent> {
     let mut events = Vec::new();
-    for i in event::TelemetryEventType::iter() {
-        if let Some(event) = event(i) {
-            event.generate(&mut events);
+
+    // XXX ensure no two entries with same subsystem?
+    let mut udev_descs = HashMap::new();
+
+    for i in types {
+        match event(i) {
+            Some(EventDesc::Periodic(desc)) => {
+                desc.generate(&mut events);
+            }
+            Some(EventDesc::Udev(desc)) => {
+                udev_descs.insert(desc.subsystem, desc);
+            }
+            None => {}
         }
     }
+
+    // XXX can this ever fail?
+    let mut enumerator = udev::Enumerator::new().unwrap();
+    for device in enumerator.scan_devices().unwrap() {
+        if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
+            if let Some(desc) = udev_descs.get(subsystem) {
+                desc.generate(&mut events, &device);
+            }
+        }
+    }
+
     events
 }
 
+pub fn all_events() -> Vec<event::TelemetryEvent> {
+    events_inner(event::TelemetryEventType::iter())
+}
+
 pub fn events(freqs: &Frequencies, freq: SamplingFrequency) -> Vec<event::TelemetryEvent> {
-    let mut events = Vec::new();
-    for i in event::TelemetryEventType::iter() {
-        if freqs.get(i) != freq {
-            continue;
-        }
-        if let Some(event) = event(i) {
-            event.generate(&mut events);
-        }
-    }
-    events
+    events_inner(event::TelemetryEventType::iter().filter(|i| freqs.get(*i) == freq))
 }
 
 pub fn peripheral_usb_type_a_event(path: &Path) -> Option<TelemetryEvent> {
