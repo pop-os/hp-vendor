@@ -5,7 +5,7 @@ use reqwest::{
     blocking::{Client, Response},
     Method,
 };
-use std::{collections::HashMap, io::Read, str::FromStr};
+use std::{cell::RefCell, collections::HashMap, io::Read, str::FromStr};
 
 use crate::event::{DeviceOSIds, Events};
 
@@ -41,36 +41,49 @@ pub struct EventsResponse {
 pub struct Api {
     client: Client,
     ids: DeviceOSIds,
-    token_resp: TokenResponse,
+    token_resp: RefCell<TokenResponse>,
+}
+
+fn authenticate(client: &Client, ids: &DeviceOSIds) -> anyhow::Result<TokenResponse> {
+    let resp = client
+        .post(format!("{}/data/token", BASE_URL))
+        .json(&ids)
+        .send()?;
+
+    if resp.status().is_success() {
+        Ok(resp.json()?)
+    } else {
+        Err(err_from_resp(resp))
+    }
 }
 
 impl Api {
     pub fn new(ids: DeviceOSIds) -> anyhow::Result<Self> {
         let client = Client::new();
-        let resp = client
-            .post(format!("{}/data/token", BASE_URL))
-            .json(&ids)
-            .send()?;
+        let resp = authenticate(&client, &ids)?;
+        Ok(Self {
+            client,
+            ids,
+            token_resp: RefCell::new(resp),
+        })
+    }
 
-        if resp.status().is_success() {
-            Ok(Self {
-                client,
-                ids,
-                token_resp: resp.json()?,
-            })
-        } else {
-            Err(err_from_resp(resp))
-        }
+    // XXX WIP
+    #[allow(dead_code)]
+    fn reauthenticate(&self) -> anyhow::Result<()> {
+        let resp = authenticate(&self.client, &self.ids)?;
+        *self.token_resp.borrow_mut() = resp;
+        Ok(())
     }
 
     fn url(&self, name: &str) -> anyhow::Result<(Method, String)> {
-        let (method, path) = self
-            .token_resp
+        let token_resp = self.token_resp.borrow();
+        let (method, path) = token_resp
             .paths
             .get(name)
             .ok_or_else(|| anyhow::anyhow!("no url for '{}'", name))?;
         let method = reqwest::Method::from_str(&method)?;
-        let dID = &self.token_resp.dID;
+        let dID = &token_resp.dID;
         let osID = &self.ids.os_install_uuid;
         let path = path.replace("{dID}", dID).replace("{osID}", osID);
         Ok((method, format!("{}{}", BASE_URL, path)))
@@ -86,7 +99,7 @@ impl Api {
         let mut req = self
             .client
             .request(method, url)
-            .header("authorizationToken", &self.token_resp.token)
+            .header("authorizationToken", &self.token_resp.borrow().token)
             .query(query);
         if let Some(body) = body {
             req = req.json(body);
