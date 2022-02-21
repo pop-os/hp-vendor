@@ -5,7 +5,7 @@ use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
     fmt::Write,
-    fs,
+    fs, io,
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
@@ -293,7 +293,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
         TelemetryEventType::HwNvmeStoragePhysical => {
             EventDesc::new_udev("nvme", |events, device| {
                 let path = device.syspath();
-                println!("Foo: {:?}", path);
                 events.push(
                     event::NvmestoragePhysical {
                         bus_info: read_file(path.join("address")),
@@ -311,44 +310,46 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
         }
         TelemetryEventType::HwNvmeStorageLogical => {
             EventDesc::new_udev("block", |events, device| {
-                if let Some(name) = device.sysname().to_str() {
-                    if name.starts_with("nvme") && !name.contains('p') {
-                        let path = device.syspath();
-
-                        let entries = fs::read_dir("/sys/class/block");
-                        let partitions = entries
-                            .into_iter()
-                            .flatten()
-                            .filter_map(Result::ok)
-                            .filter_map(|i| {
-                                let file_name = i.file_name();
-                                let path = i.path();
-                                let number = match (|| {
-                                    let part_name = file_name.to_str()?;
-                                    let number = part_name.strip_prefix(name)?.strip_prefix('p')?;
-                                    let number: i64 = number.parse().ok()?;
-                                    Some(number)
-                                })() {
-                                    Some(number) => number,
-                                    None => {
-                                        return None;
-                                    }
-                                };
-                                Some(event::StoragePartition {
-                                    file_system: String::new(), // XXX
-                                    flags: Vec::new(),          // XXX
-                                    name: String::new(),        // XXX
-                                    number,
-                                    size: read_file(path.join("size")).unwrap_or(0),
-                                })
+                fn partitions(device: &udev::Device) -> io::Result<Vec<event::StoragePartition>> {
+                    let mut enumerator = udev::Enumerator::new()?;
+                    enumerator.match_parent(device)?;
+                    Ok(enumerator
+                        .scan_devices()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|child| {
+                            let path = child.syspath();
+                            if child.devtype().and_then(OsStr::to_str) != Some("partition") {
+                                return None;
+                            }
+                            let number = match child.sysnum() {
+                                Some(number) => number as i64,
+                                None => {
+                                    return None;
+                                }
+                            };
+                            Some(event::StoragePartition {
+                                file_system: String::new(), // XXX
+                                flags: Vec::new(),          // XXX
+                                name: String::new(),        // XXX
+                                number,
+                                size: read_file(path.join("size")).unwrap_or(0),
                             })
-                            .collect();
+                        })
+                        .collect())
+                }
+
+                if let Some(name) = device.sysname().to_str() {
+                    if name.starts_with("nvme")
+                        && device.devtype().and_then(OsStr::to_str) == Some("disk")
+                    {
+                        let path = device.syspath();
 
                         events.push(
                             event::NvmestorageLogical {
                                 lba_size: None,         // XXX
                                 node_id: String::new(), // XXX
-                                partitions: Some(partitions),
+                                partitions: partitions(device).ok(),
                                 serial_number: read_file(path.join("device/serial"))
                                     .unwrap_or_else(unknown),
                                 used_capacity: None, // XXX
