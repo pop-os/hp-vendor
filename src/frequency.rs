@@ -61,34 +61,30 @@ impl Default for Frequencies {
 
 fn default_frequency(type_: TelemetryEventType) -> SamplingFrequency {
     use SamplingFrequency::*;
-    use TelemetryEventType::*;
 
     match type_ {
-        HwBaseBoard => Daily,
-        HwBattery => Daily,
-        HwBatteryUsage => Daily, // XXX make trigger based
-        HwCoolingFanCyclesSummary => Daily,
-        HwDisplay => Daily,
-        HwGraphicsCard => Daily,
-        HwMemoryPhysical => Daily,
-        HwNetworkCard => Daily,
-        HwNvmeSmartLog => Daily,
-        HwNvmeStorageLogical => Daily,
-        HwNvmeStoragePhysical => Daily,
-        HwPeripheralAudioPort => Daily,
-        HwPeripheralHdmi => Daily,
-        HwPeripheralSimCard => Daily,
-        HwPeripheralUsbTypeA => OnChange,
-        HwPeripheralUsbTypeC => Daily,
-        HwPeripheralUsbTypeCDisplayPort => Daily,
-        HwProcessor => Daily,
-        HwSystem => Daily,
-        HwThermalSummary => Daily,
-        HwTpm => Daily,
-        SwDriver => Daily,
-        SwFirmware => Daily,
-        SwLinuxDriverCrash => Daily,
-        SwLinuxKernel => Daily,
-        SwOperatingSystem => Daily,
+        TelemetryEventType::HwBaseBoard => Daily,
+        TelemetryEventType::HwBattery => Daily,
+        TelemetryEventType::HwBatteryLife => Daily, // XXX make trigger based
+        TelemetryEventType::HwCoolingFanCyclesSummary => Daily,
+        TelemetryEventType::HwDisplay => Daily,
+        TelemetryEventType::HwGraphicsCard => Daily,
+        TelemetryEventType::HwMemoryPhysical => Daily,
+        TelemetryEventType::HwNetworkCard => Daily,
+        TelemetryEventType::HwNvmeSmartLog => Daily,
+        TelemetryEventType::HwNvmeStorageLogical => Daily,
+        TelemetryEventType::HwNvmeStoragePhysical => Daily,
+        TelemetryEventType::HwPeripheralAudioPort => Daily,
+        TelemetryEventType::HwPeripheralUsb => OnChange,
+        TelemetryEventType::HwPeripheralSimCard => Daily,
+        TelemetryEventType::HwProcessor => Daily,
+        TelemetryEventType::HwSystem => Daily,
+        TelemetryEventType::HwThermalSummary => Daily,
+        TelemetryEventType::HwTpm => Daily,
+        TelemetryEventType::SwDriver => Daily,
+        TelemetryEventType::SwFirmware => Daily,
+        TelemetryEventType::SwLinuxDriverCrash => Daily,
+        TelemetryEventType::SwLinuxKernel => Daily,
+        TelemetryEventType::SwOperatingSystem => Daily,
     }
 }

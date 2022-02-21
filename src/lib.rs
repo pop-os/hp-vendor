@@ -133,49 +133,34 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     ct_number: String::new(), // XXX,
                     devicename: read_file(path.join("model_name")),
                     energy_design: read_file(path.join("charge_full_design"))
-                        .map(|x: f64| x / 1000000.), // XXX divisor?
+                        .map(|x: i64| x / 1000),
                     manufacturer: read_file(path.join("manufacturer")),
                     serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
                     state: State::Added,
                     voltage_design: read_file(path.join("voltage_min_design"))
-                        .map(|x: f64| x / 1000.),
+                        .map(|x: i64| x / 1000),
                 }
                 .into(),
             );
         }),
-        TelemetryEventType::HwBatteryUsage => EventDesc::new(|events| {
+        // TODO: generate in daemon
+        TelemetryEventType::HwBatteryLife => EventDesc::new(|events| {
             let path = match battery() {
                 Some(path) => path,
                 None => return,
             };
 
-            // XXX: Division? Integers?
-            let energy_rate = || -> Option<i64> {
-                let current: i64 = read_file(path.join("current_now"))?;
-                let voltage: i64 = read_file(path.join("voltage_now"))?;
-                Some(current * voltage / 1000000)
-            };
             events.push(
-                event::BatteryUsage {
-                    battery_state: read_file(path.join("status")).unwrap_or_else(unknown),
-                    cell_voltage: None,       // XXX
+                event::BatteryLife {
                     ct_number: String::new(), // XXX
                     cycle_count: read_file(path.join("cycle_count")).unwrap_or(-1),
-                    eletric_current: None, // XXX
                     energy_full: read_file(path.join("charge_full"))
-                        .map(|x: f64| x / 1000000.)
-                        .unwrap_or(-1.),
-                    energy_rate: energy_rate(),
-                    energy_remaining: read_file(path.join("charge_now"))
-                        .map(|x: f64| x / 1000000.)
-                        .unwrap_or(-1.),
-                    max_error: None, // XXX
+                        .map(|x: i64| x / 1000)
+                        .unwrap_or(-1),
                     serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
-                    status_register: None, // XXX
-                    temperature: None,     // XXX
-                    time_to_empty: None,   // XXX
-                    timestamp: event::date_time(),
-                    voltage: read_file(path.join("voltage_now")).map(|x: i64| x / 1000000),
+                    total_ac_charging_time: None, // XXX
+                    total_ac_time: 0,             // XXX
+                    total_dc_time: 0,             // XXX
                 }
                 .into(),
             );
@@ -234,7 +219,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     state: State::Added,
                     uuid: read_file("/sys/class/dmi/id/product_uuid").unwrap_or_else(unknown),
                     version: read_file("/sys/class/dmi/id/product_version"),
-                    width: None, // XXX
                 }
                 .into(),
             );
@@ -360,7 +344,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             })
         }
-        TelemetryEventType::HwPeripheralUsbTypeA => EventDesc::new_udev("usb", |events, device| {
+        TelemetryEventType::HwPeripheralUsb => EventDesc::new_udev("usb", |events, device| {
             if device.devtype().and_then(OsStr::to_str) == Some("usb_device") {
                 if let Some(event) = peripheral_usb_type_a_event(device.syspath()) {
                     events.push(event);
@@ -526,14 +510,14 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
         TelemetryEventType::HwDisplay => EventDesc::new(|events| {
             for device in DrmDevice::all() {
                 for connector in device.connectors() {
-                    let connected = connector.state() == drm::control::connector::State::Connected;
-                    let display_name =
-                        format!("{:?}{}", connector.interface(), connector.interface_id()); // XXX probably should depend on gpu
+                    if connector.state() != drm::control::connector::State::Connected {
+                        continue;
+                    }
+                    let port = format!("{:?}-{}", connector.interface(), connector.interface_id()); // XXX probably should depend on gpu
                     let pixel_size = device.connector_mode(&connector).map(|mode| mode.size());
                     events.push(
                         event::Display {
-                            connected,
-                            display_name,
+                            port,
                             pixel_width: pixel_size.map(|x| x.0 as i64),
                             pixel_height: pixel_size.map(|x| x.1 as i64),
                             state: State::Added,
@@ -594,7 +578,7 @@ pub fn peripheral_usb_type_a_event(path: &Path) -> Option<TelemetryEvent> {
     }
 
     Some(
-        event::PeripheralUSBTypeA {
+        event::PeripheralUSB {
             device_version: None, // XXX
             manufacturer: read_file(path.join("manufacturer")),
             manufacturer_id: read_file(path.join("idVendor")),
@@ -605,6 +589,7 @@ pub fn peripheral_usb_type_a_event(path: &Path) -> Option<TelemetryEvent> {
             timestamp: event::date_time(),
             usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
             usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
+            usb_speed: read_file(path.join("speed")).unwrap_or_else(unknown),
         }
         .into(),
     )

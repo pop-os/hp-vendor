@@ -15,7 +15,11 @@ fn gen_primary(properties_obj: &Map<String, Value>) -> TokenStream {
         .filter_map(|(k, v)| {
             if let Some(desc) = v.pointer("/description") {
                 if desc.as_str().unwrap().contains("PRIMARY KEY") {
-                    return Some(Ident::new(k, Span::call_site()));
+                    if k == "type" {
+                        return Some(Ident::new("type_", Span::call_site()));
+                    } else {
+                        return Some(Ident::new(k, Span::call_site()));
+                    }
                 }
             }
             None
