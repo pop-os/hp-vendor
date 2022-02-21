@@ -37,24 +37,30 @@ pub(crate) fn date_time() -> String {
 
 impl DeviceOSIds {
     pub fn new(os_install_uuid: String) -> anyhow::Result<Self> {
-        for i in dmi() {
-            if let Some(info) = i.get::<SystemInfo24>() {
-                let device_sku = i.get_str(info.sku).cloned();
-                let device_bios_uuid = Uuid::from(&info.uuid).to_string();
-                let device_sn = i.get_str(info.serial).cloned();
-                if let (Some(device_sku), Some(device_sn)) = (device_sku, device_sn) {
-                    return Ok(DeviceOSIds {
-                        device_sku,
-                        device_bios_uuid,
-                        device_sn,
-                        os_install_uuid,
-                    });
-                }
-            }
-        }
-        Err(anyhow::Error::msg(
-            "Unable to get sku, uuid, and serial from BIOS",
-        ))
+        (|| {
+            let dmi = dmi();
+
+            let (i, sys_info) = dmi
+                .iter()
+                .find_map(|i| Some((i, i.get::<SystemInfo24>()?)))?;
+            let device_sku = i.get_str(sys_info.sku).cloned()?;
+            let device_bios_uuid = Uuid::from(&sys_info.uuid).to_string();
+            let device_sn = i.get_str(sys_info.serial).cloned()?;
+
+            let (i, bb_info) = dmi
+                .iter()
+                .find_map(|i| Some((i, i.get::<dmi::BaseBoardInfo>()?)))?;
+            let device_base_board_id = i.get_str(bb_info.product).cloned()?;
+
+            Some(DeviceOSIds {
+                device_sku,
+                device_base_board_id,
+                device_bios_uuid,
+                device_sn,
+                os_install_uuid,
+            })
+        })()
+        .ok_or_else(|| anyhow::Error::msg("Unable to get sku, uuid, and serial from BIOS"))
     }
 }
 
@@ -110,7 +116,7 @@ pub fn remove_event(event: &mut TelemetryEvent) {
     }
     event.clear_options();
 
-    if let TelemetryEvent::HwPeripheralUsbTypeA(event) = event {
+    if let TelemetryEvent::HwPeripheralUsb(event) = event {
         event.timestamp = date_time();
     }
     // TODO: any other types with timestamp, etc.

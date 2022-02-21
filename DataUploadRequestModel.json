@@ -20,6 +20,7 @@
         "data_header",
         "data"
     ],
+    "additionalProperties": false,
     "definitions": {
         "DeviceOSIds": {
             "title": "DeviceOSIds",
@@ -34,6 +35,12 @@
                     ],
                     "type": "string"
                 },
+                "device_base_board_id": {
+                    "title": "Device Base Board Id",
+                    "description": "Device Base Board Id",
+                    "pattern": "^[A-Z0-9]{4}$",
+                    "type": "string"
+                },
                 "device_sn": {
                     "title": "Device Sn",
                     "description": "Device Serial Number",
@@ -42,23 +49,25 @@
                 },
                 "device_bios_uuid": {
                     "title": "Device Bios Uuid",
-                    "description": "Device Firmware Unique and Universal Identifier (UUID v4 - RFC4122)",
-                    "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+                    "description": "Device Firmware Unique and Universal Identifier",
+                    "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
                     "type": "string"
                 },
                 "os_install_uuid": {
                     "title": "Os Install Uuid",
-                    "description": "OS Installation Unique and Universal Identifier (UUID v4 - RFC4122)",
-                    "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+                    "description": "OS Installation Unique and Universal Identifier",
+                    "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
                     "type": "string"
                 }
             },
             "required": [
                 "device_sku",
+                "device_base_board_id",
                 "device_sn",
                 "device_bios_uuid",
                 "os_install_uuid"
-            ]
+            ],
+            "additionalProperties": false
         },
         "DataProviderInfo": {
             "title": "DataProviderInfo",
@@ -86,7 +95,8 @@
                 "app_version",
                 "os_name",
                 "os_version"
-            ]
+            ],
+            "additionalProperties": false
         },
         "DataCollectionConsent": {
             "title": "DataCollectionConsent",
@@ -104,7 +114,8 @@
             "required": [
                 "opted_in_level",
                 "version"
-            ]
+            ],
+            "additionalProperties": false
         },
         "TelemetryHeaderModel": {
             "title": "TelemetryHeaderModel",
@@ -131,7 +142,8 @@
                 "timestamp",
                 "data_provider",
                 "consent"
-            ]
+            ],
+            "additionalProperties": false
         },
         "State": {
             "title": "State",
@@ -199,7 +211,8 @@
             "required": [
                 "state",
                 "ct_number"
-            ]
+            ],
+            "additionalProperties": false
         },
         "Battery": {
             "title": "Battery",
@@ -255,14 +268,14 @@
                 },
                 "energy_design": {
                     "title": "Energy Design",
-                    "description": "Battery Design Charge Capacity (in Wh)",
+                    "description": "Battery Design Charge Capacity (in mWh)",
                     "examples": [
                         "4450"
                     ],
                     "source": {
-                        "Linux": "/sys/class/power_supply/BAT0/charge_full_design  divided by 1000000"
+                        "Linux": "/sys/class/power_supply/BAT0/charge_full_design divided by 1000"
                     },
-                    "type": "number"
+                    "type": "integer"
                 },
                 "voltage_design": {
                     "title": "Voltage Design",
@@ -273,18 +286,19 @@
                     "source": {
                         "Linux": "/sys/class/power_supply/BAT0/voltage_min_design divided by 1000"
                     },
-                    "type": "number"
+                    "type": "integer"
                 }
             },
             "required": [
                 "state",
                 "serial_number",
                 "ct_number"
-            ]
+            ],
+            "additionalProperties": false
         },
-        "BatteryUsage": {
-            "title": "BatteryUsage",
-            "description": "Battery Events captured on a frequency defined by the Battery Usage trigger\nThis may mean weekly, daily, or listening to certain events\n\nMost fields are available in upower",
+        "BatteryLife": {
+            "title": "BatteryLife",
+            "description": "Events related with the long term life and wear of the battery\n\nDC/AC fields should be sampled every 1 minute",
             "type": "object",
             "properties": {
                 "serial_number": {
@@ -309,23 +323,6 @@
                     },
                     "type": "string"
                 },
-                "timestamp": {
-                    "title": "Timestamp",
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "battery_state": {
-                    "title": "Battery State",
-                    "description": "State of the battery",
-                    "examples": [
-                        "CHARGING",
-                        "DISCHARGING"
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/power_supply/BAT0/status"
-                    },
-                    "type": "string"
-                },
                 "cycle_count": {
                     "title": "Cycle Count",
                     "description": "Number of full discharge cycles of the battery",
@@ -339,146 +336,83 @@
                 },
                 "energy_full": {
                     "title": "Energy Full",
-                    "description": "\n    Total Energy when the battery is at its full capacity (in Wh) \n    This value is the main indicator of the expected life of a battery \n    ",
+                    "description": "\n    Total Energy when the battery is at its full capacity (in mWh) \n    This value is the main indicator of the expected life of a battery \n    ",
                     "examples": [
                         ""
                     ],
                     "source": {
-                        "Linux": "/sys/class/power_supply/BAT0/charge_full divided by 1000000"
-                    },
-                    "type": "number"
-                },
-                "energy_remaining": {
-                    "title": "Energy Remaining",
-                    "description": "Remaining energy (in Wh) of the battery before reaching zero in this discharge cycle ",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/power_supply/BAT0/charge_now divided by 1000000"
-                    },
-                    "type": "number"
-                },
-                "energy_rate": {
-                    "title": "Energy Rate",
-                    "description": "Charge or Discharge energy rate (in W)",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/power_supply/BAT0/current_now divided by 1000000 times battery voltage"
+                        "Linux": "/sys/class/power_supply/BAT0/charge_full divided by 1000"
                     },
                     "type": "integer"
                 },
-                "voltage": {
-                    "title": "Voltage",
-                    "description": "Current battery Voltage (in V)",
+                "total_dc_time": {
+                    "title": "Total Dc Time",
+                    "description": "\n    Total time (in floor(minutes)) in which the device was on DC (Direct Current) between the previous data collection and the current one.\n    ",
                     "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/power_supply/BAT0/voltage_now divided by 1000000"
-                    },
-                    "type": "integer"
-                },
-                "time_to_empty": {
-                    "title": "Time To Empty",
-                    "description": "Time to empty (seconds)",
-                    "examples": [
-                        "102"
-                    ],
-                    "source": {
-                        "Linux": "upower -d"
-                    },
-                    "type": "integer"
-                },
-                "eletric_current": {
-                    "title": "Eletric Current",
-                    "description": "Eletric Current - mA",
-                    "examples": [
-                        ""
+                        1,
+                        61,
+                        10
                     ],
                     "source": {
                         "Linux": ""
                     },
                     "type": "integer"
                 },
-                "temperature": {
-                    "title": "Temperature",
-                    "description": "Temperature - \u00baC",
+                "total_ac_time": {
+                    "title": "Total Ac Time",
+                    "description": "\n    Total time (in floor(minutes)) in which the device was on AC (Alternate Current) between the previous data collection and the current one.\n    Note that this field does not need to know the state (charging, etc.) of the battery.\n    ",
                     "examples": [
-                        ""
+                        1209,
+                        1,
+                        19999
                     ],
                     "source": {
                         "Linux": ""
                     },
                     "type": "integer"
                 },
-                "max_error": {
-                    "title": "Max Error",
-                    "description": "Max Error (Battery Spec) - 0 to 100",
+                "total_ac_charging_time": {
+                    "title": "Total Ac Charging Time",
+                    "description": "\n    Total time (in floor(minutes)) in which the device was on AC (Alternate Current) *while charging the battery* between the previous data collection and the current one.\n    The state of the battery needs to be known and differentiated between on AC Charging vs. on AC Not Charging.\n    ",
                     "examples": [
-                        ""
+                        1209,
+                        1,
+                        19999
                     ],
                     "source": {
                         "Linux": ""
                     },
                     "type": "integer"
-                },
-                "status_register": {
-                    "title": "Status Register",
-                    "description": "Status Register - Bit encoded battery status",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "integer"
-                },
-                "cell_voltage": {
-                    "title": "Cell Voltage",
-                    "description": "Cell Voltages (ordered list of voltages, mV) - Most devices have 3 cells, but 4 and 2 are also found.",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
                 }
             },
             "required": [
                 "serial_number",
                 "ct_number",
-                "timestamp",
-                "battery_state",
                 "cycle_count",
                 "energy_full",
-                "energy_remaining"
-            ]
+                "total_dc_time",
+                "total_ac_time"
+            ],
+            "additionalProperties": false
         },
         "Display": {
             "title": "Display",
-            "description": "A wrapper model of all events",
+            "description": "Display stores data on each monitor, its port, resolution, etc.\n\nSampling Frequency:\n* ON CHANGE - when display is connected/disconnected\n* DAILY/WEEKLY/... - to update other fields, if changed (pixel resolution)",
             "type": "object",
             "properties": {
                 "state": {
                     "$ref": "#/definitions/State"
                 },
-                "display_name": {
-                    "title": "Display Name",
-                    "description": "Port type",
+                "port": {
+                    "title": "Port",
+                    "description": "Port Type",
                     "examples": [
-                        "Screen 0",
+                        "DP-1",
                         "HDMI-A-0",
                         "DisplayPort-0"
                     ],
                     "source": {
-                        "Linux": "xrandr --query"
+                        "Linux": ""
                     },
                     "type": "string"
                 },
@@ -505,22 +439,13 @@
                         "Linux": "xrandr --query"
                     },
                     "type": "integer"
-                },
-                "connected": {
-                    "title": "Connected",
-                    "description": "Display is connected or not",
-                    "examples": [],
-                    "source": {
-                        "Linux": "xrandr --query"
-                    },
-                    "type": "boolean"
                 }
             },
             "required": [
                 "state",
-                "display_name",
-                "connected"
-            ]
+                "port"
+            ],
+            "additionalProperties": false
         },
         "GraphicsCard": {
             "title": "GraphicsCard",
@@ -532,7 +457,7 @@
                 },
                 "bus_info": {
                     "title": "Bus Info",
-                    "description": "\n        Graphic Card Bus Info\n        ID of the device connected to the bus. This field forms a compound key with serial_number\n        ",
+                    "description": "\n        Graphic Card Bus Info (PRIMARY KEY)\n        ID of the device connected to the bus. This field forms a compound key with serial_number\n        ",
                     "examples": [
                         "pci@0000:04:00.0"
                     ],
@@ -543,7 +468,7 @@
                 },
                 "type": {
                     "title": "Type",
-                    "description": "Graphic Card Type",
+                    "description": "Graphic Card Type (PRIMARY KEY)",
                     "examples": [
                         "Integrated",
                         "UMA",
@@ -621,7 +546,8 @@
                 "type",
                 "manufacturer",
                 "model"
-            ]
+            ],
+            "additionalProperties": false
         },
         "MemoryPhysical": {
             "title": "MemoryPhysical",
@@ -710,9 +636,9 @@
                 },
                 "data_width": {
                     "title": "Data Width",
-                    "description": "Chip Data Width",
+                    "description": "Chip Data Width (bits)",
                     "examples": [
-                        "64 (bits)"
+                        "64"
                     ],
                     "source": {
                         "Linux": "dmidecode -t memory"
@@ -757,7 +683,8 @@
                 "state",
                 "serial_number",
                 "part_number"
-            ]
+            ],
+            "additionalProperties": false
         },
         "NetworkCard": {
             "title": "NetworkCard",
@@ -876,576 +803,8 @@
             },
             "required": [
                 "state"
-            ]
-        },
-        "PeripheralAudioPort": {
-            "title": "PeripheralAudioPort",
-            "description": "PeripheralAudioPort - TODO",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                }
-            },
-            "required": [
-                "state"
-            ]
-        },
-        "PeripheralHDMI": {
-            "title": "PeripheralHDMI",
-            "description": "PeripheralHDMIPort - TODO",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                }
-            },
-            "required": [
-                "state"
-            ]
-        },
-        "PeripheralSIMCard": {
-            "title": "PeripheralSIMCard",
-            "description": "PeripheralSIMCardPort - TODO",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                }
-            },
-            "required": [
-                "state"
-            ]
-        },
-        "PeripheralUSBTypeA": {
-            "title": "PeripheralUSBTypeA",
-            "description": "PeripheralUSBTypeA is any gadget that is plugged/unplugged from one of the USB type A ports\nIncluding: External Mic, External Camera, USB Flash Drive, etc.\n\nLinux source will be a combination of dmesg, /proc/kmesg, journalctl, udev, lsusb\n\nPrimary keys are the DEVICE ID and the BUS ID telling where it was added/removed",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                },
-                "timestamp": {
-                    "title": "Timestamp",
-                    "description": "Time of the event",
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "usb_bus_id": {
-                    "title": "Usb Bus Id",
-                    "description": "USB Bus Id (PRIMARY KEY)",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "integer"
-                },
-                "usb_device_id": {
-                    "title": "Usb Device Id",
-                    "description": "USB Device Id (PRIMARY KEY)",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "manufacturer_id": {
-                    "title": "Manufacturer Id",
-                    "description": "Manufacturer Id",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "product_id": {
-                    "title": "Product Id",
-                    "description": "Product Id",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "device_version": {
-                    "title": "Device Version",
-                    "description": "Device Version",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "manufacturer": {
-                    "title": "Manufacturer",
-                    "description": "Manufacturer name",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "product": {
-                    "title": "Product",
-                    "description": "Product name",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "message": {
-                    "title": "Message",
-                    "description": "Any extra Warning or Critical messages shown in the log",
-                    "examples": [
-                        "[multi-line class extracted from dmesg -Hw after adding a headset: Jabra UC VOICE 750a MS]\n        usb 3-2: Warning! Unlikely big volume range (=4096), cval->res is probably wrong.\n        usb 3-2: [11] FU [Sidetone Playback Volume] ch: 1, val: 0/4096/1"
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                }
-            },
-            "required": [
-                "state",
-                "timestamp",
-                "usb_bus_id",
-                "usb_device_id"
-            ]
-        },
-        "PeripheralUSBTypeC": {
-            "title": "PeripheralUSBTypeC",
-            "description": "Peripheral USB Type-C used in SuperSpeed mode - TODO",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                }
-            },
-            "required": [
-                "state"
-            ]
-        },
-        "PeripheralUSBTypeCDisplayPort": {
-            "title": "PeripheralUSBTypeCDisplayPort",
-            "description": "Peripheral USB Type-C used in DisplayPort mode - TODO",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                }
-            },
-            "required": [
-                "state"
-            ]
-        },
-        "ProcessorCache": {
-            "title": "ProcessorCache",
-            "type": "object",
-            "properties": {
-                "name": {
-                    "title": "Name",
-                    "description": "Cache Name",
-                    "examples": [
-                        "L1",
-                        "L2"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t cache"
-                    },
-                    "type": "string"
-                },
-                "size": {
-                    "title": "Size",
-                    "description": "Cache Size (in KiB)",
-                    "examples": [
-                        "32"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t cache"
-                    },
-                    "type": "integer"
-                }
-            },
-            "required": [
-                "name",
-                "size"
-            ]
-        },
-        "Processor": {
-            "title": "Processor",
-            "description": "A wrapper model of all events",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                },
-                "device_id": {
-                    "title": "Device Id",
-                    "description": "Device Id (PRIMARY KEY) - The DeviceID property contains a str uniquely identifying the processor with other devices on the system.",
-                    "examples": [
-                        "CPU0",
-                        "CPU1",
-                        "cpu@0"
-                    ],
-                    "source": {
-                        "Linux": "* * Linux: TBD"
-                    },
-                    "type": "string"
-                },
-                "processor_id": {
-                    "title": "Processor Id",
-                    "description": "Processor Id (PRIMARY KEY) - Processor information that describes the processor features.",
-                    "examples": [
-                        "BFEBFBFF000506E3"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "string"
-                },
-                "socket": {
-                    "title": "Socket",
-                    "description": "Processor Socket",
-                    "examples": [
-                        "FP6"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "string"
-                },
-                "name": {
-                    "title": "Name",
-                    "description": "Processor Name (also known as version)",
-                    "examples": [
-                        "AMD Ryzen 7 PRO 5850U with Radeon Graphics"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "string"
-                },
-                "manufacturer": {
-                    "title": "Manufacturer",
-                    "description": "Processor Manufacturer",
-                    "examples": [
-                        "Advanced Micro Devices, Inc."
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "string"
-                },
-                "signature": {
-                    "title": "Signature",
-                    "description": "Processor Signature",
-                    "examples": [
-                        "Family 25, Model 80, Stepping 0",
-                        "Intel64 Family 6 Model 94 Stepping 3"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "string"
-                },
-                "voltage": {
-                    "title": "Voltage",
-                    "description": "CPU Voltage (in V)",
-                    "examples": [
-                        "1.2V"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "number"
-                },
-                "max_clock_speed": {
-                    "title": "Max Clock Speed",
-                    "description": "CPU Max Clock Speed (in MHz)",
-                    "examples": [
-                        "4450"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "integer"
-                },
-                "cores_count": {
-                    "title": "Cores Count",
-                    "description": "CPU Cores Count - Number of cores for the current instance of the processor.",
-                    "examples": [
-                        "16"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "integer"
-                },
-                "cores_enabled": {
-                    "title": "Cores Enabled",
-                    "description": "CPU Cores Enabled - The number of enabled cores per processor socket.",
-                    "examples": [
-                        "16"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "integer"
-                },
-                "thread_count": {
-                    "title": "Thread Count",
-                    "description": "CPU Thread Count",
-                    "examples": [
-                        "16",
-                        "32"
-                    ],
-                    "source": {
-                        "Linux": "dmidecode -t processor"
-                    },
-                    "type": "integer"
-                },
-                "capabilities": {
-                    "title": "Capabilities",
-                    "description": "CPU Capabilities",
-                    "examples": [
-                        "x86-64 fpu fpu_exception wp vme de pse tsc msr pae mce cx8"
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "caches": {
-                    "title": "Caches",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ProcessorCache"
-                    }
-                }
-            },
-            "required": [
-                "state",
-                "device_id",
-                "processor_id"
-            ]
-        },
-        "NVMEStoragePhysical": {
-            "title": "NVMEStoragePhysical",
-            "description": "A wrapper model of all events",
-            "type": "object",
-            "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                },
-                "serial_number": {
-                    "title": "Serial Number",
-                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
-                    "examples": [
-                        "S4P4NF0M522988Y"
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/block/nvme0n1/device/serial"
-                    },
-                    "type": "string"
-                },
-                "model": {
-                    "title": "Model",
-                    "description": "Drive Model - Model of the NVM subsystem that is assigned by the vendor.",
-                    "examples": [
-                        "Samsung SSD 970 EVO Plus 1TB"
-                    ],
-                    "source": {
-                        "Linux": "sys/class/block/nvme0n1/device/model"
-                    },
-                    "type": "string"
-                },
-                "firmware_revision": {
-                    "title": "Firmware Revision",
-                    "description": "Drive Firmware Revision",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/block/nvme0n1/device/firmware_rev"
-                    },
-                    "type": "string"
-                },
-                "vendor_id": {
-                    "title": "Vendor Id",
-                    "description": "Vendor ID",
-                    "examples": [
-                        "0x144d"
-                    ],
-                    "source": {
-                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
-                    },
-                    "type": "string"
-                },
-                "sub_system_id": {
-                    "title": "Sub System Id",
-                    "description": "Sub-System Id",
-                    "examples": [
-                        "0x144d"
-                    ],
-                    "source": {
-                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
-                    },
-                    "type": "string"
-                },
-                "total_capacity": {
-                    "title": "Total Capacity",
-                    "description": "Drive Capacity (in GBs)",
-                    "examples": [
-                        "931 (GB)"
-                    ],
-                    "source": {
-                        "Linux": "nvme list (nvme-cli package)"
-                    },
-                    "type": "string"
-                },
-                "bus_info": {
-                    "title": "Bus Info",
-                    "description": "BUS Information",
-                    "examples": [
-                        "pci@0000:04:00.0"
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/block/nvme0n1/device/address"
-                    },
-                    "type": "string"
-                }
-            },
-            "required": [
-                "state",
-                "serial_number"
-            ]
-        },
-        "StoragePartition": {
-            "title": "StoragePartition",
-            "type": "object",
-            "properties": {
-                "number": {
-                    "title": "Number",
-                    "type": "integer"
-                },
-                "size": {
-                    "title": "Size",
-                    "type": "integer"
-                },
-                "file_system": {
-                    "title": "File System",
-                    "type": "string"
-                },
-                "name": {
-                    "title": "Name",
-                    "type": "string"
-                },
-                "flags": {
-                    "title": "Flags",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            },
-            "required": [
-                "number",
-                "size",
-                "file_system",
-                "name",
-                "flags"
-            ]
-        },
-        "NVMEStorageLogical": {
-            "title": "NVMEStorageLogical",
-            "type": "object",
-            "properties": {
-                "serial_number": {
-                    "title": "Serial Number",
-                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
-                    "examples": [
-                        "S4P4NF0M522988Y"
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/block/nvme0n1/device/serial"
-                    },
-                    "type": "string"
-                },
-                "node_id": {
-                    "title": "Node Id",
-                    "description": "Drive Node Id (PRIMARY KEY)",
-                    "examples": [
-                        "/dev/nvme0n1"
-                    ],
-                    "source": {
-                        "Linux": "nvme list (nvme-cli package)"
-                    },
-                    "type": "string"
-                },
-                "used_capacity": {
-                    "title": "Used Capacity",
-                    "description": "Used Drive Capacity (in GBs, rounded up to the nearest Giga)",
-                    "examples": [
-                        "102 (GB)"
-                    ],
-                    "source": {
-                        "Linux": "nvme list (nvme-cli package)"
-                    },
-                    "type": "integer"
-                },
-                "lba_size": {
-                    "title": "Lba Size",
-                    "description": "LBA Size",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": "nvme list (nvme-cli package)"
-                    },
-                    "type": "integer"
-                },
-                "partitions": {
-                    "title": "Partitions",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/StoragePartition"
-                    }
-                }
-            },
-            "required": [
-                "serial_number",
-                "node_id"
-            ]
+            ],
+            "additionalProperties": false
         },
         "NVMESmartLog": {
             "title": "NVMESmartLog",
@@ -1597,7 +956,560 @@
                 "temperature_sensor",
                 "thermal_management_trans_count",
                 "thermal_management_total_time"
-            ]
+            ],
+            "additionalProperties": false
+        },
+        "StoragePartition": {
+            "title": "StoragePartition",
+            "type": "object",
+            "properties": {
+                "number": {
+                    "title": "Number",
+                    "type": "integer"
+                },
+                "size": {
+                    "title": "Size",
+                    "type": "integer"
+                },
+                "file_system": {
+                    "title": "File System",
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "flags": {
+                    "title": "Flags",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "number",
+                "size",
+                "file_system",
+                "name",
+                "flags"
+            ],
+            "additionalProperties": false
+        },
+        "NVMEStorageLogical": {
+            "title": "NVMEStorageLogical",
+            "type": "object",
+            "properties": {
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
+                    "examples": [
+                        "S4P4NF0M522988Y"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/serial"
+                    },
+                    "type": "string"
+                },
+                "node_id": {
+                    "title": "Node Id",
+                    "description": "Drive Node Id (PRIMARY KEY)",
+                    "examples": [
+                        "/dev/nvme0n1"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "used_capacity": {
+                    "title": "Used Capacity",
+                    "description": "Used Drive Capacity (in GBs, rounded up to the nearest Giga)",
+                    "examples": [
+                        "102 (GB)"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "integer"
+                },
+                "lba_size": {
+                    "title": "Lba Size",
+                    "description": "LBA Size",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "integer"
+                },
+                "partitions": {
+                    "title": "Partitions",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StoragePartition"
+                    }
+                }
+            },
+            "required": [
+                "serial_number",
+                "node_id"
+            ],
+            "additionalProperties": false
+        },
+        "NVMEStoragePhysical": {
+            "title": "NVMEStoragePhysical",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "serial_number": {
+                    "title": "Serial Number",
+                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
+                    "examples": [
+                        "S4P4NF0M522988Y"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/serial"
+                    },
+                    "type": "string"
+                },
+                "model": {
+                    "title": "Model",
+                    "description": "Drive Model - Model of the NVM subsystem that is assigned by the vendor.",
+                    "examples": [
+                        "Samsung SSD 970 EVO Plus 1TB"
+                    ],
+                    "source": {
+                        "Linux": "sys/class/block/nvme0n1/device/model"
+                    },
+                    "type": "string"
+                },
+                "firmware_revision": {
+                    "title": "Firmware Revision",
+                    "description": "Drive Firmware Revision",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/firmware_rev"
+                    },
+                    "type": "string"
+                },
+                "vendor_id": {
+                    "title": "Vendor Id",
+                    "description": "Vendor ID",
+                    "examples": [
+                        "0x144d"
+                    ],
+                    "source": {
+                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "sub_system_id": {
+                    "title": "Sub System Id",
+                    "description": "Sub-System Id",
+                    "examples": [
+                        "0x144d"
+                    ],
+                    "source": {
+                        "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "total_capacity": {
+                    "title": "Total Capacity",
+                    "description": "Drive Capacity (in GBs)",
+                    "examples": [
+                        "931 (GB)"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "string"
+                },
+                "bus_info": {
+                    "title": "Bus Info",
+                    "description": "BUS Information",
+                    "examples": [
+                        "pci@0000:04:00.0"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/block/nvme0n1/device/address"
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "state",
+                "serial_number"
+            ],
+            "additionalProperties": false
+        },
+        "PeripheralAudioPort": {
+            "title": "PeripheralAudioPort",
+            "description": "PeripheralAudioPort",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ],
+            "additionalProperties": false
+        },
+        "PeripheralSIMCard": {
+            "title": "PeripheralSIMCard",
+            "description": "PeripheralSIMCardPort",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "required": [
+                "state"
+            ],
+            "additionalProperties": false
+        },
+        "PeripheralUSB": {
+            "title": "PeripheralUSB",
+            "description": "PeripheralUSB is any gadget that is plugged/unplugged from one of the USB type A or type C ports\nIncluding: External Mic, External Camera, USB Flash Drive, Charger, etc.\n\nLinux source will be a combination of dmesg, /proc/kmesg, journalctl, udev, lsusb",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "description": "Time of the event",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "usb_bus_id": {
+                    "title": "Usb Bus Id",
+                    "description": "USB Bus Id (PRIMARY KEY)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "integer"
+                },
+                "usb_device_id": {
+                    "title": "Usb Device Id",
+                    "description": "USB Device Id (PRIMARY KEY)",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "usb_speed": {
+                    "title": "Usb Speed",
+                    "description": "USB Speed (PRIMARY KEY)\n    This fields tell us whether this is a TypeA or TypeC USB\n    ",
+                    "examples": [
+                        "480",
+                        "1.5"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "manufacturer_id": {
+                    "title": "Manufacturer Id",
+                    "description": "Manufacturer Id",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "product_id": {
+                    "title": "Product Id",
+                    "description": "Product Id",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "device_version": {
+                    "title": "Device Version",
+                    "description": "Device Version",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Manufacturer name",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "product": {
+                    "title": "Product",
+                    "description": "Product name",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                },
+                "message": {
+                    "title": "Message",
+                    "description": "Any extra Warning or Critical messages shown in the log",
+                    "examples": [
+                        "[multi-line class extracted from dmesg -Hw after adding a headset: Jabra UC VOICE 750a MS]\n        usb 3-2: Warning! Unlikely big volume range (=4096), cval->res is probably wrong.\n        usb 3-2: [11] FU [Sidetone Playback Volume] ch: 1, val: 0/4096/1"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "string"
+                }
+            },
+            "required": [
+                "state",
+                "timestamp",
+                "usb_bus_id",
+                "usb_device_id",
+                "usb_speed"
+            ],
+            "additionalProperties": false
+        },
+        "ProcessorCache": {
+            "title": "ProcessorCache",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "Cache Name",
+                    "examples": [
+                        "L1",
+                        "L2"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t cache"
+                    },
+                    "type": "string"
+                },
+                "size": {
+                    "title": "Size",
+                    "description": "Cache Size (in KiB)",
+                    "examples": [
+                        "32"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t cache"
+                    },
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "name",
+                "size"
+            ],
+            "additionalProperties": false
+        },
+        "Processor": {
+            "title": "Processor",
+            "description": "A wrapper model of all events",
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
+                "device_id": {
+                    "title": "Device Id",
+                    "description": "Device Id (PRIMARY KEY) - The DeviceID property contains a str uniquely identifying the processor with other devices on the system.",
+                    "examples": [
+                        "CPU0",
+                        "CPU1",
+                        "cpu@0"
+                    ],
+                    "source": {
+                        "Linux": "* * Linux: TBD"
+                    },
+                    "type": "string"
+                },
+                "processor_id": {
+                    "title": "Processor Id",
+                    "description": "Processor Id (PRIMARY KEY) - Processor information that describes the processor features.",
+                    "examples": [
+                        "BFEBFBFF000506E3"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "socket": {
+                    "title": "Socket",
+                    "description": "Processor Socket",
+                    "examples": [
+                        "FP6"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "name": {
+                    "title": "Name",
+                    "description": "Processor Name (also known as version)",
+                    "examples": [
+                        "AMD Ryzen 7 PRO 5850U with Radeon Graphics",
+                        "Intel(R) Core(TM) i7-4600U CPU @ 2.10GHz"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "title": "Manufacturer",
+                    "description": "Processor Manufacturer",
+                    "examples": [
+                        "Advanced Micro Devices, Inc."
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "signature": {
+                    "title": "Signature",
+                    "description": "Processor Signature",
+                    "examples": [
+                        "Family 25, Model 80, Stepping 0",
+                        "Intel64 Family 6 Model 94 Stepping 3"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "string"
+                },
+                "voltage": {
+                    "title": "Voltage",
+                    "description": "CPU Voltage (in V)",
+                    "examples": [
+                        "1.2V"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "number"
+                },
+                "max_clock_speed": {
+                    "title": "Max Clock Speed",
+                    "description": "CPU Max Clock Speed (in MHz)",
+                    "examples": [
+                        "4450"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "cores_count": {
+                    "title": "Cores Count",
+                    "description": "CPU Cores Count - Number of cores for the current instance of the processor.",
+                    "examples": [
+                        "16"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "cores_enabled": {
+                    "title": "Cores Enabled",
+                    "description": "CPU Cores Enabled - The number of enabled cores per processor socket.",
+                    "examples": [
+                        "16"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "thread_count": {
+                    "title": "Thread Count",
+                    "description": "CPU Thread Count",
+                    "examples": [
+                        "16",
+                        "32"
+                    ],
+                    "source": {
+                        "Linux": "dmidecode -t processor"
+                    },
+                    "type": "integer"
+                },
+                "capabilities": {
+                    "title": "Capabilities",
+                    "description": "CPU Capabilities",
+                    "examples": [
+                        "x86-64 fpu fpu_exception wp vme de pse tsc msr pae mce cx8"
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "caches": {
+                    "title": "Caches",
+                    "examples": [
+                        ""
+                    ],
+                    "source": {
+                        "Linux": ""
+                    },
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProcessorCache"
+                    }
+                }
+            },
+            "required": [
+                "state",
+                "device_id",
+                "processor_id"
+            ],
+            "additionalProperties": false
         },
         "System": {
             "title": "System",
@@ -1621,9 +1533,9 @@
                 },
                 "uuid": {
                     "title": "Uuid",
-                    "description": "System UUID (PRIMARY KEY) - Universally Unique Identifier is a 16-octet (128-bit) number ",
+                    "description": "System BIOS UUID (PRIMARY KEY) - Universally Unique Identifier is a 16-octet (128-bit) number ",
                     "examples": [
-                        "550E8400-E29B-41D4-A716-446655440000",
+                        "ab7ca61b-4c95-46ef-86d1-5754ebe07a31",
                         "7F57D02D-7314-E311-A9BD-F7757856691A"
                     ],
                     "source": {
@@ -1698,17 +1610,6 @@
                     },
                     "type": "string"
                 },
-                "width": {
-                    "title": "Width",
-                    "description": "System Bit Width",
-                    "examples": [
-                        "64-bit"
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
                 "capabilities": {
                     "title": "Capabilities",
                     "description": "System Capabilities",
@@ -1742,7 +1643,8 @@
                 "state",
                 "serialnumber",
                 "uuid"
-            ]
+            ],
+            "additionalProperties": false
         },
         "ThermalSummary": {
             "title": "ThermalSummary",
@@ -1772,8 +1674,8 @@
                     "minimum": 20,
                     "type": "integer"
                 },
-                "cpu_zone_percentile": {
-                    "title": "Cpu Zone Percentile",
+                "cpu_zone_ptile": {
+                    "title": "Cpu Zone Ptile",
                     "description": "Percentiles of sample metric 'CPU/APU Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
                     "minItems": 11,
                     "maxItems": 11,
@@ -1782,8 +1684,8 @@
                         "type": "number"
                     }
                 },
-                "chg_zone_percentile": {
-                    "title": "Chg Zone Percentile",
+                "chg_zone_ptile": {
+                    "title": "Chg Zone Ptile",
                     "description": "Percentiles of sample metric 'Charging Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
                     "minItems": 11,
                     "maxItems": 11,
@@ -1792,9 +1694,9 @@
                         "type": "number"
                     }
                 },
-                "bat_zone_percentile": {
-                    "title": "Bat Zone Percentile",
-                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                "ext_zone_ptile": {
+                    "title": "Ext Zone Ptile",
+                    "description": "Percentiles of sample metric 'External/Remote Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
@@ -1802,9 +1704,29 @@
                         "type": "number"
                     }
                 },
-                "ext_zone_percentile": {
-                    "title": "Ext Zone Percentile",
-                    "description": "Percentiles of sample metric 'External/Remote Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                "bat_zone_dc_ptile": {
+                    "title": "Bat Zone Dc Ptile",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on DC (Direct Current) - which *may* be read as *Discharging*\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "bat_zone_ac_charging_ptile": {
+                    "title": "Bat Zone Ac Charging Ptile",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on AC (Alternate Current) and *Charging*\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "minItems": 11,
+                    "maxItems": 11,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "bat_zone_ac_not_charging_ptile": {
+                    "title": "Bat Zone Ac Not Charging Ptile",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on AC (Alternate Current) but Not Charging\n\n        This state means that the battery is tipically running any sort of algorithm to avoid be always at full charge (which increases the stress on the battery cells).\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
@@ -1818,15 +1740,18 @@
                 "end_time",
                 "system_up_time",
                 "num_samples",
-                "cpu_zone_percentile",
-                "chg_zone_percentile",
-                "bat_zone_percentile",
-                "ext_zone_percentile"
-            ]
+                "cpu_zone_ptile",
+                "chg_zone_ptile",
+                "ext_zone_ptile",
+                "bat_zone_dc_ptile",
+                "bat_zone_ac_charging_ptile",
+                "bat_zone_ac_not_charging_ptile"
+            ],
+            "additionalProperties": false
         },
         "CoolingFanCyclesSummary": {
             "title": "CoolingFanCyclesSummary",
-            "description": "A summary of Fan Cycles on a given period\n\nWhat is a FAN Cycle?\n    A FAN Cycle starts when the CPU Thermal Zone Temperature increases to > X \u00baC (which will lead to a FAN spin up)\n    A FAN Cycle end when that Temperature decreases to < Y \u00baC (which should make FAN to reduce its speed)\n    Note: Y < X\n\nHow to calculate this summary?\n    Build up an internal database to track the metrics outlined below\n    At upload time, aggregate/summarize them into the requested values/percentiles\n\nWhich sensors are sampled to build the metrics? And how frequently?\n    Temperature Thermal Zone (the ones that drive the Fan) - sampled every 5 seconds\n    FAN RPM Thermal Zone (the ones that drive the Fan) - sampled only during Fan Cycles",
+            "description": "A summary of Fan Cycles on a given period\n\nWhat is a FAN Cycle?\n    A FAN Cycle starts when the CPU Thermal Zone Temperature increases to >= 75 \u00baC or Local Thermal Zone Temperature >= 56\u00baC\n        Which will lead to a FAN spin up.\n    A FAN Cycle ends when that Temperature decreases to <= 71 \u00baC or Local Thermal Zone Temperature <= 55\u00baC\n        Which should make FAN to reduce its speed\n\nHow to calculate this summary?\n    Build up an internal database to track the metrics outlined below\n    At upload time, aggregate/summarize them into the requested values/percentiles\n\nWhich sensors are sampled to build the metrics? And how frequently?\n    Temperature Thermal Zone (the ones that drive the Fan) - sampled every 30 seconds, increase to 5 seconds during a FAN Cycle\n    FAN RPM Thermal Zone (the ones that drive the Fan) - sampled only during Fan Cycles",
             "type": "object",
             "properties": {
                 "start_time": {
@@ -1891,7 +1816,8 @@
                 "cycle_length_percentile",
                 "time_to_max_speed_percentile",
                 "sum_speed_percentile"
-            ]
+            ],
+            "additionalProperties": false
         },
         "TrustedPlatformModule": {
             "title": "TrustedPlatformModule",
@@ -1996,7 +1922,8 @@
                 "manufacturer_version",
                 "manufacturer_version_info",
                 "trusted_computing_group_version"
-            ]
+            ],
+            "additionalProperties": false
         },
         "Driver": {
             "title": "Driver",
@@ -2106,7 +2033,8 @@
                 "module_name",
                 "module_path",
                 "module_type"
-            ]
+            ],
+            "additionalProperties": false
         },
         "LinuxDriverCrash": {
             "title": "LinuxDriverCrash",
@@ -2241,7 +2169,8 @@
             "required": [
                 "crash_time",
                 "kernel"
-            ]
+            ],
+            "additionalProperties": false
         },
         "Firmware": {
             "title": "Firmware",
@@ -2332,7 +2261,8 @@
                         "type": "string"
                     }
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "OperatingSystem": {
             "title": "OperatingSystem",
@@ -2388,7 +2318,8 @@
             "required": [
                 "name",
                 "boot_device"
-            ]
+            ],
+            "additionalProperties": false
         },
         "LinuxKernel": {
             "title": "LinuxKernel",
@@ -2432,7 +2363,8 @@
                 "name",
                 "release",
                 "version"
-            ]
+            ],
+            "additionalProperties": false
         },
         "AnyTelemetryEvent": {
             "title": "AnyTelemetryEvent",
@@ -2444,8 +2376,8 @@
                 "hw_battery": {
                     "$ref": "#/definitions/Battery"
                 },
-                "hw_battery_usage": {
-                    "$ref": "#/definitions/BatteryUsage"
+                "hw_battery_life": {
+                    "$ref": "#/definitions/BatteryLife"
                 },
                 "hw_display": {
                     "$ref": "#/definitions/Display"
@@ -2459,35 +2391,26 @@
                 "hw_network_card": {
                     "$ref": "#/definitions/NetworkCard"
                 },
-                "hw_peripheral_audio_port": {
-                    "$ref": "#/definitions/PeripheralAudioPort"
-                },
-                "hw_peripheral_hdmi": {
-                    "$ref": "#/definitions/PeripheralHDMI"
-                },
-                "hw_peripheral_sim_card": {
-                    "$ref": "#/definitions/PeripheralSIMCard"
-                },
-                "hw_peripheral_usb_type_a": {
-                    "$ref": "#/definitions/PeripheralUSBTypeA"
-                },
-                "hw_peripheral_usb_type_c": {
-                    "$ref": "#/definitions/PeripheralUSBTypeC"
-                },
-                "hw_peripheral_usb_type_c_display_port": {
-                    "$ref": "#/definitions/PeripheralUSBTypeCDisplayPort"
-                },
-                "hw_processor": {
-                    "$ref": "#/definitions/Processor"
-                },
-                "hw_nvme_storage_physical": {
-                    "$ref": "#/definitions/NVMEStoragePhysical"
+                "hw_nvme_smart_log": {
+                    "$ref": "#/definitions/NVMESmartLog"
                 },
                 "hw_nvme_storage_logical": {
                     "$ref": "#/definitions/NVMEStorageLogical"
                 },
-                "hw_nvme_smart_log": {
-                    "$ref": "#/definitions/NVMESmartLog"
+                "hw_nvme_storage_physical": {
+                    "$ref": "#/definitions/NVMEStoragePhysical"
+                },
+                "hw_peripheral_audio_port": {
+                    "$ref": "#/definitions/PeripheralAudioPort"
+                },
+                "hw_peripheral_sim_card": {
+                    "$ref": "#/definitions/PeripheralSIMCard"
+                },
+                "hw_peripheral_usb": {
+                    "$ref": "#/definitions/PeripheralUSB"
+                },
+                "hw_processor": {
+                    "$ref": "#/definitions/Processor"
                 },
                 "hw_system": {
                     "$ref": "#/definitions/System"
@@ -2516,7 +2439,8 @@
                 "sw_linux_kernel": {
                     "$ref": "#/definitions/LinuxKernel"
                 }
-            }
+            },
+            "additionalProperties": false
         }
     }
 }
