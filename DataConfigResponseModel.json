@@ -9,6 +9,7 @@
     "required": [
         "sampling_frequency"
     ],
+    "additionalProperties": false,
     "definitions": {
         "SamplingFrequency": {
             "title": "SamplingFrequency",
@@ -31,11 +32,14 @@
                 "hw_battery": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "hw_battery_usage": {
+                "hw_battery_life": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
                 "hw_display": {
-                    "$ref": "#/definitions/SamplingFrequency"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SamplingFrequency"
+                    }
                 },
                 "hw_graphics_card": {
                     "$ref": "#/definitions/SamplingFrequency"
@@ -46,34 +50,25 @@
                 "hw_network_card": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "hw_peripheral_audio_port": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_peripheral_hdmi": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_peripheral_sim_card": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_peripheral_usb_type_a": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_peripheral_usb_type_c": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_peripheral_usb_type_c_display_port": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_processor": {
-                    "$ref": "#/definitions/SamplingFrequency"
-                },
-                "hw_nvme_storage_physical": {
+                "hw_nvme_smart_log": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
                 "hw_nvme_storage_logical": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "hw_nvme_smart_log": {
+                "hw_nvme_storage_physical": {
+                    "$ref": "#/definitions/SamplingFrequency"
+                },
+                "hw_peripheral_audio_port": {
+                    "$ref": "#/definitions/SamplingFrequency"
+                },
+                "hw_peripheral_sim_card": {
+                    "$ref": "#/definitions/SamplingFrequency"
+                },
+                "hw_peripheral_usb": {
+                    "$ref": "#/definitions/SamplingFrequency"
+                },
+                "hw_processor": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
                 "hw_system": {
@@ -110,21 +105,18 @@
             "required": [
                 "hw_base_board",
                 "hw_battery",
-                "hw_battery_usage",
+                "hw_battery_life",
                 "hw_display",
                 "hw_graphics_card",
                 "hw_memory_physical",
                 "hw_network_card",
-                "hw_peripheral_audio_port",
-                "hw_peripheral_hdmi",
-                "hw_peripheral_sim_card",
-                "hw_peripheral_usb_type_a",
-                "hw_peripheral_usb_type_c",
-                "hw_peripheral_usb_type_c_display_port",
-                "hw_processor",
-                "hw_nvme_storage_physical",
-                "hw_nvme_storage_logical",
                 "hw_nvme_smart_log",
+                "hw_nvme_storage_logical",
+                "hw_nvme_storage_physical",
+                "hw_peripheral_audio_port",
+                "hw_peripheral_sim_card",
+                "hw_peripheral_usb",
+                "hw_processor",
                 "hw_system",
                 "hw_thermal_summary",
                 "hw_cooling_fan_cycles_summary",
@@ -135,7 +127,8 @@
                 "sw_operating_system",
                 "sw_linux_kernel",
                 "sw_boot_performance"
-            ]
+            ],
+            "additionalProperties": false
         }
     }
 }
