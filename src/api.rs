@@ -38,6 +38,20 @@ pub struct EventsResponse {
     pub detail: Vec<EventsResponseDetail>,
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct ExistsResponse {
+    has_data: bool,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct Purpose {
+    locale: String,
+    #[serde(rename = "minVersion")]
+    min_version: String,
+    statement: String,
+    version: String,
+}
+
 pub struct Api {
     client: Client,
     ids: DeviceOSIds,
@@ -136,8 +150,7 @@ impl Api {
         Ok(())
     }
 
-    // XXX WIP
-    pub fn purposes(&self, locale: &str) -> anyhow::Result<serde_json::Value> {
+    pub fn purposes(&self, locale: &str) -> anyhow::Result<Vec<Purpose>> {
         Ok(self
             .request(
                 "DataCollectionPurposes",
@@ -153,14 +166,16 @@ impl Api {
             .request(
                 "DataCollectionConsent",
                 &[("optIn", "true"), ("locale", locale), ("version", version)],
-                None::<&()>,
+                Some(&self.ids),
             )?
             .json()?)
     }
 
-    // XXX WIP
-    pub fn exists(&self) -> anyhow::Result<serde_json::Value> {
-        Ok(self.request("DataExists", &[], None::<&()>)?.json()?)
+    pub fn exists(&self) -> anyhow::Result<bool> {
+        Ok(self
+            .request("DataExists", &[], None::<&()>)?
+            .json::<ExistsResponse>()?
+            .has_data)
     }
 
     // XXX WIP
