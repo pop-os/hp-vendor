@@ -35,7 +35,7 @@ fn gen_primary(properties_obj: &Map<String, Value>) -> TokenStream {
 fn gen_diff(properties_obj: &Map<String, Value>, required: &[&str]) -> TokenStream {
     let mut props = Vec::new();
     for (k, _) in properties_obj.iter() {
-        if k == "state" {
+        if k == "state" || k == "timestamp" {
             continue;
         }
 

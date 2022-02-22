@@ -1,3 +1,6 @@
+// XXX memory usage? Is there any danger remove events won't occur, and memory will grow?
+// TODO Change events
+
 use lm_sensors::{prelude::*, value::Kind as SensorKind};
 use mio::{unix::SourceFd, Token};
 use nix::{
@@ -11,6 +14,7 @@ use nix::{
 };
 use std::{
     collections::HashMap,
+    ffi::OsStr,
     fs::OpenOptions,
     io::{Seek, SeekFrom},
     os::unix::{fs::OpenOptionsExt, io::AsRawFd},
@@ -18,7 +22,11 @@ use std::{
     time::Duration,
 };
 
-use crate::{db::DB, util};
+use crate::{
+    config::SamplingFrequency,
+    db::{self, DB},
+    event, util,
+};
 
 const TOKEN_SIGNAL: Token = Token(0);
 const TOKEN_UDEV: Token = Token(1);
@@ -69,12 +77,7 @@ pub fn run() {
         .unwrap();
 
     // Register polling for udev usb events
-    let mut socket = udev::MonitorBuilder::new()
-        .unwrap()
-        .match_subsystem_devtype("usb", "usb_device")
-        .unwrap()
-        .listen()
-        .unwrap();
+    let mut socket = udev::MonitorBuilder::new().unwrap().listen().unwrap();
     poll.registry()
         .register(
             &mut socket,
@@ -116,8 +119,47 @@ pub fn run() {
 
     let sensors = lm_sensors::Initializer::default().initialize().unwrap();
 
-    let mut events = mio::Events::with_capacity(1024);
+    let freqs = db.get_event_frequencies().unwrap();
+
+    let udev_descs = event::TelemetryEventType::iter()
+        .filter(|i| freqs.get(*i) == SamplingFrequency::OnChange)
+        .filter_map(|i| {
+            if let Some(crate::EventDesc::Udev(desc)) = crate::event(i) {
+                Some((desc.subsystem, desc))
+            } else {
+                None
+            }
+        })
+        .collect::<HashMap<_, _>>();
     let mut udev_devices = HashMap::new();
+
+    let old = db
+        .get_state(db::State::Frequency(SamplingFrequency::OnChange))
+        .unwrap();
+
+    let mut new = Vec::new();
+    let mut enumerator = udev::Enumerator::new().unwrap();
+    for device in enumerator.scan_devices().unwrap() {
+        if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
+            if let Some(desc) = udev_descs.get(subsystem) {
+                let mut events = Vec::new();
+                desc.generate(&mut events, &device);
+                new.extend_from_slice(&events);
+                udev_devices.insert(device.syspath().to_owned(), events);
+            }
+        }
+    }
+
+    let mut diff = new.clone();
+    event::diff(&mut diff, &old);
+    for event in diff {
+        insert_statement.execute(&event).unwrap();
+        println!("{:#?}", event);
+    }
+    db.replace_state(db::State::Frequency(SamplingFrequency::OnChange), &new)
+        .unwrap();
+
+    let mut events = mio::Events::with_capacity(1024);
     loop {
         poll.poll(&mut events, None).unwrap();
 
@@ -130,16 +172,29 @@ pub fn run() {
                 TOKEN_UDEV => {
                     socket.clone().for_each(|x| {
                         if x.event_type() == udev::EventType::Add {
-                            if let Some(event) = crate::peripheral_usb_type_a_event(x.syspath()) {
-                                println!("{:#?}", event);
-                                insert_statement.execute(&event).unwrap();
-                                udev_devices.insert(x.syspath().to_owned(), event);
+                            let subsystem = match x.subsystem().and_then(OsStr::to_str) {
+                                Some(subsystem) => subsystem,
+                                None => {
+                                    return;
+                                }
+                            };
+                            if let Some(desc) = udev_descs.get(subsystem) {
+                                let mut events = Vec::new();
+                                desc.generate(&mut events, &x);
+                                for event in &events {
+                                    println!("{:#?}", event);
+                                    insert_statement.execute(event).unwrap();
+                                }
+                                udev_devices.insert(x.syspath().to_owned(), events);
+                                // XXX empty vec? Already set?
                             }
                         } else if x.event_type() == udev::EventType::Remove {
-                            if let Some(mut event) = udev_devices.remove(x.syspath()) {
-                                crate::event::remove_event(&mut event);
-                                println!("{:#?}", event);
-                                insert_statement.execute(&event).unwrap();
+                            if let Some(events) = udev_devices.remove(x.syspath()) {
+                                for mut event in events {
+                                    crate::event::remove_event(&mut event);
+                                    println!("{:#?}", event);
+                                    insert_statement.execute(&event).unwrap();
+                                }
                             }
                         }
                     });
