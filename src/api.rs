@@ -7,7 +7,7 @@ use reqwest::{
 };
 use std::{cell::RefCell, collections::HashMap, io::Read, str::FromStr};
 
-use crate::event::{DeviceOSIds, Events};
+use crate::event::{self, DeviceOSIds, Events};
 
 const BASE_URL: &str = "https://ipngm19tbi.execute-api.us-east-1.amazonaws.com/test";
 
@@ -165,18 +165,15 @@ impl Api {
 
     // XXX WIP
     pub fn config(&self) -> anyhow::Result<crate::config::Config> {
-        let app_name = "";
-        let app_version = "";
-        let os_name = "";
-        let os_version = "";
+        let data_provider = event::data_provider();
         Ok(self
             .request(
                 "DataConfig",
                 &[
-                    ("appName", app_name),
-                    ("appVersion", app_version),
-                    ("osName", os_name),
-                    ("osVersion", os_version),
+                    ("appName", &data_provider.app_name),
+                    ("appVersion", &data_provider.app_version),
+                    ("osName", &data_provider.os_name),
+                    ("osVersion", &data_provider.os_version),
                 ],
                 None::<&()>,
             )?

@@ -2,12 +2,7 @@ use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;
 use std::{
-    collections::HashMap,
-    ffi::OsStr,
-    fs, io,
-    path::{Path, PathBuf},
-    process::Command,
-    str::FromStr,
+    collections::HashMap, ffi::OsStr, fs, io, path::PathBuf, process::Command, str::FromStr,
 };
 
 pub mod api;

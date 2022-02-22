@@ -64,20 +64,24 @@ impl DeviceOSIds {
     }
 }
 
-fn data_header(consent: DataCollectionConsent, ids: DeviceOSIds) -> TelemetryHeaderModel {
+pub fn data_provider() -> DataProviderInfo {
     let (os_name, os_version) = match OsRelease::new() {
         Ok(OsRelease { name, version, .. }) => (name, version),
         Err(_) => (unknown(), unknown()),
     };
 
+    DataProviderInfo {
+        app_name: env!("CARGO_PKG_NAME").to_string(),
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        os_name,
+        os_version,
+    }
+}
+
+fn data_header(consent: DataCollectionConsent, ids: DeviceOSIds) -> TelemetryHeaderModel {
     TelemetryHeaderModel {
         consent,
-        data_provider: DataProviderInfo {
-            app_name: env!("CARGO_PKG_NAME").to_string(),
-            app_version: env!("CARGO_PKG_VERSION").to_string(),
-            os_name,
-            os_version,
-        },
+        data_provider: data_provider(),
         ids,
         timestamp: date_time(),
     }
