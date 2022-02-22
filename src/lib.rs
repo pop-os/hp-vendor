@@ -312,11 +312,30 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             })
         }
         TelemetryEventType::HwPeripheralUsb => EventDesc::new_udev("usb", |events, device| {
-            if device.devtype().and_then(OsStr::to_str) == Some("usb_device") {
-                if let Some(event) = peripheral_usb_type_a_event(device.syspath()) {
-                    events.push(event);
-                }
+            let path = device.syspath();
+
+            if device.devtype().and_then(OsStr::to_str) != Some("usb_device")
+                || !path.join("idProduct").exists()
+            {
+                return;
             }
+
+            events.push(
+                event::PeripheralUSB {
+                    device_version: None, // XXX
+                    manufacturer: read_file(path.join("manufacturer")),
+                    manufacturer_id: read_file(path.join("idVendor")),
+                    message: None, // XXX
+                    product: read_file(path.join("product")),
+                    product_id: read_file(path.join("idProduct")),
+                    state: State::Added,
+                    timestamp: event::date_time(),
+                    usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
+                    usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
+                    usb_speed: read_file(path.join("speed")).unwrap_or_else(unknown),
+                }
+                .into(),
+            )
         }),
         TelemetryEventType::HwMemoryPhysical => EventDesc::new(|events| {
             for i in dmi() {
@@ -537,27 +556,4 @@ pub fn all_events() -> Vec<event::TelemetryEvent> {
 
 pub fn events(freqs: &Frequencies, freq: SamplingFrequency) -> Vec<event::TelemetryEvent> {
     events_inner(event::TelemetryEventType::iter().filter(|i| freqs.get(*i) == freq))
-}
-
-pub fn peripheral_usb_type_a_event(path: &Path) -> Option<TelemetryEvent> {
-    if !path.join("idProduct").exists() {
-        return None;
-    }
-
-    Some(
-        event::PeripheralUSB {
-            device_version: None, // XXX
-            manufacturer: read_file(path.join("manufacturer")),
-            manufacturer_id: read_file(path.join("idVendor")),
-            message: None, // XXX
-            product: read_file(path.join("product")),
-            product_id: read_file(path.join("idProduct")),
-            state: State::Added,
-            timestamp: event::date_time(),
-            usb_bus_id: read_file(path.join("busnum")).unwrap_or(0),
-            usb_device_id: read_file(path.join("devnum")).unwrap_or_else(unknown),
-            usb_speed: read_file(path.join("speed")).unwrap_or_else(unknown),
-        }
-        .into(),
-    )
 }
