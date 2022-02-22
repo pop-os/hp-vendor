@@ -3,7 +3,7 @@
 use base64::read::DecoderReader;
 use reqwest::{
     blocking::{Client, Response},
-    Method,
+    Method, StatusCode,
 };
 use std::{cell::RefCell, collections::HashMap, io::Read, str::FromStr};
 
@@ -49,12 +49,7 @@ fn authenticate(client: &Client, ids: &DeviceOSIds) -> anyhow::Result<TokenRespo
         .post(format!("{}/data/token", BASE_URL))
         .json(&ids)
         .send()?;
-
-    if resp.status().is_success() {
-        Ok(resp.json()?)
-    } else {
-        Err(err_from_resp(resp))
-    }
+    Ok(err_from_resp(resp)?.json()?)
 }
 
 impl Api {
@@ -95,20 +90,28 @@ impl Api {
         query: &[(&str, &str)],
         body: Option<&T>,
     ) -> anyhow::Result<Response> {
-        let (method, url) = self.url(name)?;
-        let mut req = self
-            .client
-            .request(method, url)
-            .header("authorizationToken", &self.token_resp.borrow().token)
-            .query(query);
-        if let Some(body) = body {
-            req = req.json(body);
-        }
-        let resp = req.send()?;
-        if resp.status().is_success() {
-            Ok(resp)
-        } else {
-            Err(err_from_resp(resp))
+        let mut reauthenticated = false;
+        loop {
+            let (method, url) = self.url(name)?;
+            let mut req = self
+                .client
+                .request(method, url)
+                .header("authorizationToken", &self.token_resp.borrow().token)
+                .query(query);
+            if let Some(body) = body {
+                req = req.json(body);
+            }
+            let resp = req.send()?;
+            if !reauthenticated
+                && resp.status() == StatusCode::FORBIDDEN
+                && resp.headers().get("x-amzn-errortype").map(|x| x.as_bytes())
+                    == Some(b"AccessDeniedException")
+            {
+                self.reauthenticate()?;
+                reauthenticated = true;
+            } else {
+                return err_from_resp(resp);
+            }
         }
     }
 
@@ -181,11 +184,15 @@ impl Api {
     }
 }
 
-fn err_from_resp(resp: Response) -> anyhow::Error {
+fn err_from_resp(resp: Response) -> anyhow::Result<Response> {
     let status = resp.status();
-    if let Ok(error) = resp.json::<ErrorResponse>() {
-        anyhow::anyhow!("{}: {}", status, error.message)
+    if status.is_success() {
+        Ok(resp)
     } else {
-        anyhow::anyhow!("{}", status)
+        Err(if let Ok(error) = resp.json::<ErrorResponse>() {
+            anyhow::anyhow!("{}: {}", status, error.message)
+        } else {
+            anyhow::anyhow!("{}", status)
+        })
     }
 }
