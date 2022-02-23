@@ -8,7 +8,7 @@ pub fn run(arg: Option<&str>) {
     match arg {
         Some("consent") => println!("{:#?}", db.get_consent().unwrap()),
         Some("frequencies") => println!("{:#?}", db.get_event_frequencies().unwrap()),
-        Some("queued") => println!("{:#?}", db.get_queued(false).unwrap()),
+        Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
         _ => {
             eprintln!("Usage: hp-vendor print (consent|frequencies|queued|state)");
