@@ -67,7 +67,7 @@ pub struct Api {
 fn authenticate(client: &Client, ids: &DeviceOSIds) -> anyhow::Result<TokenResponse> {
     let resp = client
         .post(format!("{}/data/token", BASE_URL))
-        .json(&ids)
+        .json(&event::DeviceIds::from(ids))
         .send()?;
     Ok(err_from_resp(resp)?.json()?)
 }
