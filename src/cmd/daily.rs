@@ -1,5 +1,5 @@
 use crate::{
-    api::Api,
+    api::{self, Api},
     config::SamplingFrequency,
     db::{self, DB},
     event, util,
@@ -62,12 +62,29 @@ pub fn run(arg: Option<&str>) {
         println!("{}", events.to_json_pretty());
 
         if let Some(api) = &api {
-            match api.upload(&events) {
-                Ok(res) => println!("{:#?}", res),
-                Err(err) => panic!("Failed to upload: {}", err),
+            let mut start = 0;
+            let mut end = chunk.len();
+            while start < chunk.len() {
+                events.data = &chunk[start..end];
+                match api.upload(&events) {
+                    Ok(res) => {
+                        println!("{:#?}", res);
+                        db.remove_queued(&chunk_ids[start..end]).unwrap();
+                        start = end;
+                        end = chunk.len();
+                    }
+                    Err(err) => {
+                        if err.is::<api::PayloadSizeError>() {
+                            // Try to transmit fewer events
+                            end = start + (end - start) / 2;
+                        } else {
+                            panic!("Failed to upload: {}", err);
+                        }
+                    }
+                }
             }
+        } else {
+            db.remove_queued(chunk_ids).unwrap();
         }
-
-        db.remove_queued(chunk_ids).unwrap();
     }
 }
