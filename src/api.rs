@@ -3,7 +3,7 @@
 use base64::read::DecoderReader;
 use reqwest::{
     blocking::{Client, Response},
-    Method, StatusCode,
+    header, Method, StatusCode,
 };
 use std::{cell::RefCell, collections::HashMap, io::Read, str::FromStr};
 
@@ -104,7 +104,7 @@ impl Api {
         Ok((method, format!("{}{}", BASE_URL, path)))
     }
 
-    fn request<T: serde::Serialize>(
+    fn request_inner<T: serde::Serialize>(
         &self,
         name: &str,
         query: &[(&str, &str)],
@@ -118,8 +118,11 @@ impl Api {
                 .request(method, url)
                 .header("authorizationToken", &self.token_resp.borrow().token)
                 .query(query);
-            if let Some(body) = body {
-                req = req.json(body);
+            if let Some(body) = &body {
+                // Like `RequestBuilder::json`, use `serde_json::to_vec` and set header
+                let body = serde_json::to_vec(body)?;
+                req = req.header(header::CONTENT_TYPE, "application/json");
+                req = req.body(body);
             }
             let resp = req.send()?;
             if !reauthenticated
@@ -135,13 +138,26 @@ impl Api {
         }
     }
 
+    fn request(&self, name: &str, query: &[(&str, &str)]) -> anyhow::Result<Response> {
+        self.request_inner(name, query, None::<&()>)
+    }
+
+    fn request_json<T: serde::Serialize>(
+        &self,
+        name: &str,
+        query: &[(&str, &str)],
+        json: &T,
+    ) -> anyhow::Result<Response> {
+        self.request_inner(name, query, Some(json))
+    }
+
     pub fn upload(&self, events: &Events) -> anyhow::Result<serde_json::Value> {
-        Ok(self.request("DataUpload", &[], Some(events))?.json()?)
+        Ok(self.request_json("DataUpload", &[], events)?.json()?)
     }
 
     pub fn download(&self, zip: bool) -> anyhow::Result<Vec<u8>> {
         let format = if zip { "ZIP" } else { "JSON" };
-        let mut res = self.request("DataDownload", &[("fileFormat", format)], None::<&()>)?;
+        let mut res = self.request("DataDownload", &[("fileFormat", format)])?;
         let mut bytes = Vec::new();
         if zip {
             DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
@@ -152,7 +168,7 @@ impl Api {
     }
 
     pub fn delete(&self) -> anyhow::Result<()> {
-        self.request("DataDelete", &[], None::<&()>)?;
+        self.request("DataDelete", &[])?;
         Ok(())
     }
 
@@ -161,24 +177,23 @@ impl Api {
             .request(
                 "DataCollectionPurposes",
                 &[("locale", locale), ("latest", "true")],
-                None::<&()>,
             )?
             .json()?)
     }
 
     pub fn consent(&self, locale: &str, version: &str) -> anyhow::Result<ConsentResponse> {
         Ok(self
-            .request(
+            .request_json(
                 "DataCollectionConsent",
                 &[("optIn", "true"), ("locale", locale), ("version", version)],
-                Some(&self.ids),
+                &self.ids,
             )?
             .json()?)
     }
 
     pub fn exists(&self) -> anyhow::Result<bool> {
         Ok(self
-            .request("DataExists", &[], None::<&()>)?
+            .request("DataExists", &[])?
             .json::<ExistsResponse>()?
             .has_data)
     }
@@ -195,7 +210,6 @@ impl Api {
                     ("osName", &data_provider.os_name),
                     ("osVersion", &data_provider.os_version),
                 ],
-                None::<&()>,
             )?
             .json()?)
     }
