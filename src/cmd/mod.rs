@@ -1,3 +1,4 @@
+mod consent;
 mod daemon;
 mod daily;
 mod delete;
@@ -37,14 +38,17 @@ pub fn run() {
     }
 
     let mut args = env::args().skip(1);
-    match args.next().as_deref() {
+    let cmd = args.next();
+    let arg = args.next();
+    match cmd.as_deref() {
+        Some("consent") => consent::run(arg.as_deref()),
         Some("daemon") => daemon::run(),
-        Some("daily") => daily::run(args.next().as_deref()),
+        Some("daily") => daily::run(arg.as_deref()),
         Some("delete") => delete::run(),
-        Some("download") => download::run(args.next().as_deref()),
-        Some("print") => print::run(args.next().as_deref()),
+        Some("download") => download::run(arg.as_deref()),
+        Some("print") => print::run(arg.as_deref()),
         _ => {
-            eprintln!("Usage: hp-vendor (daemon|daily|delete|download|print)");
+            eprintln!("Usage: hp-vendor (consent|daemon|daily|delete|download|print)");
             process::exit(1);
         }
     }
