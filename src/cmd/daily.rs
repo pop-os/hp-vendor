@@ -38,22 +38,36 @@ pub fn run(arg: Option<&str>) {
     let mut diff = new.clone();
     event::diff(&mut diff, &old);
 
-    diff.extend_from_slice(&db.get_queued(true).unwrap());
-
-    let events = event::Events::new(consent, ids.clone(), &diff);
-    println!("{}", events.to_json_pretty());
-
-    if arg != Some("--dequeue-no-upload") {
-        match Api::new(ids) {
-            Ok(api) => match api.upload(&events) {
-                Ok(res) => println!("{:#?}", res),
-                Err(err) => panic!("Failed to upload: {}", err),
-            },
-            Err(err) => panic!("Failed to authenticate with server: {}", err),
-        }
+    let mut insert_statement = db.prepare_queue_insert().unwrap();
+    for event in diff {
+        insert_statement.execute(&event).unwrap();
     }
-
-    db.clear_queued().unwrap();
     db.replace_state(db::State::Frequency(SamplingFrequency::Daily), &new)
         .unwrap();
+
+    let api = if arg != Some("--dequeue-no-upload") {
+        match Api::new(ids.clone()) {
+            Ok(api) => Some(api),
+            Err(err) => panic!("Failed to authenticate with server: {}", err),
+        }
+    } else {
+        None
+    };
+
+    let (queued_ids, queued) = db.get_queued().unwrap();
+    let mut events = event::Events::new(consent, ids, &[]);
+    for (chunk_ids, chunk) in queued_ids.chunks(100).zip(queued.chunks(100)) {
+        events.data = chunk;
+
+        println!("{}", events.to_json_pretty());
+
+        if let Some(api) = &api {
+            match api.upload(&events) {
+                Ok(res) => println!("{:#?}", res),
+                Err(err) => panic!("Failed to upload: {}", err),
+            }
+        }
+
+        db.remove_queued(chunk_ids).unwrap();
+    }
 }

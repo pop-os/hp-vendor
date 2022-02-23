@@ -229,22 +229,23 @@ impl DB {
         tx.commit()
     }
 
-    // Uses `seen` property so `clear_queued` doesn't delete things added after this
-    pub fn get_queued(&self, mark_seen: bool) -> Result<Vec<TelemetryEvent>> {
-        let tx = self.0.unchecked_transaction()?;
-        if mark_seen {
-            self.0.execute("UPDATE queued_events SET seen = 1", [])?;
-        }
-        let mut stmt = self.0.prepare("SELECT value from queued_events")?;
-        let rows = stmt.query_map([], |row| row.get(0))?;
-        tx.commit()?;
-        Ok(rows.filter_map(Result::ok).collect())
+    pub fn get_queued(&self) -> Result<(Vec<i64>, Vec<TelemetryEvent>)> {
+        // TODO: how to remove anything that doesn't parse?
+        // - Shouldn't be needed, but may if certain changes are maid
+        let mut stmt = self.0.prepare("SELECT id, value from queued_events")?;
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        Ok(rows
+            .filter_map(Result::ok)
+            .unzip::<i64, TelemetryEvent, _, _>())
     }
 
-    pub fn clear_queued(&self) -> Result<()> {
-        self.0
-            .execute("DELETE from queued_events where seen = 1", [])
-            .map(|_| ())
+    pub fn remove_queued(&self, ids: &[i64]) -> Result<()> {
+        let mut stmt = self.0.prepare("DELETE from queued_events where id = ?")?;
+        let tx = self.0.unchecked_transaction()?;
+        for id in ids {
+            stmt.execute([id])?;
+        }
+        tx.commit()
     }
 }
 
