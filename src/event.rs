@@ -64,6 +64,25 @@ impl DeviceOSIds {
     }
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct DeviceIds<'a> {
+    device_sku: &'a str,
+    device_base_board_id: &'a str,
+    device_bios_uuid: &'a str,
+    device_sn: &'a str,
+}
+
+impl<'a> From<&'a DeviceOSIds> for DeviceIds<'a> {
+    fn from(ids: &'a DeviceOSIds) -> Self {
+        Self {
+            device_sku: &ids.device_sku,
+            device_base_board_id: &ids.device_base_board_id,
+            device_bios_uuid: &ids.device_bios_uuid,
+            device_sn: &ids.device_sn,
+        }
+    }
+}
+
 pub fn data_provider() -> DataProviderInfo {
     let (os_name, os_version) = match OsRelease::new() {
         Ok(OsRelease { name, version, .. }) => (name, version),
