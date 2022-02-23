@@ -25,11 +25,13 @@ fn create_tables(conn: &Connection) -> Result<()> {
              frequency TEXT NOT NULL
          );
          CREATE TABLE state (
+             id INTEGER PRIMARY KEY,
              type TEXT NOT NULL,
              value TEXT NOT NULL,
              FOREIGN KEY(type) REFERENCES event_types(type) ON DELETE CASCADE
          );
          CREATE TABLE queued_events (
+             id INTEGER PRIMARY KEY,
              value TEXT NOT NULL,
              seen INTEGER DEFAULT 0 NOT NULL
          );
