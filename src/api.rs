@@ -132,7 +132,7 @@ impl Api {
             if let Some(body) = &body {
                 // Like `RequestBuilder::json`, use `serde_json::to_vec` and set header
                 let body = serde_json::to_vec(body)?;
-                if body.len() >= 80000 {
+                if body.len() >= 8000 {
                     return Err(PayloadSizeError.into());
                 }
                 req = req.header(header::CONTENT_TYPE, "application/json");
