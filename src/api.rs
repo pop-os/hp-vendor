@@ -5,7 +5,7 @@ use reqwest::{
     blocking::{Client, Response},
     header, Method, StatusCode,
 };
-use std::{cell::RefCell, collections::HashMap, io::Read, str::FromStr};
+use std::{cell::RefCell, collections::HashMap, error::Error, fmt, io::Read, str::FromStr};
 
 use crate::event::{self, DeviceOSIds, Events};
 
@@ -57,6 +57,17 @@ pub struct ConsentResponse {
     pub acknowledgement: bool,
     pub consent_action: String,
 }
+
+#[derive(Debug)]
+pub struct PayloadSizeError;
+
+impl fmt::Display for PayloadSizeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Payload too large")
+    }
+}
+
+impl Error for PayloadSizeError {}
 
 pub struct Api {
     client: Client,
@@ -121,6 +132,9 @@ impl Api {
             if let Some(body) = &body {
                 // Like `RequestBuilder::json`, use `serde_json::to_vec` and set header
                 let body = serde_json::to_vec(body)?;
+                if body.len() >= 80000 {
+                    return Err(PayloadSizeError.into());
+                }
                 req = req.header(header::CONTENT_TYPE, "application/json");
                 req = req.body(body);
             }
