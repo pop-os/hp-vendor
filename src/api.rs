@@ -45,11 +45,17 @@ struct ExistsResponse {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Purpose {
-    locale: String,
+    pub locale: String,
     #[serde(rename = "minVersion")]
-    min_version: String,
-    statement: String,
-    version: String,
+    pub min_version: String,
+    pub statement: String,
+    pub version: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ConsentResponse {
+    pub acknowledgement: bool,
+    pub consent_action: String,
 }
 
 pub struct Api {
@@ -160,8 +166,7 @@ impl Api {
             .json()?)
     }
 
-    // XXX WIP
-    pub fn consent(&self, locale: &str, version: &str) -> anyhow::Result<serde_json::Value> {
+    pub fn consent(&self, locale: &str, version: &str) -> anyhow::Result<ConsentResponse> {
         Ok(self
             .request(
                 "DataCollectionConsent",
