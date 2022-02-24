@@ -213,21 +213,21 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             .args(["-F", field, module_name])
                             .output()
                             .ok()?;
-                        if !res.status.success() {
-                            return None;
-                        }
                         let mut s = String::from_utf8(res.stdout).ok()?;
                         s.truncate(s.trim_end().len());
+                        if !res.status.success() || s.is_empty() {
+                            return None;
+                        }
                         Some(s)
                     };
                     events.push(
                         event::Driver {
-                            author: None,                       // XXX
-                            description: None,                  // XXX
-                            driver_version: modinfo("version"), // XXX most don't have version
-                            link_time: None,                    // XXX
+                            author: modinfo("author"),
+                            description: modinfo("description"),
+                            driver_version: modinfo("version"),
+                            link_time: None, // XXX
                             module_name: module_name.to_string(),
-                            module_path: String::new(), // XXX
+                            module_path: modinfo("filename").unwrap_or_else(unknown),
                             module_type: String::new(), // XXX
                             size,
                         }
