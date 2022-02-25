@@ -6,6 +6,8 @@ Build-Depends:
   debhelper-compat (= 11),
   cargo,
   clang,
+  dkms,
+  dh-modaliases,
   libclang-dev,
   libsensors-dev,
   libsqlite3-dev,
@@ -19,7 +21,15 @@ Homepage: https://github.com/pop-os/hp-vendor
 Package: pop-hp-vendor
 Architecture: amd64 arm64
 Depends:
+  pop-hp-vendor-dkms,
   systemd,
   ${misc:Depends},
   ${shlibs:Depends}
 Description: HP vendor support
+
+Package: pop-hp-vendor-dkms
+Architecture: amd64 arm64
+Depends: ${misc:Depends}
+XB-Modaliases: ${modaliases}
+Description: HP vendor kernel driver
+ This DKMS driver provides fan support for HP products
