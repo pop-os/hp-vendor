@@ -152,31 +152,40 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             );
         }),
         TelemetryEventType::SwFirmware => EventDesc::new(|events| {
-            fn bios_date() -> Option<String> {
-                let date: String = read_file("/sys/class/dmi/id/bios_date")?;
-                let mut parts = date.split('/');
-                let month = parts.next()?;
-                let day = parts.next()?;
-                let year = parts.next()?;
-                Some(format!("{}-{}-{}", year, month, day))
-            }
-            fn smbios_version() -> Option<String> {
-                let entry_point = fs::read("/sys/firmware/dmi/tables/smbios_entry_point").ok()?;
-                let smbios = dmi::Smbios::from_bytes(&entry_point).ok()?;
-                Some(format!("{}.{}", smbios.major_version, smbios.minor_version))
-            }
-            events.push(
-                event::Firmware {
-                    bios_release_date: bios_date(),
-                    bios_vendor: read_file("/sys/class/dmi/id/bios_vendor"),
-                    bios_version: read_file("/sys/class/dmi/id/bios_version"),
-                    capabilities: None, // XXX
-                    embedded_controller_version: read_file("/sys/class/dmi/id/ec_firmware_release"),
-                    rom_size: None, // XXX
-                    smbios_version: smbios_version(),
+            for i in dmi() {
+                if let Some(bios) = i.get::<util::dmi::BiosInfo31>() {
+                    let bios_date = (|| {
+                        let date = i.get_str(bios.date)?;
+                        let mut parts = date.split('/');
+                        let month = parts.next()?;
+                        let day = parts.next()?;
+                        let year = parts.next()?;
+                        Some(format!("{}-{}-{}", year, month, day))
+                    })();
+                    let ec_version = format!("{}.{}", bios.ec_major, bios.ec_minor);
+                    // XXX not working?
+                    let smbios_version = (|| {
+                        let entry_point =
+                            fs::read("/sys/firmware/dmi/tables/smbios_entry_point").ok()?;
+                        let smbios = dmi::Smbios::from_bytes(&entry_point).ok()?;
+                        Some(format!("{}.{}", smbios.major_version, smbios.minor_version))
+                    })();
+                    events.push(
+                        event::Firmware {
+                            bios_release_date: bios_date,
+                            bios_vendor: i.get_str(bios.vendor).cloned(),
+                            bios_version: i.get_str(bios.version).cloned(),
+                            capabilities: None, // XXX
+                            embedded_controller_version: Some(ec_version),
+                            rom_size: None, // XXX
+                            smbios_version,
+                        }
+                        .into(),
+                    );
+
+                    break;
                 }
-                .into(),
-            );
+            }
         }),
         TelemetryEventType::HwSystem => EventDesc::new(|events| {
             events.push(

@@ -67,3 +67,27 @@ unsafe impl Plain for SystemInfo24 {}
 impl dmi::TableKind for SystemInfo24 {
     const KIND: u8 = 1;
 }
+
+#[repr(packed)]
+#[derive(Clone, Default, Debug, Copy)]
+#[allow(dead_code)]
+pub struct BiosInfo31 {
+    pub vendor: u8,
+    pub version: u8,
+    pub address: u16,
+    pub date: u8,
+    pub size: u8,
+    pub characteristics: u64,
+    pub characteristics_extension_bytes: [u8; 2],
+    pub system_major: u8,
+    pub system_minor: u8,
+    pub ec_major: u8,
+    pub ec_minor: u8,
+    pub extended_rom_rize: u8,
+}
+
+unsafe impl Plain for BiosInfo31 {}
+
+impl dmi::TableKind for BiosInfo31 {
+    const KIND: u8 = 0;
+}
