@@ -21,6 +21,18 @@ use util::{
     drm::DrmDevice,
 };
 
+pub fn supported_hardware() -> Result<(), String> {
+    let board_vendor: String =
+        read_file("/sys/class/dmi/id/board_vendor").ok_or_else(|| "`board_vendor` not defined")?;
+    let board_name: String =
+        read_file("/sys/class/dmi/id/board_name").ok_or_else(|| "`board_name` not defined")?;
+    if (board_vendor.as_str(), board_name.as_str()) != ("HP", "8A78") {
+        Err(format!("`{} {}` unrecognized", board_vendor, board_name))
+    } else {
+        Ok(())
+    }
+}
+
 fn battery() -> Option<PathBuf> {
     for entry in fs::read_dir("/sys/class/power_supply").ok()? {
         let entry = entry.ok()?;
