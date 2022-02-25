@@ -1,6 +1,8 @@
 use std::{ffi::OsStr, process::Command};
 
 // TODO: what should be optional?
+// For parsing JSON output of `nvme smart-log`
+// See also `struct nvme_smart_log`
 #[derive(serde::Deserialize)]
 pub struct SmartLog {
     pub critical_warning: i64,
@@ -9,16 +11,16 @@ pub struct SmartLog {
     pub spare_thresh: i64,
     pub percent_used: i64,
     // "endurance_grp_critical_warning_summary"
-    pub data_units_read: i64,
-    pub data_units_written: i64,
-    pub host_read_commands: i64,
-    pub host_write_commands: i64,
-    pub controller_busy_time: i64,
-    pub power_cycles: i64,
-    pub power_on_hours: i64,
-    pub unsafe_shutdowns: i64,
-    // pub media_errors: i64,
-    pub num_err_log_entries: i64,
+    pub data_units_read: u128,
+    pub data_units_written: u128,
+    pub host_read_commands: u128,
+    pub host_write_commands: i128,
+    pub controller_busy_time: u128,
+    pub power_cycles: u128,
+    pub power_on_hours: u128,
+    pub unsafe_shutdowns: u128,
+    pub media_errors: u128,
+    pub num_err_log_entries: u128,
     pub warning_temp_time: i64,
     pub critical_comp_time: i64,
     // "temperature_sensor_1"
