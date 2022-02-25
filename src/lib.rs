@@ -171,6 +171,16 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         let smbios = dmi::Smbios::from_bytes(&entry_point).ok()?;
                         Some(format!("{}.{}", smbios.major_version, smbios.minor_version))
                     })();
+                    let mut rom_size = (bios.rom_size as u16 + 1) / 16;
+                    if bios.rom_size == 0xff {
+                        let unit = bios.extended_rom_size >> 14;
+                        let size = bios.extended_rom_size & 0x3fff;
+                        if unit == 0b00 {
+                            rom_size = size;
+                        } else if unit == 0b01 {
+                            rom_size = size * 1024;
+                        }
+                    }
                     events.push(
                         event::Firmware {
                             bios_release_date: bios_date,
@@ -178,7 +188,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             bios_version: i.get_str(bios.version).cloned(),
                             capabilities: None, // XXX
                             embedded_controller_version: Some(ec_version),
-                            rom_size: None, // XXX
+                            rom_size: Some(rom_size.to_string()), // XXX why string?
                             smbios_version,
                         }
                         .into(),

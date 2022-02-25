@@ -76,14 +76,14 @@ pub struct BiosInfo31 {
     pub version: u8,
     pub address: u16,
     pub date: u8,
-    pub size: u8,
+    pub rom_size: u8,
     pub characteristics: u64,
     pub characteristics_extension_bytes: [u8; 2],
     pub system_major: u8,
     pub system_minor: u8,
     pub ec_major: u8,
     pub ec_minor: u8,
-    pub extended_rom_rize: u8,
+    pub extended_rom_size: u16,
 }
 
 unsafe impl Plain for BiosInfo31 {}
