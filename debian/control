@@ -11,6 +11,7 @@ Build-Depends:
   libsqlite3-dev,
   libssl-dev,
   libudev-dev,
+  nvme-cli,
   pkg-config,
 Standards-Version: 4.1.1
 Homepage: https://github.com/pop-os/hp-vendor

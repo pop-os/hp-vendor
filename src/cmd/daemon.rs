@@ -121,16 +121,17 @@ pub fn run() {
 
     let freqs = db.get_event_frequencies().unwrap();
 
-    let udev_descs = event::TelemetryEventType::iter()
-        .filter(|i| freqs.get(*i) == SamplingFrequency::OnChange)
-        .filter_map(|i| {
-            if let Some(crate::EventDesc::Udev(desc)) = crate::event(i) {
-                Some((desc.subsystem, desc))
-            } else {
-                None
-            }
-        })
-        .collect::<HashMap<_, _>>();
+    let mut udev_descs = HashMap::new();
+    for i in event::TelemetryEventType::iter() {
+        if freqs.get(i) == SamplingFrequency::OnChange {
+            continue;
+        } else if let Some(crate::EventDesc::Udev(desc)) = crate::event(i) {
+            udev_descs
+                .entry(desc.subsystem)
+                .or_insert_with(Vec::new)
+                .push(desc);
+        }
+    }
     let mut udev_devices = HashMap::new();
 
     let old = db
@@ -141,9 +142,11 @@ pub fn run() {
     let mut enumerator = udev::Enumerator::new().unwrap();
     for device in enumerator.scan_devices().unwrap() {
         if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
-            if let Some(desc) = udev_descs.get(subsystem) {
+            if let Some(descs) = udev_descs.get(subsystem) {
                 let mut events = Vec::new();
-                desc.generate(&mut events, &device);
+                for desc in descs {
+                    desc.generate(&mut events, &device);
+                }
                 new.extend_from_slice(&events);
                 udev_devices.insert(device.syspath().to_owned(), events);
             }
@@ -178,9 +181,11 @@ pub fn run() {
                                     return;
                                 }
                             };
-                            if let Some(desc) = udev_descs.get(subsystem) {
+                            if let Some(descs) = udev_descs.get(subsystem) {
                                 let mut events = Vec::new();
-                                desc.generate(&mut events, &x);
+                                for desc in descs {
+                                    desc.generate(&mut events, &x);
+                                }
                                 for event in &events {
                                     println!("{:#?}", event);
                                     insert_statement.execute(event).unwrap();
