@@ -1,28 +1,26 @@
-#![allow(dead_code)]
-
-use std::process::Command;
+use std::{ffi::OsStr, process::Command};
 
 // TODO: what should be optional?
 #[derive(serde::Deserialize)]
-struct SmartLog {
-    critical_warning: i64,
+pub struct SmartLog {
+    pub critical_warning: i64,
     // "temperature"
-    avail_spare: i64,
-    spare_thresh: i64,
-    percent_used: i64,
+    pub avail_spare: i64,
+    pub spare_thresh: i64,
+    pub percent_used: i64,
     // "endurance_grp_critical_warning_summary"
-    // "data_units_read"
-    // "data_units_written"
-    // "host_read_commands"
-    // "host_write_commands"
-    // "controller_busy_time"
-    power_cycles: i64,
-    power_on_hours: i64,
-    unsafe_shutdowns: i64,
-    media_errors: i64,
-    num_err_log_entries: i64,
-    warning_temp_time: i64,
-    // "critical_comp_time"
+    pub data_units_read: i64,
+    pub data_units_written: i64,
+    pub host_read_commands: i64,
+    pub host_write_commands: i64,
+    pub controller_busy_time: i64,
+    pub power_cycles: i64,
+    pub power_on_hours: i64,
+    pub unsafe_shutdowns: i64,
+    // pub media_errors: i64,
+    pub num_err_log_entries: i64,
+    pub warning_temp_time: i64,
+    pub critical_comp_time: i64,
     // "temperature_sensor_1"
     // "temperature_sensor_2"
     // "thm_temp1_trans_count"
@@ -31,11 +29,13 @@ struct SmartLog {
     // "thm_temp2_total_time"
 }
 
-fn smart_log(path: &str) -> Option<SmartLog> {
+pub fn smart_log<S: AsRef<OsStr>>(path: S) -> Option<SmartLog> {
     let stdout = Command::new("nvme")
-        .args(&["smart-log", path, "--output-format=json"])
+        .arg("smart-log")
+        .arg(&path)
+        .arg("--output-format=json")
         .output()
         .ok()?
         .stdout;
-    serde_json::from_slice(&stdout).ok()
+    Some(serde_json::from_slice(&stdout).unwrap())
 }

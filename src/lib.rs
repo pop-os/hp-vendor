@@ -306,6 +306,49 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             })
         }
+        // XXX need support for multiple events with same selector
+        TelemetryEventType::HwNvmeSmartLog => EventDesc::new_udev("nvme", |events, device| {
+            let path = device.syspath();
+            let devnode = match device.devnode() {
+                Some(devnode) => devnode,
+                None => {
+                    return;
+                }
+            };
+
+            if let Some(smart_log) = util::nvme::smart_log(devnode) {
+                events.push(
+                    event::NvmesmartLog {
+                        available_spare: smart_log.avail_spare,
+                        available_spare_threshold: smart_log.spare_thresh,
+                        controller_busy_time: smart_log.controller_busy_time,
+                        critical_composite_temperature_threshold: -1, // XXX
+                        critical_composite_temperature_time: smart_log.critical_comp_time,
+                        critical_warning: smart_log.critical_warning,
+                        data_units_read: smart_log.data_units_read,
+                        data_units_written: smart_log.data_units_written,
+                        endurance_critical_warning: -1, // XXX
+                        host_read_commands: smart_log.host_read_commands,
+                        host_write_commands: smart_log.host_write_commands,
+                        // media_errors: smart_log.media_errors,
+                        media_errors: -1, // XXX
+                        num_err_log_entries: smart_log.num_err_log_entries,
+                        nvme_version: String::new(), // XXX
+                        percentage_used: smart_log.percent_used,
+                        power_cycles: smart_log.power_cycles,
+                        power_on_hours: smart_log.power_on_hours,
+                        serial_number: read_file(path.join("serial")).unwrap_or_else(unknown),
+                        temperature_sensor: Vec::new(), // XXX
+                        thermal_management_total_time: Vec::new(), // XXX
+                        thermal_management_trans_count: Vec::new(), // XXX
+                        unsafe_shutdowns: smart_log.unsafe_shutdowns,
+                        warning_temperature_threshold: -1, // XXX
+                        warning_temperature_time: smart_log.warning_temp_time,
+                    }
+                    .into(),
+                );
+            }
+        }),
         TelemetryEventType::HwPeripheralUsb => EventDesc::new_udev("usb", |events, device| {
             let path = device.syspath();
 
@@ -517,7 +560,6 @@ pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
 ) -> Vec<event::TelemetryEvent> {
     let mut events = Vec::new();
 
-    // XXX ensure no two entries with same subsystem?
     let mut udev_descs = HashMap::new();
 
     for i in types {
@@ -526,7 +568,10 @@ pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
                 desc.generate(&mut events);
             }
             Some(EventDesc::Udev(desc)) => {
-                udev_descs.insert(desc.subsystem, desc);
+                udev_descs
+                    .entry(desc.subsystem)
+                    .or_insert_with(Vec::new)
+                    .push(desc);
             }
             None => {}
         }
@@ -536,8 +581,10 @@ pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
     let mut enumerator = udev::Enumerator::new().unwrap();
     for device in enumerator.scan_devices().unwrap() {
         if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
-            if let Some(desc) = udev_descs.get(subsystem) {
-                desc.generate(&mut events, &device);
+            if let Some(descs) = udev_descs.get(subsystem) {
+                for desc in descs {
+                    desc.generate(&mut events, &device);
+                }
             }
         }
     }
