@@ -84,6 +84,25 @@ impl EventDesc {
     }
 }
 
+struct UdevDescs(HashMap<&'static str, Vec<UdevEventDesc>>);
+
+impl UdevDescs {
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    fn insert(&mut self, desc: UdevEventDesc) {
+        self.0
+            .entry(desc.subsystem)
+            .or_insert_with(Vec::new)
+            .push(desc);
+    }
+
+    fn get(&self, subsystem: &str) -> &[UdevEventDesc] {
+        self.0.get(subsystem).map_or(&[], Vec::as_slice)
+    }
+}
+
 pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
     Some(match type_ {
         TelemetryEventType::SwLinuxKernel => EventDesc::new(|events| {
@@ -594,19 +613,13 @@ pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
 ) -> Vec<event::TelemetryEvent> {
     let mut events = Vec::new();
 
-    let mut udev_descs = HashMap::new();
-
+    let mut udev_descs = UdevDescs::new();
     for i in types {
         match event(i) {
             Some(EventDesc::Periodic(desc)) => {
                 desc.generate(&mut events);
             }
-            Some(EventDesc::Udev(desc)) => {
-                udev_descs
-                    .entry(desc.subsystem)
-                    .or_insert_with(Vec::new)
-                    .push(desc);
-            }
+            Some(EventDesc::Udev(desc)) => udev_descs.insert(desc),
             None => {}
         }
     }
@@ -615,10 +628,8 @@ pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
     let mut enumerator = udev::Enumerator::new().unwrap();
     for device in enumerator.scan_devices().unwrap() {
         if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
-            if let Some(descs) = udev_descs.get(subsystem) {
-                for desc in descs {
-                    desc.generate(&mut events, &device);
-                }
+            for desc in udev_descs.get(subsystem) {
+                desc.generate(&mut events, &device);
             }
         }
     }
