@@ -101,6 +101,14 @@ impl UdevDescs {
     fn get(&self, subsystem: &str) -> &[UdevEventDesc] {
         self.0.get(subsystem).map_or(&[], Vec::as_slice)
     }
+
+    fn generate(&self, events: &mut Vec<TelemetryEvent>, device: &udev::Device) {
+        if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
+            for desc in self.get(subsystem) {
+                desc.generate(events, &device);
+            }
+        }
+    }
 }
 
 pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
@@ -627,11 +635,7 @@ pub fn events_inner<I: Iterator<Item = TelemetryEventType>>(
     // XXX can this ever fail?
     let mut enumerator = udev::Enumerator::new().unwrap();
     for device in enumerator.scan_devices().unwrap() {
-        if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
-            for desc in udev_descs.get(subsystem) {
-                desc.generate(&mut events, &device);
-            }
-        }
+        udev_descs.generate(&mut events, &device);
     }
 
     events
