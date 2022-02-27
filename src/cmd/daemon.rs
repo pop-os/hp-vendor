@@ -14,7 +14,6 @@ use nix::{
 };
 use std::{
     collections::HashMap,
-    ffi::OsStr,
     fs::OpenOptions,
     io::{Seek, SeekFrom},
     os::unix::{fs::OpenOptionsExt, io::AsRawFd},
@@ -138,16 +137,11 @@ pub fn run() {
     let mut new = Vec::new();
     let mut enumerator = udev::Enumerator::new().unwrap();
     for device in enumerator.scan_devices().unwrap() {
-        if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
-            let descs = udev_descs.get(subsystem);
-            if !descs.is_empty() {
-                let mut events = Vec::new();
-                for desc in descs {
-                    desc.generate(&mut events, &device);
-                }
-                new.extend_from_slice(&events);
-                udev_devices.insert(device.syspath().to_owned(), events);
-            }
+        let mut events = Vec::new();
+        udev_descs.generate(&mut events, &device);
+        if !events.is_empty() {
+            new.extend_from_slice(&events);
+            udev_devices.insert(device.syspath().to_owned(), events);
         }
     }
 
@@ -173,24 +167,16 @@ pub fn run() {
                 TOKEN_UDEV => {
                     socket.clone().for_each(|x| {
                         if x.event_type() == udev::EventType::Add {
-                            let subsystem = match x.subsystem().and_then(OsStr::to_str) {
-                                Some(subsystem) => subsystem,
-                                None => {
-                                    return;
-                                }
-                            };
-                            let descs = udev_descs.get(subsystem);
-                            if !descs.is_empty() {
-                                let mut events = Vec::new();
-                                for desc in descs {
-                                    desc.generate(&mut events, &x);
-                                }
-                                for event in &events {
-                                    println!("{:#?}", event);
-                                    insert_statement.execute(event).unwrap();
-                                }
+                            let mut events = Vec::new();
+                            udev_descs.generate(&mut events, &x);
+                            for event in &events {
+                                println!("{:#?}", event);
+                                insert_statement.execute(event).unwrap();
+                            }
+                            if !events.is_empty() {
                                 udev_devices.insert(x.syspath().to_owned(), events);
-                                // XXX empty vec? Already set?
+                            } else {
+                                udev_devices.remove(&x.syspath().to_owned());
                             }
                         } else if x.event_type() == udev::EventType::Remove {
                             if let Some(events) = udev_devices.remove(x.syspath()) {
