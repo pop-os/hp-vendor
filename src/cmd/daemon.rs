@@ -121,15 +121,12 @@ pub fn run() {
 
     let freqs = db.get_event_frequencies().unwrap();
 
-    let mut udev_descs = HashMap::new();
+    let mut udev_descs = crate::UdevDescs::new();
     for i in event::TelemetryEventType::iter() {
-        if freqs.get(i) == SamplingFrequency::OnChange {
+        if freqs.get(i) != SamplingFrequency::OnChange {
             continue;
         } else if let Some(crate::EventDesc::Udev(desc)) = crate::event(i) {
-            udev_descs
-                .entry(desc.subsystem)
-                .or_insert_with(Vec::new)
-                .push(desc);
+            udev_descs.insert(desc);
         }
     }
     let mut udev_devices = HashMap::new();
@@ -142,7 +139,8 @@ pub fn run() {
     let mut enumerator = udev::Enumerator::new().unwrap();
     for device in enumerator.scan_devices().unwrap() {
         if let Some(subsystem) = device.subsystem().and_then(OsStr::to_str) {
-            if let Some(descs) = udev_descs.get(subsystem) {
+            let descs = udev_descs.get(subsystem);
+            if !descs.is_empty() {
                 let mut events = Vec::new();
                 for desc in descs {
                     desc.generate(&mut events, &device);
@@ -181,7 +179,8 @@ pub fn run() {
                                     return;
                                 }
                             };
-                            if let Some(descs) = udev_descs.get(subsystem) {
+                            let descs = udev_descs.get(subsystem);
+                            if !descs.is_empty() {
                                 let mut events = Vec::new();
                                 for desc in descs {
                                     desc.generate(&mut events, &x);
