@@ -8,6 +8,7 @@ pub mod dmi;
 pub mod drm;
 pub mod nvme;
 pub mod pcie;
+pub mod sensors;
 
 /// Set unique advisory lock on whole file Returns `EACCESS` or `EAGAIN` if
 /// already locked.
