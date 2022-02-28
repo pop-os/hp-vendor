@@ -4,6 +4,7 @@ use rusqlite::{
     Connection, Result, Statement,
 };
 use std::{error::Error, fmt, str};
+use time::{Duration, OffsetDateTime};
 
 use crate::{
     config::SamplingFrequency,
@@ -46,12 +47,13 @@ fn create_tables(conn: &Connection) -> Result<()> {
          CREATE TABLE properties (
              id INTEGER PRIMARY KEY,
              os_install_id TEXT,
+             last_weekly_time INTEGER,
              CHECK (id = 0)
          );",
     )?;
     conn.execute(
-        "INSERT into properties
-         VALUES (0, ?)",
+        "INSERT into properties (id, os_install_id, last_weekly_time)
+         VALUES (0, ?, 0)",
         [uuid::Uuid::new_v4().to_string()],
     )?;
     Ok(())
@@ -84,6 +86,10 @@ fn migrate_0_to_1(conn: &Connection) -> Result<()> {
     )
 }
 
+fn migrate_1_to_2(conn: &Connection) -> Result<()> {
+    conn.execute_batch("ALTER TABLE properties ADD COLUMN last_weekly_time INTEGER")
+}
+
 pub struct DB(Connection);
 
 impl DB {
@@ -97,10 +103,15 @@ impl DB {
             .exists([])?;
         if empty {
             create_tables(&conn)?;
-        } else if user_version == 0 {
-            migrate_0_to_1(&conn)?;
+        } else {
+            if user_version < 1 {
+                migrate_0_to_1(&conn)?;
+            }
+            if user_version < 2 {
+                migrate_1_to_2(&conn)?;
+            }
         }
-        conn.execute("PRAGMA user_version = 1", [])?;
+        conn.execute("PRAGMA user_version = 2", [])?;
         tx.commit()?;
 
         conn.execute("PRAGMA foreign_keys = ON", [])?;
@@ -145,6 +156,28 @@ impl DB {
     pub fn get_os_install_id(&self) -> Result<String> {
         self.0
             .query_row("SELECT os_install_id from properties", [], |row| row.get(0))
+    }
+
+    fn get_last_weekly_time(&self) -> Result<OffsetDateTime> {
+        let time: Option<i64> =
+            self.0
+                .query_row("SELECT last_weekly_time from properties", [], |row| {
+                    row.get(0)
+                })?;
+        Ok(OffsetDateTime::from_unix_timestamp(time.unwrap_or(0))
+            .unwrap_or(OffsetDateTime::UNIX_EPOCH))
+    }
+
+    pub fn last_weekly_time_expired(&self) -> Result<bool> {
+        let diff = OffsetDateTime::now_utc() - self.get_last_weekly_time()?;
+        Ok(diff.is_negative() || diff > Duration::WEEK)
+    }
+
+    pub fn update_last_weekly_time(&self) -> Result<()> {
+        let time = OffsetDateTime::now_utc().unix_timestamp();
+        self.0
+            .execute("UPDATE properties SET last_weekly_time = ?", [time])
+            .map(|_| ())
     }
 
     pub fn update_event_types(&self) -> Result<()> {
