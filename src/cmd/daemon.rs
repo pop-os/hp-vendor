@@ -198,6 +198,9 @@ pub fn run() {
                 TOKEN_TIMER => {
                     let mut buf = [0; 8];
                     let _ = unistd::read(timer.as_raw_fd(), &mut buf);
+                    if let Some((current, requested)) = util::sensors::fan() {
+                        println!("Fan: {} RPM current, {} RPM requested", current, requested);
+                    }
                     for chip in sensors.chip_iter(None) {
                         for feature in chip.feature_iter() {
                             let _label = match feature.label() {
