@@ -648,3 +648,23 @@ pub fn all_events() -> Vec<event::TelemetryEvent> {
 pub fn events(freqs: &Frequencies, freq: SamplingFrequency) -> Vec<event::TelemetryEvent> {
     events_inner(event::TelemetryEventType::iter().filter(|i| freqs.get(*i) == freq))
 }
+
+pub fn update_events_and_queue(
+    db: &db::DB,
+    freqs: &Frequencies,
+    freq: SamplingFrequency,
+) -> rusqlite::Result<()> {
+    let old = db.get_state(db::State::Frequency(freq))?;
+
+    let new = events(&freqs, freq);
+    let mut diff = new.clone();
+    event::diff(&mut diff, &old);
+
+    let mut insert_statement = db.prepare_queue_insert()?;
+    for event in diff {
+        insert_statement.execute(&event)?;
+    }
+    db.replace_state(db::State::Frequency(freq), &new)?;
+
+    Ok(())
+}

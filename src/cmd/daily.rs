@@ -1,7 +1,7 @@
 use crate::{
     api::{self, Api},
     config::SamplingFrequency,
-    db::{self, DB},
+    db::DB,
     event, util,
 };
 
@@ -29,21 +29,11 @@ pub fn run(arg: Option<&str>) {
     let ids = event::DeviceOSIds::new(os_install_id).unwrap();
     let freqs = db.get_event_frequencies().unwrap();
 
-    // TODO: handle frequencies other than daily
-    let old = db
-        .get_state(db::State::Frequency(SamplingFrequency::Daily))
-        .unwrap();
-
-    let new = crate::events(&freqs, SamplingFrequency::Daily);
-    let mut diff = new.clone();
-    event::diff(&mut diff, &old);
-
-    let mut insert_statement = db.prepare_queue_insert().unwrap();
-    for event in diff {
-        insert_statement.execute(&event).unwrap();
+    crate::update_events_and_queue(&db, &freqs, SamplingFrequency::Daily).unwrap();
+    if db.last_weekly_time_expired().unwrap() {
+        crate::update_events_and_queue(&db, &freqs, SamplingFrequency::Weeky).unwrap();
+        db.update_last_weekly_time().unwrap();
     }
-    db.replace_state(db::State::Frequency(SamplingFrequency::Daily), &new)
-        .unwrap();
 
     let api = if arg != Some("--dequeue-no-upload") {
         match Api::new(ids.clone()) {
