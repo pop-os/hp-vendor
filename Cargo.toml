@@ -10,7 +10,6 @@ anyhow = "1.0.53"
 base64 = "0.13.0"
 drm = "0.6.2"
 libc = "0.2.104"
-lm-sensors = "0.1.4"
 mio = { version = "0.8", features = ["os-ext"] }
 nix = "0.23"
 os-release = "0.1.0"

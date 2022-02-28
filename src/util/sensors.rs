@@ -21,3 +21,17 @@ pub fn fan() -> Option<(i64, i64)> {
     file.read_exact(&mut buf).ok()?;
     Some((fan_to_rpm(buf[0]), fan_to_rpm(buf[1])))
 }
+
+pub fn thermal() -> Option<Vec<i64>> {
+    let mut enumerator = udev::Enumerator::new().ok()?;
+    enumerator.match_subsystem("hwmon").ok()?;
+    enumerator.match_attribute("name", "acpitz").ok()?;
+    let device = enumerator.scan_devices().ok()?.next()?;
+
+    let mut temps = Vec::new();
+    for i in 1..=6 {
+        let value = device.attribute_value(format!("temp{}_input", i))?;
+        temps.push(value.to_str()?.trim().parse().ok()?);
+    }
+    Some(temps)
+}
