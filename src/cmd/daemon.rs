@@ -1,7 +1,6 @@
 // XXX memory usage? Is there any danger remove events won't occur, and memory will grow?
 // TODO Change events
 
-use lm_sensors::{prelude::*, value::Kind as SensorKind};
 use mio::{unix::SourceFd, Token};
 use nix::{
     sys::{
@@ -116,8 +115,6 @@ pub fn run() {
         )
         .unwrap();
 
-    let sensors = lm_sensors::Initializer::default().initialize().unwrap();
-
     let freqs = db.get_event_frequencies().unwrap();
 
     let mut udev_descs = crate::UdevDescs::new();
@@ -196,29 +193,15 @@ pub fn run() {
                     }
                 }
                 TOKEN_TIMER => {
+                    println!("timer");
                     let mut buf = [0; 8];
                     let _ = unistd::read(timer.as_raw_fd(), &mut buf);
                     if let Some((current, requested)) = util::sensors::fan() {
                         println!("Fan: {} RPM current, {} RPM requested", current, requested);
                     }
-                    for chip in sensors.chip_iter(None) {
-                        for feature in chip.feature_iter() {
-                            let _label = match feature.label() {
-                                Ok(label) => label,
-                                Err(_) => {
-                                    continue;
-                                }
-                            };
-                            if let Ok(sub_feature) =
-                                feature.sub_feature_by_kind(SensorKind::TemperatureInput)
-                            {
-                                if let Ok(value) = sub_feature.raw_value() {
-                                    println!("{} {} {} {}", chip, feature, sub_feature, value);
-                                }
-                            }
-                        }
+                    if let Some(temps) = util::sensors::thermal() {
+                        println!("Temps: {:?}", temps);
                     }
-                    println!("timer");
                 }
                 _ => unreachable!(),
             }
