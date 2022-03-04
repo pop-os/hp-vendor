@@ -13,25 +13,17 @@ pub fn run(arg: Option<&str>) {
     let db = DB::open().unwrap();
     db.update_event_types().unwrap();
 
-    // TODO set consent correctly, and check its value
-    let consent = match db.get_consent().unwrap() {
-        Some(consent) => consent,
-        None => {
-            let consent = event::DataCollectionConsent {
-                opted_in_level: String::new(),
-                version: String::new(),
-            };
-            db.set_consent(Some(&consent)).unwrap();
-            consent
-        }
-    };
+    let consents = db.get_consents().unwrap();
+    if consents.is_empty() {
+        panic!("Need to opt-in with `hp-vendor consent``");
+    }
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = event::DeviceOSIds::new(os_install_id).unwrap();
     let freqs = db.get_event_frequencies().unwrap();
 
     crate::update_events_and_queue(&db, &freqs, SamplingFrequency::Daily).unwrap();
     if db.last_weekly_time_expired().unwrap() {
-        crate::update_events_and_queue(&db, &freqs, SamplingFrequency::Weeky).unwrap();
+        crate::update_events_and_queue(&db, &freqs, SamplingFrequency::Weekly).unwrap();
         db.update_last_weekly_time().unwrap();
     }
 
@@ -45,7 +37,7 @@ pub fn run(arg: Option<&str>) {
     };
 
     let (queued_ids, queued) = db.get_queued().unwrap();
-    let mut events = event::Events::new(consent, ids, &[]);
+    let mut events = event::Events::new(consents, ids, &[]);
     for (chunk_ids, chunk) in queued_ids.chunks(100).zip(queued.chunks(100)) {
         events.data = chunk;
 

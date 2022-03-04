@@ -215,7 +215,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             bios_version: i.get_str(bios.version).cloned(),
                             capabilities: None, // XXX
                             embedded_controller_version: Some(ec_version),
-                            rom_size: Some(rom_size.to_string()), // XXX why string?
+                            rom_size: Some(rom_size.into()),
                             smbios_version,
                         }
                         .into(),
@@ -334,9 +334,9 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 }
                             };
                             Some(event::StoragePartition {
-                                file_system: String::new(), // XXX
-                                flags: Vec::new(),          // XXX
-                                name: String::new(),        // XXX
+                                file_system: None,   // XXX
+                                flags: Vec::new(),   // XXX
+                                name: String::new(), // XXX
                                 number,
                                 size: read_file(path.join("size")).unwrap_or(0),
                             })
@@ -421,7 +421,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
 
             events.push(
                 event::PeripheralUSB {
-                    device_version: None, // XXX
                     manufacturer: read_file(path.join("manufacturer")),
                     manufacturer_id: read_file(path.join("idVendor")),
                     message: None, // XXX

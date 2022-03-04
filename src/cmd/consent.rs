@@ -3,13 +3,20 @@ use std::{
     process,
 };
 
-use crate::{api::Api, db::DB, event::DeviceOSIds};
+use crate::{
+    api::Api,
+    db::DB,
+    event::{self, DeviceOSIds},
+};
 
-pub fn run(arg: Option<&str>) {
-    let locale = arg.unwrap_or_else(|| {
-        eprintln!("Usage: hp-vendor consent <locale>");
-        process::exit(1)
-    });
+fn arg_err<'a>() -> &'a str {
+    eprintln!("Usage: hp-vendor consent <locale> <country>");
+    process::exit(1)
+}
+
+pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
+    let locale = arg1.unwrap_or_else(arg_err);
+    let country = arg2.unwrap_or_else(arg_err);
 
     let db = DB::open().unwrap();
     let os_install_id = db.get_os_install_id().unwrap();
@@ -19,17 +26,31 @@ pub fn run(arg: Option<&str>) {
 
     let api = Api::new(ids).unwrap();
     let purposes = api.purposes(locale).unwrap();
-    // XXX multiple?
-    let purpose = &purposes[0];
 
-    println!("Purpose: {}", purpose.statement);
-    print!("Agree? [yN]: ");
-    io::stdout().lock().flush().unwrap();
-    let mut answer = String::new();
-    io::stdin().read_line(&mut answer).unwrap();
-    if answer.trim() == "y" {
-        let resp = api.consent(&purpose.locale, &purpose.version).unwrap();
-        println!("{:?}", resp);
-        // XXX set consent
+    let mut consents = Vec::new();
+    for purpose in purposes {
+        println!("Purpose: {}", purpose.verbiage.statement);
+        print!("Agree? [yN]: ");
+        io::stdout().lock().flush().unwrap();
+        let mut answer = String::new();
+        io::stdin().read_line(&mut answer).unwrap();
+        if answer.trim() == "y" {
+            let resp = api
+                .consent(
+                    &purpose.verbiage.locale,
+                    country,
+                    &purpose.purpose_id,
+                    &purpose.verbiage.version,
+                )
+                .unwrap();
+            println!("{:?}", resp);
+            consents.push(event::DataCollectionConsent {
+                country: country.to_string(),
+                locale: purpose.verbiage.locale,
+                purpose_id: purpose.purpose_id,
+                version: purpose.verbiage.version,
+            });
+        }
     }
+    db.set_consents(&consents).unwrap();
 }

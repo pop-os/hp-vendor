@@ -36,14 +36,13 @@ fn create_tables(conn: &Connection) -> Result<()> {
              value TEXT NOT NULL,
              seen INTEGER DEFAULT 0 NOT NULL
          );
-         CREATE TABLE consent (
+         CREATE TABLE consents (
              id INTEGER PRIMARY KEY,
-             opted_in_level TEXT,
-             version TEXT,
-             CHECK (id = 0)
+             locale TEXT NOT NULL,
+             country TEXT NOT NULL,
+             purpose_id TEXT NOT NULL,
+             version TEXT NOT NULL
          );
-         INSERT INTO consent (id, opted_in_level, version)
-         VALUES (0, NULL, NULL);
          CREATE TABLE properties (
              id INTEGER PRIMARY KEY,
              os_install_id TEXT,
@@ -90,6 +89,23 @@ fn migrate_1_to_2(conn: &Connection) -> Result<()> {
     conn.execute_batch("ALTER TABLE properties ADD COLUMN last_weekly_time INTEGER")
 }
 
+fn migrate_2_to_3(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "DROP TABLE consent;
+         CREATE TABLE consents (
+             id INTEGER PRIMARY KEY,
+             locale TEXT NOT NULL,
+             country TEXT NOT NULL,
+             purpose_id TEXT NOT NULL,
+             version TEXT NOT NULL
+         );
+         ",
+    )
+}
+
+static MIGRATIONS: &[fn(&Connection) -> Result<()>] =
+    &[migrate_0_to_1, migrate_1_to_2, migrate_2_to_3];
+
 pub struct DB(Connection);
 
 impl DB {
@@ -97,21 +113,18 @@ impl DB {
         let conn = Connection::open("/var/hp-vendor/db.sqlite3")?;
 
         let tx = conn.unchecked_transaction()?;
-        let user_version: i32 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        let user_version: usize = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
         let empty = !conn
             .prepare("SELECT 1 FROM sqlite_schema where type='table'")?
             .exists([])?;
         if empty {
             create_tables(&conn)?;
         } else {
-            if user_version < 1 {
-                migrate_0_to_1(&conn)?;
-            }
-            if user_version < 2 {
-                migrate_1_to_2(&conn)?;
+            for migration in &MIGRATIONS[user_version..] {
+                migration(&conn)?;
             }
         }
-        conn.execute("PRAGMA user_version = 2", [])?;
+        conn.pragma_update(None, "user_version", MIGRATIONS.len())?;
         tx.commit()?;
 
         conn.execute("PRAGMA foreign_keys = ON", [])?;
@@ -129,28 +142,32 @@ impl DB {
     }
 
     // Should be checked before upload, etc.
-    pub fn get_consent(&self) -> Result<Option<DataCollectionConsent>> {
-        self.0
-            .query_row("SELECT opted_in_level, version from consent", [], |row| {
-                Ok((|| {
-                    Some(DataCollectionConsent {
-                        opted_in_level: row.get(0).ok()?,
-                        version: row.get(1).ok()?,
-                    })
-                })())
+    pub fn get_consents(&self) -> Result<Vec<DataCollectionConsent>> {
+        let mut stmt = self
+            .0
+            .prepare("SELECT locale, country, purpose_id, version from consents")?;
+        let rows = stmt.query_map([], |row| {
+            Ok(DataCollectionConsent {
+                locale: row.get(0)?,
+                country: row.get(1)?,
+                purpose_id: row.get(2)?,
+                version: row.get(3)?,
             })
+        })?;
+        Ok(rows.filter_map(Result::ok).collect())
     }
 
-    pub fn set_consent(&self, consent: Option<&DataCollectionConsent>) -> Result<()> {
-        let opted_in_level = consent.map(|x| &x.opted_in_level);
-        let version = consent.map(|x| &x.version);
-        self.0
-            .execute(
-                "REPLACE INTO consent (id, opted_in_level, version)
-                 VALUES (0, ?, ?)",
-                [opted_in_level, version],
-            )
-            .map(|_| ())
+    pub fn set_consents(&self, consent: &[DataCollectionConsent]) -> Result<()> {
+        let tx = self.0.unchecked_transaction()?;
+        self.0.execute("DELETE FROM consents", [])?;
+        let mut stmt = self.0.prepare(
+            "INSERT INTO consents (locale, country, purpose_id, version)
+             VALUES (?, ?, ?, ?)",
+        )?;
+        for i in consent {
+            stmt.execute([&i.locale, &i.country, &i.purpose_id, &i.version])?;
+        }
+        tx.commit()
     }
 
     pub fn get_os_install_id(&self) -> Result<String> {

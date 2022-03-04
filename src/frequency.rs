@@ -8,7 +8,7 @@ impl SamplingFrequency {
             Self::OnTrigger => "on_trigger",
             Self::OnChange => "on_change",
             Self::Daily => "daily",
-            Self::Weeky => "weekly", // XXX weekly
+            Self::Weekly => "weekly",
         }
     }
 
@@ -17,7 +17,7 @@ impl SamplingFrequency {
             "on_trigger" => Some(Self::OnTrigger),
             "on_change" => Some(Self::OnChange),
             "daily" => Some(Self::Daily),
-            "weekly" => Some(Self::Weeky), // XXX weekly
+            "weekly" => Some(Self::Weekly),
             _ => None,
         }
     }

@@ -5,6 +5,7 @@ use reqwest::{
     blocking::{Client, Response},
     header, Method, StatusCode,
 };
+use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, error::Error, fmt, io::Read, str::FromStr};
 
 use crate::event::{self, DeviceOSIds, Events};
@@ -18,11 +19,6 @@ struct TokenResponse {
     token: String,
     dID: String,
     paths: HashMap<String, (String, String)>,
-}
-
-#[derive(Debug, serde::Deserialize)]
-struct ErrorResponse {
-    message: String,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -44,12 +40,22 @@ struct ExistsResponse {
 }
 
 #[derive(Debug, serde::Deserialize)]
-pub struct Purpose {
+pub struct PurposeVerbiage {
     pub locale: String,
     #[serde(rename = "minVersion")]
     pub min_version: String,
     pub statement: String,
     pub version: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct Purpose {
+    pub organization: String,
+    pub processingBasis: String,
+    #[serde(rename = "purposeId")]
+    pub purpose_id: String,
+    pub requiredIdentifiers: String,
+    pub verbiage: PurposeVerbiage,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -195,11 +201,23 @@ impl Api {
             .json()?)
     }
 
-    pub fn consent(&self, locale: &str, version: &str) -> anyhow::Result<ConsentResponse> {
+    pub fn consent(
+        &self,
+        locale: &str,
+        country: &str,
+        purpose_id: &str,
+        version: &str,
+    ) -> anyhow::Result<ConsentResponse> {
         Ok(self
             .request_json(
                 "DataCollectionConsent",
-                &[("optIn", "true"), ("locale", locale), ("version", version)],
+                &[
+                    ("optIn", "true"),
+                    ("locale", locale),
+                    ("country", country),
+                    ("purposeId", purpose_id),
+                    ("version", version),
+                ],
                 &self.ids,
             )?
             .json()?)
@@ -234,10 +252,13 @@ fn err_from_resp(resp: Response) -> anyhow::Result<Response> {
     if status.is_success() {
         Ok(resp)
     } else {
-        Err(if let Ok(error) = resp.json::<ErrorResponse>() {
-            anyhow::anyhow!("{}: {}", status, error.message)
-        } else {
-            anyhow::anyhow!("{}", status)
-        })
+        if let Ok(Value::Object(obj)) = resp.json::<Value>() {
+            if let Some(Value::String(message)) = obj.get("message") {
+                return Err(anyhow::anyhow!("{}: {}", status, message));
+            } else if let Some(Value::String(detail)) = obj.get("detail") {
+                return Err(anyhow::anyhow!("{}: {}", status, detail));
+            }
+        }
+        Err(anyhow::anyhow!("{}", status))
     }
 }

@@ -102,8 +102,16 @@
             "title": "DataCollectionConsent",
             "type": "object",
             "properties": {
-                "opted_in_level": {
-                    "title": "Opted In Level",
+                "purpose_id": {
+                    "title": "Purpose Id",
+                    "type": "string"
+                },
+                "locale": {
+                    "title": "Locale",
+                    "type": "string"
+                },
+                "country": {
+                    "title": "Country",
                     "type": "string"
                 },
                 "version": {
@@ -112,7 +120,9 @@
                 }
             },
             "required": [
-                "opted_in_level",
+                "purpose_id",
+                "locale",
+                "country",
                 "version"
             ],
             "additionalProperties": false
@@ -133,15 +143,21 @@
                 "data_provider": {
                     "$ref": "#/definitions/DataProviderInfo"
                 },
-                "consent": {
-                    "$ref": "#/definitions/DataCollectionConsent"
+                "consents": {
+                    "title": "Consents",
+                    "description": "List of Data collection consents. Send only latest consented version per purpose_id, locale and country.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DataCollectionConsent"
+                    }
                 }
             },
             "required": [
                 "ids",
                 "timestamp",
                 "data_provider",
-                "consent"
+                "consents"
             ],
             "additionalProperties": false
         },
@@ -990,7 +1006,6 @@
             "required": [
                 "number",
                 "size",
-                "file_system",
                 "name",
                 "flags"
             ],
@@ -1246,17 +1261,6 @@
                 "product_id": {
                     "title": "Product Id",
                     "description": "Product Id",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": ""
-                    },
-                    "type": "string"
-                },
-                "device_version": {
-                    "title": "Device Version",
-                    "description": "Device Version",
                     "examples": [
                         ""
                     ],
@@ -2240,7 +2244,7 @@
                     "source": {
                         "Linux": "TBD"
                     },
-                    "type": "string"
+                    "type": "integer"
                 },
                 "capabilities": {
                     "title": "Capabilities",

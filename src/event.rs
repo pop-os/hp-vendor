@@ -97,9 +97,9 @@ pub fn data_provider() -> DataProviderInfo {
     }
 }
 
-fn data_header(consent: DataCollectionConsent, ids: DeviceOSIds) -> TelemetryHeaderModel {
+fn data_header(consents: Vec<DataCollectionConsent>, ids: DeviceOSIds) -> TelemetryHeaderModel {
     TelemetryHeaderModel {
-        consent,
+        consents,
         data_provider: data_provider(),
         ids,
         timestamp: date_time(),
@@ -114,13 +114,13 @@ pub struct Events<'a> {
 
 impl<'a> Events<'a> {
     pub fn new(
-        consent: DataCollectionConsent,
+        consents: Vec<DataCollectionConsent>,
         ids: DeviceOSIds,
         data: &'a [TelemetryEvent],
     ) -> Self {
         Self {
             data,
-            data_header: data_header(consent, ids),
+            data_header: data_header(consents, ids),
         }
     }
 
