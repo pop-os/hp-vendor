@@ -10,7 +10,7 @@ use std::{cell::RefCell, collections::HashMap, error::Error, fmt, io::Read, str:
 
 use crate::event::{self, DeviceOSIds, Events};
 
-const BASE_URL: &str = "API_URL";
+const BASE_URL: &str = "https://api.data.hpdevone.com";
 
 #[derive(Debug, serde::Deserialize)]
 struct TokenResponse {
