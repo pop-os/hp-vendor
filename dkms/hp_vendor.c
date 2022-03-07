@@ -96,6 +96,9 @@ static struct acpi_battery_hook hp_vendor_battery_hook = {
 
 /* hwmon */
 
+#define EC_INDEX_FAN_SPEED 0x2E
+#define EC_FAN_SPEED_MODIFIER 245760
+
 static umode_t thermal_is_visible(const void *drvdata, enum hwmon_sensor_types type,
 				  u32 attr, int channel)
 {
@@ -122,12 +125,12 @@ static int thermal_read(struct device *dev, enum hwmon_sensor_types type, u32 at
 		switch (channel) {
 		case 0:
 			u8 raw;
-			ec_read(0x2E, &raw);
+			ec_read(EC_INDEX_FAN_SPEED, &raw);
 
 			if (raw == 0 || raw == 0xFF) {
 				*val = 0;
 			} else {
-				*val = (long)(245760) / (long)(raw);
+				*val = (long)(EC_FAN_SPEED_MODIFIER) / (long)(raw);
 			}
 			return 0;
 		default:
