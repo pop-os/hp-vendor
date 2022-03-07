@@ -19,8 +19,12 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/power_supply.h>
+#include <linux/sysfs.h>
 #include <linux/types.h>
 #include <linux/version.h>
+
+#include <acpi/battery.h>
 
 static const struct dmi_system_id hp_vendor_dmi_table[] = {
 	{
@@ -33,6 +37,61 @@ static const struct dmi_system_id hp_vendor_dmi_table[] = {
 	{}
 };
 MODULE_DEVICE_TABLE(dmi, hp_vendor_dmi_table);
+
+/* battery */
+
+#define EC_MAILBOX_PORT_ADDR 0x200
+#define EC_MAILBOX_PORT_DATA 0x201
+#define EC_MAILBOX_INDEX_CT_NUMBER 0xA1
+
+static unsigned char ec_mailbox_read(uint8_t index) {
+	outb(index, EC_MAILBOX_PORT_ADDR);
+	return inb(EC_MAILBOX_PORT_DATA);
+}
+
+static ssize_t battery_ct_number_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int count;
+	for (count = 0; count < 14; count++) {
+		buf[count] = ec_mailbox_read(EC_MAILBOX_INDEX_CT_NUMBER + count);
+	}
+	buf[count] = 0;
+	return count;
+}
+
+static DEVICE_ATTR_RO(battery_ct_number);
+
+static struct attribute *hp_vendor_battery_attrs[] = {
+	&dev_attr_battery_ct_number.attr,
+	NULL,
+};
+
+ATTRIBUTE_GROUPS(hp_vendor_battery);
+
+static int hp_vendor_battery_add(struct power_supply *battery)
+{
+	// HP vendor only supports 1 battery
+	if (strcmp(battery->desc->name, "BATT") != 0)
+		return -ENODEV;
+
+	if (device_add_groups(&battery->dev, hp_vendor_battery_groups))
+		return -ENODEV;
+
+	return 0;
+}
+
+static int hp_vendor_battery_remove(struct power_supply *battery)
+{
+	device_remove_groups(&battery->dev, hp_vendor_battery_groups);
+	return 0;
+}
+
+static struct acpi_battery_hook hp_vendor_battery_hook = {
+	.add_battery = hp_vendor_battery_add,
+	.remove_battery = hp_vendor_battery_remove,
+	.name = "HP Vendor Battery Extension",
+};
 
 /* hwmon */
 
@@ -115,6 +174,8 @@ static const struct hwmon_chip_info thermal_chip_info = {
 	.info = thermal_channel_info,
 };
 
+/* platform */
+
 static struct platform_driver hp_vendor_platform_driver = {
 	.driver = {
 		.name  = "hp_vendor",
@@ -149,11 +210,15 @@ static int __init hp_vendor_init(void)
 		return PTR_ERR_OR_ZERO(hp_vendor_hwmon);
 	}
 
+	battery_hook_register(&hp_vendor_battery_hook);
+
 	return 0;
 }
 
 static void __exit hp_vendor_exit(void)
 {
+	battery_hook_unregister(&hp_vendor_battery_hook);
+
 	platform_device_unregister(hp_vendor_platform_device);
 	platform_driver_unregister(&hp_vendor_platform_driver);
 }
