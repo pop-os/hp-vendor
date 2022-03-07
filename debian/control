@@ -7,6 +7,7 @@ Build-Depends:
   cargo,
   clang,
   dkms,
+  dh-modaliases,
   libclang-dev,
   libsensors-dev,
   libsqlite3-dev,
@@ -29,5 +30,6 @@ Description: HP vendor support
 Package: pop-hp-vendor-dkms
 Architecture: amd64 arm64
 Depends: ${misc:Depends}
+XB-Modaliases: ${modaliases}
 Description: HP vendor kernel driver
  This DKMS driver provides fan support for HP products
