@@ -171,9 +171,9 @@ fn main() {
         )*
 
         // Define `TelemetryEventType` enum
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Deserialize)]
         pub enum TelemetryEventType {
-            #(#variants),*
+            #(#[serde(rename = #names)] #variants),*
         }
 
         // Generate `TelemetryEventType::iter()` method to iterate over variants
