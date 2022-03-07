@@ -56,6 +56,7 @@ static ssize_t battery_ct_number_show(struct device *dev,
 	for (count = 0; count < 14; count++) {
 		buf[count] = ec_mailbox_read(EC_MAILBOX_INDEX_CT_NUMBER + count);
 	}
+	buf[count++] = '\n';
 	buf[count] = 0;
 	return count;
 }
