@@ -183,6 +183,20 @@ pub fn run() {
                                     insert_statement.execute(&event).unwrap();
                                 }
                             }
+                        } else if x.event_type() == udev::EventType::Change {
+                            if let Some(old) = udev_devices.remove(x.syspath()) {
+                                let mut new = Vec::new();
+                                udev_descs.generate(&mut new, &x);
+                                let mut diff = new.clone();
+                                event::diff(&mut diff, &old);
+                                for event in diff {
+                                    insert_statement.execute(&event).unwrap();
+                                    println!("{:#?}", event);
+                                }
+                                if !events.is_empty() {
+                                    udev_devices.insert(x.syspath().to_owned(), new);
+                                }
+                            }
                         }
                     });
                 }
