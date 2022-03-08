@@ -1,4 +1,7 @@
-use drm::{control::Device as ControlDevice, Device};
+use drm::{
+    control::{Device as ControlDevice, ModeTypeFlags},
+    Device,
+};
 use std::{
     fs,
     os::unix::io::{AsRawFd, RawFd},
@@ -57,6 +60,18 @@ impl DrmDevice {
         let encoder = self.get_encoder(connector.current_encoder()?).ok()?;
         let crtc = self.get_crtc(encoder.crtc()?).ok()?;
         crtc.mode()
+    }
+
+    #[allow(dead_code)]
+    pub fn connector_preferred_mode(
+        &self,
+        connector: &drm::control::connector::Info,
+    ) -> Option<drm::control::Mode> {
+        connector
+            .modes()
+            .iter()
+            .find(|mode| mode.mode_type().contains(ModeTypeFlags::PREFERRED))
+            .copied()
     }
 }
 
