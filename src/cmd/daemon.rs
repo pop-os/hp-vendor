@@ -125,7 +125,6 @@ pub fn run() {
             udev_descs.insert(desc);
         }
     }
-    let mut udev_devices = HashMap::new();
 
     let old = db
         .get_state(db::State::Frequency(SamplingFrequency::OnChange))
@@ -133,12 +132,16 @@ pub fn run() {
 
     let mut new = Vec::new();
     let mut enumerator = udev::Enumerator::new().unwrap();
+    let mut udev_event_idx = Vec::new();
     for device in enumerator.scan_devices().unwrap() {
         let mut events = Vec::new();
         udev_descs.generate(&mut events, &device);
         if !events.is_empty() {
             new.extend_from_slice(&events);
-            udev_devices.insert(device.syspath().to_owned(), events);
+            udev_event_idx.push((
+                device.syspath().to_owned(),
+                (new.len() - events.len())..new.len(),
+            ));
         }
     }
 
@@ -148,8 +151,13 @@ pub fn run() {
         insert_statement.execute(&event).unwrap();
         println!("{:#?}", event);
     }
-    db.replace_state(db::State::Frequency(SamplingFrequency::OnChange), &new)
+    let ids = db
+        .replace_state(db::State::Frequency(SamplingFrequency::OnChange), &new)
         .unwrap();
+    let mut udev_devices = udev_event_idx
+        .into_iter()
+        .map(|(syspath, range)| (syspath, ids[range].to_owned()))
+        .collect::<HashMap<_, _>>();
 
     let mut events = mio::Events::with_capacity(1024);
     loop {
@@ -171,20 +179,24 @@ pub fn run() {
                                 insert_statement.execute(event).unwrap();
                             }
                             if !events.is_empty() {
-                                udev_devices.insert(x.syspath().to_owned(), events);
+                                let ids = db.replace_state(db::State::Ids(&[]), &events).unwrap();
+                                udev_devices.insert(x.syspath().to_owned(), ids);
                             } else {
-                                udev_devices.remove(&x.syspath().to_owned());
+                                udev_devices.remove(x.syspath());
                             }
                         } else if x.event_type() == udev::EventType::Remove {
-                            if let Some(events) = udev_devices.remove(x.syspath()) {
+                            if let Some(ids) = udev_devices.remove(x.syspath()) {
+                                let events = db.get_state(db::State::Ids(&ids)).unwrap();
                                 for mut event in events {
                                     crate::event::remove_event(&mut event);
                                     println!("{:#?}", event);
                                     insert_statement.execute(&event).unwrap();
                                 }
+                                db.replace_state(db::State::Ids(&ids), &[]).unwrap();
                             }
                         } else if x.event_type() == udev::EventType::Change {
-                            if let Some(old) = udev_devices.remove(x.syspath()) {
+                            if let Some(ids) = udev_devices.remove(x.syspath()) {
+                                let old = db.get_state(db::State::Ids(&ids)).unwrap();
                                 let mut new = Vec::new();
                                 udev_descs.generate(&mut new, &x);
                                 let mut diff = new.clone();
@@ -194,7 +206,8 @@ pub fn run() {
                                     println!("{:#?}", event);
                                 }
                                 if !events.is_empty() {
-                                    udev_devices.insert(x.syspath().to_owned(), new);
+                                    let ids = db.replace_state(db::State::Ids(&ids), &new).unwrap();
+                                    udev_devices.insert(x.syspath().to_owned(), ids);
                                 }
                             }
                         }

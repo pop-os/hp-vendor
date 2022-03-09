@@ -1,7 +1,7 @@
 use rusqlite::{
     params,
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef},
-    Connection, Result, Statement,
+    Connection, OptionalExtension, Result, Statement,
 };
 use std::{error::Error, fmt, str};
 use time::{Duration, OffsetDateTime};
@@ -12,11 +12,12 @@ use crate::{
     frequency::Frequencies,
 };
 
-pub enum State {
+pub enum State<'a> {
     All,
     Frequency(SamplingFrequency),
     #[allow(dead_code)]
     Type(TelemetryEventType),
+    Ids(&'a [i64]),
 }
 
 fn create_tables(conn: &Connection) -> Result<()> {
@@ -243,12 +244,22 @@ impl DB {
                 let stmt = self.0.prepare("SELECT value from state WHERE type = ?")?;
                 (stmt, vec![type_ as &dyn ToSql])
             }
+            State::Ids(ids) => {
+                let mut stmt = self.0.prepare("SELECT value from state WHERE id = ?")?;
+                let mut events = Vec::new();
+                for id in *ids {
+                    if let Some(event) = stmt.query_row([id], |row| row.get(0)).optional()? {
+                        events.push(event);
+                    }
+                }
+                return Ok(events);
+            }
         };
         let rows = stmt.query_map(&*params, |row| row.get(0))?;
         Ok(rows.filter_map(Result::ok).collect())
     }
 
-    pub fn replace_state(&self, filter: State, events: &[TelemetryEvent]) -> Result<()> {
+    pub fn replace_state(&self, filter: State, events: &[TelemetryEvent]) -> Result<Vec<i64>> {
         let mut insert_statement = self.0.prepare(
             "INSERT into state (type, value)
              VALUES (?, ?)",
@@ -274,11 +285,20 @@ impl DB {
                 self.0
                     .execute("DELETE from state WHERE type = ?", [type_])?;
             }
+            State::Ids(ids) => {
+                let mut stmt = self.0.prepare("DELETE from state WHERE id = ?")?;
+                for id in ids {
+                    stmt.execute([id])?;
+                }
+            }
         }
+        let mut ids = Vec::new();
         for i in events {
             insert_statement.execute(params!(i.type_().name(), i))?;
+            ids.push(self.0.last_insert_rowid());
         }
-        tx.commit()
+        tx.commit()?;
+        Ok(ids)
     }
 
     pub fn get_queued(&self) -> Result<(Vec<i64>, Vec<TelemetryEvent>)> {
