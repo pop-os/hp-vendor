@@ -14,6 +14,7 @@ impl Device for DrmDevice {}
 impl ControlDevice for DrmDevice {}
 
 impl DrmDevice {
+    #[allow(dead_code)]
     pub fn all() -> impl Iterator<Item = Self> {
         fs::read_dir("/dev/dri")
             .into_iter()
@@ -52,6 +53,7 @@ impl DrmDevice {
             })
     }
 
+    #[allow(dead_code)]
     pub fn connector_mode(
         &self,
         connector: &drm::control::connector::Info,
@@ -62,7 +64,6 @@ impl DrmDevice {
         crtc.mode()
     }
 
-    #[allow(dead_code)]
     pub fn connector_preferred_mode(
         &self,
         connector: &drm::control::connector::Info,

@@ -67,7 +67,7 @@ fn default_frequency(type_: TelemetryEventType) -> SamplingFrequency {
         TelemetryEventType::HwBattery => Daily,
         TelemetryEventType::HwBatteryLife => Daily, // XXX make trigger based
         TelemetryEventType::HwCoolingFanCyclesSummary => Daily,
-        TelemetryEventType::HwDisplay => Daily,
+        TelemetryEventType::HwDisplay => OnChange,
         TelemetryEventType::HwGraphicsCard => Daily,
         TelemetryEventType::HwMemoryPhysical => Daily,
         TelemetryEventType::HwNetworkCard => Daily,

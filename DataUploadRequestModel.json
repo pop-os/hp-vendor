@@ -421,7 +421,7 @@
                 },
                 "port": {
                     "title": "Port",
-                    "description": "Port Type",
+                    "description": "Port Type (PRIMARY KEY)",
                     "examples": [
                         "DP-1",
                         "HDMI-A-0",

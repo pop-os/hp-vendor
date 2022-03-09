@@ -591,14 +591,23 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             }
         }),
-        TelemetryEventType::HwDisplay => EventDesc::new(|events| {
-            for device in DrmDevice::all() {
-                for connector in device.connectors() {
+        TelemetryEventType::HwDisplay => EventDesc::new_udev("drm", |events, device| {
+            // TODO if possible, would base on connector device; but can't seem to map to DRM
+
+            if !device.sysname().to_str().unwrap_or("").starts_with("card") {
+                return;
+            }
+
+            if let Some(drm_device) = device.devnode().and_then(DrmDevice::open) {
+                for connector in drm_device.connectors() {
+                    //println!("connector ({:?}): {:#?}", connector.state() == drm::control::connector::State::Connected, &connector);
                     if connector.state() != drm::control::connector::State::Connected {
                         continue;
                     }
                     let port = format!("{:?}-{}", connector.interface(), connector.interface_id()); // XXX probably should depend on gpu
-                    let pixel_size = device.connector_mode(&connector).map(|mode| mode.size());
+                    let pixel_size = drm_device
+                        .connector_preferred_mode(&connector)
+                        .map(|mode| mode.size());
                     events.push(
                         event::Display {
                             port,
