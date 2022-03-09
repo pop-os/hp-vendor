@@ -14,7 +14,7 @@ use nix::{
 use std::{
     collections::HashMap,
     fs::OpenOptions,
-    io::{Seek, SeekFrom},
+    io::{ErrorKind, Seek, SeekFrom},
     os::unix::{fs::OpenOptionsExt, io::AsRawFd},
     str,
     time::Duration,
@@ -161,7 +161,18 @@ pub fn run() {
 
     let mut events = mio::Events::with_capacity(1024);
     loop {
-        poll.poll(&mut events, None).unwrap();
+        loop {
+            match poll.poll(&mut events, None) {
+                Ok(()) => {
+                    break;
+                }
+                Err(err) => {
+                    if err.kind() != ErrorKind::Interrupted {
+                        panic!("Mio polling error {}", err);
+                    }
+                }
+            }
+        }
 
         for event in &events {
             match event.token() {
