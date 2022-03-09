@@ -2,6 +2,7 @@ use drm::{
     control::{Device as ControlDevice, ModeTypeFlags},
     Device,
 };
+use plain::Plain;
 use std::{
     fs,
     os::unix::io::{AsRawFd, RawFd},
@@ -74,6 +75,22 @@ impl DrmDevice {
             .find(|mode| mode.mode_type().contains(ModeTypeFlags::PREFERRED))
             .copied()
     }
+
+    #[allow(dead_code)]
+    pub fn connector_edid(&self, connector: &drm::control::connector::Info) -> Option<EDIDHeader> {
+        let properties = self.get_properties(connector.handle()).ok()?;
+        let (handles, values) = properties.as_props_and_values();
+        for (handle, raw_value) in handles.iter().zip(values) {
+            let prop = self.get_property(*handle).ok()?;
+            if prop.name().to_bytes() == b"EDID" {
+                let bytes = self.get_property_blob(*raw_value).ok()?;
+                let mut header = EDIDHeader::default();
+                plain::copy_from_bytes(&mut header, &bytes).ok()?;
+                return Some(header);
+            }
+        }
+        None
+    }
 }
 
 impl AsRawFd for DrmDevice {
@@ -81,3 +98,19 @@ impl AsRawFd for DrmDevice {
         self.0.as_raw_fd()
     }
 }
+
+#[repr(packed)]
+#[derive(Clone, Default, Debug, Copy)]
+#[allow(dead_code)]
+pub struct EDIDHeader {
+    pub magic: [u8; 8],
+    pub manufacturer: [u8; 2], // encodes 3 5-bit letters
+    pub product_code: u16,     // little endian
+    pub serial_number: u32,    // little endian
+    pub week: u8,
+    pub year: u8,
+    pub edid_version: u8,
+    pub edid_revision: u8,
+}
+
+unsafe impl Plain for EDIDHeader {}
