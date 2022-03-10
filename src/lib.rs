@@ -191,11 +191,10 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         Some(format!("{}-{}-{}", year, month, day))
                     })();
                     let ec_version = format!("{}.{}", bios.ec_major, bios.ec_minor);
-                    // XXX not working?
                     let smbios_version = (|| {
                         let entry_point =
                             fs::read("/sys/firmware/dmi/tables/smbios_entry_point").ok()?;
-                        let smbios = dmi::Smbios::from_bytes(&entry_point).ok()?;
+                        let smbios = dmi::Smbios3::from_bytes(&entry_point).ok()?;
                         Some(format!("{}.{}", smbios.major_version, smbios.minor_version))
                     })();
                     let mut rom_size = (bios.rom_size as u16 + 1) / 16;
