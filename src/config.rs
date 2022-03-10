@@ -11,7 +11,6 @@ impl Copy for SamplingFrequency {}
 #[serde(untagged)]
 enum Freq {
     Known(SamplingFrequency),
-    Knowns(Vec<SamplingFrequency>),
     Unknown(String),
 }
 
