@@ -366,7 +366,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             })
         }
         TelemetryEventType::HwNvmeSmartLog => EventDesc::new_udev("nvme", |events, device| {
-            let path = device.syspath();
             let devnode = match device.devnode() {
                 Some(devnode) => devnode,
                 None => {
@@ -374,7 +373,9 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             };
 
-            if let Some(smart_log) = util::nvme::smart_log(devnode) {
+            let smart_log = util::nvme::smart_log(devnode);
+            let controller_id = util::nvme::controller_id(devnode);
+            if let (Some(smart_log), Some(controller_id)) = (smart_log, controller_id) {
                 events.push(
                     event::NvmesmartLog {
                         available_spare: smart_log.avail_spare,
@@ -383,7 +384,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             .controller_busy_time
                             .try_into()
                             .unwrap_or(-1),
-                        critical_composite_temperature_threshold: -1, // XXX
+                        critical_composite_temperature_threshold: controller_id.cctemp,
                         critical_composite_temperature_time: smart_log.critical_comp_time,
                         critical_warning: smart_log.critical_warning,
                         data_units_read: smart_log.data_units_read.try_into().unwrap_or(-1),
@@ -394,11 +395,11 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         host_write_commands: smart_log.host_write_commands.try_into().unwrap_or(-1),
                         media_errors: smart_log.media_errors.try_into().unwrap_or(-1),
                         num_err_log_entries: smart_log.num_err_log_entries.try_into().unwrap_or(-1),
-                        nvme_version: String::new(), // XXX
+                        nvme_version: controller_id.ver(),
                         percentage_used: smart_log.percent_used,
                         power_cycles: smart_log.power_cycles.try_into().unwrap_or(-1),
                         power_on_hours: smart_log.power_on_hours.try_into().unwrap_or(-1),
-                        serial_number: read_file(path.join("serial")).unwrap_or_else(unknown),
+                        serial_number: controller_id.sn.trim().to_string(),
                         temperature_sensor: smart_log.temperature_sensors(),
                         thermal_management_total_time: vec![
                             smart_log.thm_temp1_total_time,
@@ -409,7 +410,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             smart_log.thm_temp2_trans_count,
                         ],
                         unsafe_shutdowns: smart_log.unsafe_shutdowns.try_into().unwrap_or(-1),
-                        warning_temperature_threshold: -1, // XXX
+                        warning_temperature_threshold: controller_id.wctemp,
                         warning_temperature_time: smart_log.warning_temp_time,
                     }
                     .into(),
