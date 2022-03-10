@@ -334,7 +334,10 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                                 }
                             };
                             Some(event::StoragePartition {
-                                file_system: None,   // XXX
+                                file_system: child
+                                    .property_value("ID_FS_TYPE")
+                                    .and_then(|x| x.to_str())
+                                    .map(|x| x.to_string()),
                                 flags: Vec::new(),   // XXX
                                 name: String::new(), // XXX
                                 number,
