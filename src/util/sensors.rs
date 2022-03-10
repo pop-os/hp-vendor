@@ -4,6 +4,16 @@ use std::{
     process::Command,
 };
 
+#[derive(Debug)]
+pub struct Temps {
+    pub cpu: i64,
+    pub gpu: i64,
+    pub ext: i64,
+    pub loc: i64,
+    pub bat: i64,
+    pub chg: i64,
+}
+
 fn fan_to_rpm(value: u8) -> i64 {
     if value == 0xff {
         0
@@ -22,16 +32,23 @@ pub fn fan() -> Option<(i64, i64)> {
     Some((fan_to_rpm(buf[0]), fan_to_rpm(buf[1])))
 }
 
-pub fn thermal() -> Option<Vec<i64>> {
+pub fn thermal() -> Option<Temps> {
     let mut enumerator = udev::Enumerator::new().ok()?;
     enumerator.match_subsystem("hwmon").ok()?;
     enumerator.match_attribute("name", "acpitz").ok()?;
     let device = enumerator.scan_devices().ok()?.next()?;
 
-    let mut temps = Vec::new();
-    for i in 1..=6 {
-        let value = device.attribute_value(format!("temp{}_input", i))?;
-        temps.push(value.to_str()?.trim().parse().ok()?);
-    }
-    Some(temps)
+    let temp_n = |n| {
+        let value = device.attribute_value(format!("temp{}_input", n))?;
+        value.to_str()?.trim().parse().ok()
+    };
+
+    Some(Temps {
+        cpu: temp_n(1)?,
+        gpu: temp_n(2)?,
+        ext: temp_n(3)?,
+        loc: temp_n(4)?,
+        bat: temp_n(5)?,
+        chg: temp_n(6)?,
+    })
 }
