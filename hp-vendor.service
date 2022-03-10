@@ -5,6 +5,7 @@ Documentation=
 [Service]
 Type=simple
 ExecStart=/usr/libexec/hp-vendor daemon
+Restart=on-failure
 
 [Install]
 WantedBy=graphical.target
