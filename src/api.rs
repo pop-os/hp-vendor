@@ -100,7 +100,6 @@ impl Api {
         })
     }
 
-    // XXX WIP
     #[allow(dead_code)]
     fn reauthenticate(&self) -> anyhow::Result<()> {
         let resp = authenticate(&self.client, &self.ids)?;
@@ -230,7 +229,6 @@ impl Api {
             .has_data)
     }
 
-    // XXX WIP
     pub fn config(&self) -> anyhow::Result<crate::config::Config> {
         let data_provider = event::data_provider();
         Ok(self

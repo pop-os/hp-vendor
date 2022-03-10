@@ -365,7 +365,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 }
             })
         }
-        // XXX need support for multiple events with same selector
         TelemetryEventType::HwNvmeSmartLog => EventDesc::new_udev("nvme", |events, device| {
             let path = device.syspath();
             let devnode = match device.devnode() {
