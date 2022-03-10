@@ -10,5 +10,5 @@ pub fn run(arg: Option<&str>) {
 
     let zip = arg == Some("--zip");
     let res = api.download(zip).unwrap();
-    io::stdout().write(&res).unwrap();
+    io::stdout().write_all(&res).unwrap();
 }
