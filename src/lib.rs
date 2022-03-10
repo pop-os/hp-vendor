@@ -388,7 +388,8 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         critical_warning: smart_log.critical_warning,
                         data_units_read: smart_log.data_units_read.try_into().unwrap_or(-1),
                         data_units_written: smart_log.data_units_written.try_into().unwrap_or(-1),
-                        endurance_critical_warning: -1, // XXX
+                        endurance_critical_warning: smart_log
+                            .endurance_grp_critical_warning_summary,
                         host_read_commands: smart_log.host_read_commands.try_into().unwrap_or(-1),
                         host_write_commands: smart_log.host_write_commands.try_into().unwrap_or(-1),
                         media_errors: smart_log.media_errors.try_into().unwrap_or(-1),
@@ -398,9 +399,15 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         power_cycles: smart_log.power_cycles.try_into().unwrap_or(-1),
                         power_on_hours: smart_log.power_on_hours.try_into().unwrap_or(-1),
                         serial_number: read_file(path.join("serial")).unwrap_or_else(unknown),
-                        temperature_sensor: Vec::new(), // XXX
-                        thermal_management_total_time: Vec::new(), // XXX
-                        thermal_management_trans_count: Vec::new(), // XXX
+                        temperature_sensor: smart_log.temperature_sensors(),
+                        thermal_management_total_time: vec![
+                            smart_log.thm_temp1_total_time,
+                            smart_log.thm_temp2_total_time,
+                        ],
+                        thermal_management_trans_count: vec![
+                            smart_log.thm_temp1_trans_count,
+                            smart_log.thm_temp2_trans_count,
+                        ],
                         unsafe_shutdowns: smart_log.unsafe_shutdowns.try_into().unwrap_or(-1),
                         warning_temperature_threshold: -1, // XXX
                         warning_temperature_time: smart_log.warning_temp_time,

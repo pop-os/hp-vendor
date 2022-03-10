@@ -10,7 +10,7 @@ pub struct SmartLog {
     pub avail_spare: i64,
     pub spare_thresh: i64,
     pub percent_used: i64,
-    // "endurance_grp_critical_warning_summary"
+    pub endurance_grp_critical_warning_summary: i64,
     pub data_units_read: u128,
     pub data_units_written: u128,
     pub host_read_commands: u128,
@@ -23,12 +23,34 @@ pub struct SmartLog {
     pub num_err_log_entries: u128,
     pub warning_temp_time: i64,
     pub critical_comp_time: i64,
-    // "temperature_sensor_1"
-    // "temperature_sensor_2"
-    // "thm_temp1_trans_count"
-    // "thm_temp2_trans_count"
-    // "thm_temp1_total_time"
-    // "thm_temp2_total_time"
+    pub temperature_sensor_1: Option<i64>,
+    pub temperature_sensor_2: Option<i64>,
+    pub temperature_sensor_3: Option<i64>,
+    pub temperature_sensor_4: Option<i64>,
+    pub temperature_sensor_5: Option<i64>,
+    pub temperature_sensor_6: Option<i64>,
+    pub temperature_sensor_7: Option<i64>,
+    pub thm_temp1_trans_count: i64,
+    pub thm_temp2_trans_count: i64,
+    pub thm_temp1_total_time: i64,
+    pub thm_temp2_total_time: i64,
+}
+
+impl SmartLog {
+    pub fn temperature_sensors(&self) -> Vec<i64> {
+        [
+            self.temperature_sensor_1,
+            self.temperature_sensor_2,
+            self.temperature_sensor_3,
+            self.temperature_sensor_4,
+            self.temperature_sensor_5,
+            self.temperature_sensor_6,
+            self.temperature_sensor_7,
+        ]
+        .iter()
+        .filter_map(|x| *x)
+        .collect()
+    }
 }
 
 pub fn smart_log<S: AsRef<OsStr>>(path: S) -> Option<SmartLog> {
