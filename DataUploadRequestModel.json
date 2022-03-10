@@ -419,6 +419,17 @@
                 "state": {
                     "$ref": "#/definitions/State"
                 },
+                "bus_id": {
+                    "title": "Bus Id",
+                    "description": "DRM Bus ID (PRIMARY KEY)",
+                    "examples": [
+                        "pci:0000:03:00.0"
+                    ],
+                    "source": {
+                        "Linux": "drm_info"
+                    },
+                    "type": "string"
+                },
                 "port": {
                     "title": "Port",
                     "description": "Port Type (PRIMARY KEY)",
@@ -434,31 +445,32 @@
                 },
                 "pixel_width": {
                     "title": "Pixel Width",
-                    "description": "Current Pixel Size",
+                    "description": "Preferred Pixel Height",
                     "examples": [
                         "1920",
                         "1280"
                     ],
                     "source": {
-                        "Linux": "xrandr --query"
+                        "Linux": "drm_info"
                     },
                     "type": "integer"
                 },
                 "pixel_height": {
                     "title": "Pixel Height",
-                    "description": "Current Pixel Size",
+                    "description": "Preferred Pixel Height",
                     "examples": [
                         "1080",
                         "1024"
                     ],
                     "source": {
-                        "Linux": "xrandr --query"
+                        "Linux": "drm_info"
                     },
                     "type": "integer"
                 }
             },
             "required": [
                 "state",
+                "bus_id",
                 "port"
             ],
             "additionalProperties": false

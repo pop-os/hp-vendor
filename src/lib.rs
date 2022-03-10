@@ -598,8 +598,13 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             }
 
             if let Some(drm_device) = device.devnode().and_then(DrmDevice::open) {
+                let bus_id = match drm_device.bus_id() {
+                    Some(bus_id) => bus_id,
+                    None => {
+                        return;
+                    }
+                };
                 for connector in drm_device.connectors() {
-                    //println!("connector ({:?}): {:#?}", connector.state() == drm::control::connector::State::Connected, &connector);
                     if connector.state() != drm::control::connector::State::Connected {
                         continue;
                     }
@@ -609,6 +614,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         .map(|mode| mode.size());
                     events.push(
                         event::Display {
+                            bus_id: bus_id.clone(),
                             port,
                             pixel_width: pixel_size.map(|x| x.0 as i64),
                             pixel_height: pixel_size.map(|x| x.1 as i64),

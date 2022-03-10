@@ -91,6 +91,11 @@ impl DrmDevice {
         }
         None
     }
+
+    pub fn bus_id(&self) -> Option<String> {
+        let bus_id = self.get_bus_id().ok()?;
+        Some(bus_id.as_ref().to_str()?.to_string())
+    }
 }
 
 impl AsRawFd for DrmDevice {
