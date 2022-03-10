@@ -36,6 +36,15 @@ pub fn run(arg: Option<&str>) {
         None
     };
 
+    if let Some(api) = &api {
+        // XXX try to get config before daily sampling
+        // XXX restart daemon if changed
+        match api.config() {
+            Ok(config) => db.set_event_frequencies(config.frequencies()).unwrap(),
+            Err(err) => eprintln!("Error getting frequencies from server: {}", err),
+        }
+    }
+
     let (queued_ids, queued) = db.get_queued().unwrap();
     let mut events = event::Events::new(consents, ids, &[]);
     for (chunk_ids, chunk) in queued_ids.chunks(100).zip(queued.chunks(100)) {

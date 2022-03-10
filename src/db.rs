@@ -199,9 +199,20 @@ impl DB {
     }
 
     pub fn update_event_types(&self) -> Result<()> {
-        // TODO: take argument; when/show should this be initialized? Include default with package,
-        // or query server first?
+        // Add with default frequency if not already in db
+        let mut insert_statement = self.0.prepare(
+            "INSERT OR IGNORE into event_types (type, frequency)
+             VALUES (?, ?)",
+        )?;
 
+        let tx = self.0.unchecked_transaction()?;
+        for (type_, frequency) in Frequencies::default().iter() {
+            insert_statement.execute(params![type_, frequency])?;
+        }
+        tx.commit()
+    }
+
+    pub fn set_event_frequencies(&self, frequencies: Frequencies) -> Result<()> {
         let mut insert_statement = self.0.prepare(
             "INSERT into event_types (type, frequency)
              VALUES (?, ?)
@@ -210,7 +221,7 @@ impl DB {
         )?;
 
         let tx = self.0.unchecked_transaction()?;
-        for (type_, frequency) in Frequencies::default().iter() {
+        for (type_, frequency) in frequencies.iter() {
             insert_statement.execute(params![type_, frequency])?;
         }
         tx.commit()
