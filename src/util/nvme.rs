@@ -18,6 +18,13 @@ impl ControllerId {
     }
 }
 
+#[allow(dead_code)]
+#[derive(serde::Deserialize)]
+pub struct NamespaceId {
+    nuse: i64,
+    // Ignoring fields that aren't useful
+}
+
 // TODO: what should be optional?
 // For parsing JSON output of `nvme smart-log`
 // See also `struct nvme_smart_log`
@@ -90,4 +97,9 @@ pub fn smart_log<S: AsRef<OsStr>>(path: S) -> Option<SmartLog> {
 
 pub fn controller_id<S: AsRef<OsStr>>(path: S) -> Option<ControllerId> {
     nvme_cmd("id-ctrl", path)
+}
+
+#[allow(dead_code)]
+pub fn namespace_id<S: AsRef<OsStr>>(path: S) -> Option<NamespaceId> {
+    nvme_cmd("id-ns", path)
 }
