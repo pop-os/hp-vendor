@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Hewlett-Packard Development Company, L.P.
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 #![allow(non_snake_case)]
 
 use base64::read::DecoderReader;

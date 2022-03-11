@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Hewlett-Packard Development Company, L.P.
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 #![allow(dead_code)]
 
 use std::{collections::HashSet, fmt::Write, path::Path};

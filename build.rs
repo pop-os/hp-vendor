@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Hewlett-Packard Development Company, L.P.
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 use convert_case::{Case, Casing};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;

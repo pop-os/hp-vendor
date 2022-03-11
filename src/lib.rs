@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Hewlett-Packard Development Company, L.P.
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;

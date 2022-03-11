@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Hewlett-Packard Development Company, L.P.
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 use os_release::OsRelease;
 use serde::{Deserialize, Serialize};
 use std::{

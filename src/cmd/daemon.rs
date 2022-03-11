@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Hewlett-Packard Development Company, L.P.
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 // XXX memory usage? Is there any danger remove events won't occur, and memory will grow?
 // TODO Change events
 
