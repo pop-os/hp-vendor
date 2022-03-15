@@ -15,7 +15,6 @@ pub fn run(arg: Option<&str>) {
 
     // XXX handle db errors?
     let db = DB::open().unwrap();
-    db.update_event_types().unwrap();
 
     let consents = db.get_consents().unwrap();
     if consents.is_empty() {

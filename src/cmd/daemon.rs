@@ -60,7 +60,6 @@ pub fn run() {
     let _lock = util::lock_file_or_panic("/var/hp-vendor/daemon.lock");
 
     let db = DB::open().unwrap();
-    db.update_event_types().unwrap();
     let mut insert_statement = db.prepare_queue_insert().unwrap();
 
     let mut poll = mio::Poll::new().unwrap();

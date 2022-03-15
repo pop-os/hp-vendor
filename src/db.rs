@@ -134,7 +134,9 @@ impl DB {
 
         conn.execute("PRAGMA foreign_keys = ON", [])?;
 
-        Ok(Self(conn))
+        let db = Self(conn);
+        db.init_event_types()?;
+        Ok(db)
     }
 
     pub fn prepare_queue_insert(&self) -> Result<QueueInsert> {
@@ -202,7 +204,7 @@ impl DB {
             .map(|_| ())
     }
 
-    pub fn update_event_types(&self) -> Result<()> {
+    fn init_event_types(&self) -> Result<()> {
         // Add with default frequency if not already in db
         let mut insert_statement = self.0.prepare(
             "INSERT OR IGNORE into event_types (type, frequency)
