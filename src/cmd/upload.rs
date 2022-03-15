@@ -12,7 +12,7 @@ use crate::{
 
 pub fn run(arg: Option<&str>) {
     // Get unique lock
-    let _lock = util::lock_file_or_panic("/var/hp-vendor/daily-upload.lock");
+    let _lock = util::lock_file_or_panic("/var/hp-vendor/upload.lock");
 
     // XXX handle db errors?
     let db = DB::open().unwrap();
