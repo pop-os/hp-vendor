@@ -20,7 +20,7 @@ use std::{
     fs::OpenOptions,
     io::{ErrorKind, Seek, SeekFrom},
     os::unix::{fs::OpenOptionsExt, io::AsRawFd},
-    str,
+    process, str,
     time::Duration,
 };
 
@@ -61,6 +61,12 @@ pub fn run() {
 
     let db = DB::open().unwrap();
     let mut insert_statement = db.prepare_queue_insert().unwrap();
+
+    let consents = db.get_consents().unwrap();
+    if consents.is_empty() {
+        eprintln!("Need to opt-in with `hp-vendor consent``");
+        process::exit(0);
+    }
 
     let mut poll = mio::Poll::new().unwrap();
 

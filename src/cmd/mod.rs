@@ -8,6 +8,7 @@ mod daily;
 mod delete;
 mod download;
 mod print;
+mod upload;
 
 use std::{env, fs, io, os::unix::fs::PermissionsExt, process};
 
@@ -41,12 +42,13 @@ pub fn run() {
     match cmd.as_deref() {
         Some("consent") => consent::run(arg1.as_deref(), arg2.as_deref()),
         Some("daemon") => daemon::run(),
-        Some("daily") => daily::run(arg1.as_deref()),
+        Some("daily") => daily::run(),
         Some("delete") => delete::run(),
         Some("download") => download::run(arg1.as_deref()),
         Some("print") => print::run(arg1.as_deref()),
+        Some("upload") => upload::run(arg1.as_deref()),
         _ => {
-            eprintln!("Usage: hp-vendor (consent|daemon|daily|delete|download|print)");
+            eprintln!("Usage: hp-vendor (consent|daemon|daily|delete|download|print|upload)");
             process::exit(1);
         }
     }
