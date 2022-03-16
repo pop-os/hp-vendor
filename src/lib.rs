@@ -622,7 +622,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     if connector.state() != drm::control::connector::State::Connected {
                         continue;
                     }
-                    let port = format!("{:?}-{}", connector.interface(), connector.interface_id()); // XXX probably should depend on gpu
+                    let port = format!("{:?}-{}", connector.interface(), connector.interface_id());
                     let pixel_size = drm_device
                         .connector_preferred_mode(&connector)
                         .map(|mode| mode.size());
