@@ -98,35 +98,6 @@
             ],
             "additionalProperties": false
         },
-        "DataCollectionConsent": {
-            "title": "DataCollectionConsent",
-            "type": "object",
-            "properties": {
-                "purpose_id": {
-                    "title": "Purpose Id",
-                    "type": "string"
-                },
-                "locale": {
-                    "title": "Locale",
-                    "type": "string"
-                },
-                "country": {
-                    "title": "Country",
-                    "type": "string"
-                },
-                "version": {
-                    "title": "Version",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "purpose_id",
-                "locale",
-                "country",
-                "version"
-            ],
-            "additionalProperties": false
-        },
         "TelemetryHeaderModel": {
             "title": "TelemetryHeaderModel",
             "description": "A base model for Telemetry Data",
@@ -145,11 +116,11 @@
                 },
                 "consents": {
                     "title": "Consents",
-                    "description": "List of Data collection consents. Send only latest consented version per purpose_id, locale and country.",
+                    "description": "List of Data collection consented purposeIds.",
                     "minItems": 1,
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/DataCollectionConsent"
+                        "type": "string"
                     }
                 }
             },
@@ -161,24 +132,10 @@
             ],
             "additionalProperties": false
         },
-        "State": {
-            "title": "State",
-            "description": "State defines the possible states of a SW/HW component (i.e. Application, Firmware, OS)\nand what data should be captured/uploaded\n\n* ADDED - HW/SW component was added (populate all data fields)\n* REMOVED - HW/SW component was removed (populate PKs only)\n* UPDATED - HW/SW component was updated (populate PKs and changed fields)",
-            "enum": [
-                "added",
-                "removed",
-                "updated"
-            ],
-            "type": "string"
-        },
         "BaseBoard": {
             "title": "BaseBoard",
-            "description": "A wrapper model of all events",
             "type": "object",
             "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                },
                 "ct_number": {
                     "title": "Ct Number",
                     "description": "\n        CT Number of the base board - HP-specific identifier (PRIMARY KEY)\n        ",
@@ -225,10 +182,19 @@
                 }
             },
             "required": [
-                "state",
                 "ct_number"
             ],
             "additionalProperties": false
+        },
+        "State": {
+            "title": "State",
+            "description": "State defines the possible states of a SW/HW component (i.e. Application, Firmware, OS)\nand what data should be captured/uploaded\n\n* ADDED - HW/SW component was added (populate all data fields)\n* REMOVED - HW/SW component was removed (populate PKs only)\n* UPDATED - HW/SW component was updated (populate PKs and changed fields)",
+            "enum": [
+                "added",
+                "removed",
+                "updated"
+            ],
+            "type": "string"
         },
         "Battery": {
             "title": "Battery",
@@ -339,6 +305,12 @@
                     },
                     "type": "string"
                 },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "description": "Time of the event (with local timezone)",
+                    "type": "string",
+                    "format": "date-time"
+                },
                 "cycle_count": {
                     "title": "Cycle Count",
                     "description": "Number of full discharge cycles of the battery",
@@ -404,6 +376,7 @@
             "required": [
                 "serial_number",
                 "ct_number",
+                "timestamp",
                 "cycle_count",
                 "energy_full",
                 "total_dc_time",
@@ -445,7 +418,7 @@
                 },
                 "pixel_width": {
                     "title": "Pixel Width",
-                    "description": "Preferred Pixel Height",
+                    "description": "Preferred Pixel Width",
                     "examples": [
                         "1920",
                         "1280"
@@ -571,9 +544,7 @@
             "required": [
                 "state",
                 "bus_info",
-                "type",
-                "manufacturer",
-                "model"
+                "type"
             ],
             "additionalProperties": false
         },
@@ -841,7 +812,7 @@
             "properties": {
                 "serial_number": {
                     "title": "Serial Number",
-                    "description": "Drive Serial Number (PRIMARY KEY) - Serialnumber for the NVM subsystem that is assigned by the vendor",
+                    "description": "Drive Serial Number - Serialnumber for the NVM subsystem that is assigned by the vendor",
                     "examples": [
                         "S4P4NF0M522988Y"
                     ],
@@ -849,6 +820,12 @@
                         "Linux": "nvme list (nvme-cli package)"
                     },
                     "type": "string"
+                },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "description": "Sampling Time",
+                    "type": "string",
+                    "format": "date-time"
                 },
                 "nvme_version": {
                     "title": "Nvme Version",
@@ -860,6 +837,17 @@
                         "Linux": "nvme id-ctrl <node_id> (nvme-cli package)"
                     },
                     "type": "string"
+                },
+                "used_capacity": {
+                    "title": "Used Capacity",
+                    "description": "Used Drive Capacity (in GBs, rounded up to the nearest Giga)",
+                    "examples": [
+                        "102 (GB)"
+                    ],
+                    "source": {
+                        "Linux": "nvme list (nvme-cli package)"
+                    },
+                    "type": "integer"
                 },
                 "critical_warning": {
                     "title": "Critical Warning",
@@ -921,24 +909,24 @@
                     "title": "Num Err Log Entries",
                     "type": "integer"
                 },
-                "warning_temperature_threshold": {
-                    "title": "Warning Temperature Threshold",
+                "warning_temp_threshold": {
+                    "title": "Warning Temp Threshold",
                     "type": "integer"
                 },
-                "critical_composite_temperature_threshold": {
-                    "title": "Critical Composite Temperature Threshold",
+                "critical_composite_temp_threshold": {
+                    "title": "Critical Composite Temp Threshold",
                     "type": "integer"
                 },
-                "warning_temperature_time": {
-                    "title": "Warning Temperature Time",
+                "warning_temp_time": {
+                    "title": "Warning Temp Time",
                     "type": "integer"
                 },
-                "critical_composite_temperature_time": {
-                    "title": "Critical Composite Temperature Time",
+                "critical_composite_temp_time": {
+                    "title": "Critical Composite Temp Time",
                     "type": "integer"
                 },
-                "temperature_sensor": {
-                    "title": "Temperature Sensor",
+                "temp_sensor": {
+                    "title": "Temp Sensor",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -961,7 +949,9 @@
             },
             "required": [
                 "serial_number",
+                "timestamp",
                 "nvme_version",
+                "used_capacity",
                 "critical_warning",
                 "endurance_critical_warning",
                 "available_spare",
@@ -977,11 +967,11 @@
                 "unsafe_shutdowns",
                 "media_errors",
                 "num_err_log_entries",
-                "warning_temperature_threshold",
-                "critical_composite_temperature_threshold",
-                "warning_temperature_time",
-                "critical_composite_temperature_time",
-                "temperature_sensor",
+                "warning_temp_threshold",
+                "critical_composite_temp_threshold",
+                "warning_temp_time",
+                "critical_composite_temp_time",
+                "temp_sensor",
                 "thermal_management_trans_count",
                 "thermal_management_total_time"
             ],
@@ -1048,28 +1038,6 @@
                         "Linux": "nvme list (nvme-cli package)"
                     },
                     "type": "string"
-                },
-                "used_capacity": {
-                    "title": "Used Capacity",
-                    "description": "Used Drive Capacity (in GBs, rounded up to the nearest Giga)",
-                    "examples": [
-                        "102 (GB)"
-                    ],
-                    "source": {
-                        "Linux": "nvme list (nvme-cli package)"
-                    },
-                    "type": "integer"
-                },
-                "lba_size": {
-                    "title": "Lba Size",
-                    "description": "LBA Size",
-                    "examples": [
-                        ""
-                    ],
-                    "source": {
-                        "Linux": "nvme list (nvme-cli package)"
-                    },
-                    "type": "integer"
                 },
                 "partitions": {
                     "title": "Partitions",
@@ -1219,12 +1187,6 @@
                 "state": {
                     "$ref": "#/definitions/State"
                 },
-                "timestamp": {
-                    "title": "Timestamp",
-                    "description": "Time of the event",
-                    "type": "string",
-                    "format": "date-time"
-                },
                 "usb_bus_id": {
                     "title": "Usb Bus Id",
                     "description": "USB Bus Id (PRIMARY KEY)",
@@ -1258,6 +1220,12 @@
                         "Linux": ""
                     },
                     "type": "string"
+                },
+                "timestamp": {
+                    "title": "Timestamp",
+                    "description": "Time of the event (with local timezone)",
+                    "type": "string",
+                    "format": "date-time"
                 },
                 "manufacturer_id": {
                     "title": "Manufacturer Id",
@@ -1317,10 +1285,10 @@
             },
             "required": [
                 "state",
-                "timestamp",
                 "usb_bus_id",
                 "usb_device_id",
-                "usb_speed"
+                "usb_speed",
+                "timestamp"
             ],
             "additionalProperties": false
         },
@@ -1529,12 +1497,8 @@
         },
         "System": {
             "title": "System",
-            "description": "A wrapper model of all events",
             "type": "object",
             "properties": {
-                "state": {
-                    "$ref": "#/definitions/State"
-                },
                 "serialnumber": {
                     "title": "Serialnumber",
                     "description": "\n        System Serial Number (PRIMARY KEY)\n        Contains encoded information that represents serial number of system or device.\n        Format: \n        * CCC = supplier code (encoded)\n        * YMM = week of manufacture (encoded)\n        * RRRR = random values\n        ",
@@ -1544,18 +1508,6 @@
                     ],
                     "source": {
                         "Linux": "/sys/class/dmi/id/product_serial"
-                    },
-                    "type": "string"
-                },
-                "uuid": {
-                    "title": "Uuid",
-                    "description": "System BIOS UUID (PRIMARY KEY) - Universally Unique Identifier is a 16-octet (128-bit) number ",
-                    "examples": [
-                        "ab7ca61b-4c95-46ef-86d1-5754ebe07a31",
-                        "7F57D02D-7314-E311-A9BD-F7757856691A"
-                    ],
-                    "source": {
-                        "Linux": "/sys/class/dmi/id/product_uuid"
                     },
                     "type": "string"
                 },
@@ -1656,15 +1608,13 @@
                 }
             },
             "required": [
-                "state",
-                "serialnumber",
-                "uuid"
+                "serialnumber"
             ],
             "additionalProperties": false
         },
         "ThermalSummary": {
             "title": "ThermalSummary",
-            "description": "A summary of Device Temperatures on a given period\n\nHow frequent should this be sampled?\n    Every 30 seconds.",
+            "description": "A summary of Device Temperatures on a given period (see `SamplingFrequencyModel`)\n\nHow frequent should temperatures be sampled?\n* Every 1 minute\n\nHow frequent should temperatures be aggregated?\n* This is based on the *event sampling frequency* (see `SamplingFrequencyModel`)\n\nPercentile implementation:\n* Use the `Nearest-rank method` with the inclusive variation (https://en.wikipedia.org/wiki/Percentile)\n* Percentile 0 is the MINIMUM value\n* Percentile 100 is the MAXIMUM value",
             "type": "object",
             "properties": {
                 "start_time": {
@@ -1687,67 +1637,67 @@
                 "num_samples": {
                     "title": "Num Samples",
                     "description": "Total number of temperature samples between `start_time` (inclusive) and `end_time` (exclusive)",
-                    "minimum": 20,
+                    "minimum": 60,
                     "type": "integer"
                 },
                 "cpu_zone_ptile": {
                     "title": "Cpu Zone Ptile",
-                    "description": "Percentiles of sample metric 'CPU/APU Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of sample metric 'CPU/APU Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 },
                 "chg_zone_ptile": {
                     "title": "Chg Zone Ptile",
-                    "description": "Percentiles of sample metric 'Charging Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of sample metric 'Charging Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 },
                 "ext_zone_ptile": {
                     "title": "Ext Zone Ptile",
-                    "description": "Percentiles of sample metric 'External/Remote Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of sample metric 'External/Remote Thermal Zone Temperature (\u00baC)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 },
                 "bat_zone_dc_ptile": {
                     "title": "Bat Zone Dc Ptile",
-                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on DC (Direct Current) - which *may* be read as *Discharging*\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on DC (Direct Current) - which *may* be read as *Discharging*\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 },
                 "bat_zone_ac_charging_ptile": {
                     "title": "Bat Zone Ac Charging Ptile",
-                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on AC (Alternate Current) and *Charging*\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on AC (Alternate Current) and *Charging*\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 },
                 "bat_zone_ac_not_charging_ptile": {
                     "title": "Bat Zone Ac Not Charging Ptile",
-                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on AC (Alternate Current) but Not Charging\n\n        This state means that the battery is tipically running any sort of algorithm to avoid be always at full charge (which increases the stress on the battery cells).\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of sample metric 'Battery Thermal Zone Temperature (\u00baC)' while the device is on AC (Alternate Current) but Not Charging\n\n        This state means that the battery is tipically running any sort of algorithm to avoid be always at full charge (which increases the stress on the battery cells).\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 }
             },
@@ -1767,7 +1717,7 @@
         },
         "CoolingFanCyclesSummary": {
             "title": "CoolingFanCyclesSummary",
-            "description": "A summary of Fan Cycles on a given period\n\nWhat is a FAN Cycle?\n    A FAN Cycle starts when the CPU Thermal Zone Temperature increases to >= 75 \u00baC or Local Thermal Zone Temperature >= 56\u00baC\n        Which will lead to a FAN spin up.\n    A FAN Cycle ends when that Temperature decreases to <= 71 \u00baC or Local Thermal Zone Temperature <= 55\u00baC\n        Which should make FAN to reduce its speed\n\nHow to calculate this summary?\n    Build up an internal database to track the metrics outlined below\n    At upload time, aggregate/summarize them into the requested values/percentiles\n\nWhich sensors are sampled to build the metrics? And how frequently?\n    Temperature Thermal Zone (the ones that drive the Fan) - sampled every 30 seconds, increase to 5 seconds during a FAN Cycle\n    FAN RPM Thermal Zone (the ones that drive the Fan) - sampled only during Fan Cycles",
+            "description": "A summary of Fan Cycles on a given period (see `SamplingFrequencyModel`)\n\nWhat is a FAN Cycle?\n    A FAN Cycle starts when the CPU Thermal Zone Temperature increases to >= 75 \u00baC or Local Thermal Zone Temperature >= 56\u00baC\n        Which will lead to a FAN spin up.\n    A FAN Cycle ends when that Temperature decreases to <= 71 \u00baC or Local Thermal Zone Temperature <= 55\u00baC\n        Which should make FAN to reduce its speed\n\nHow to calculate this summary?\n    Build up an internal database to track the metrics outlined below\n    At upload time, aggregate/summarize them into the requested values/percentiles\n\nWhich sensors are sampled to build the metrics? And how frequently?\n    Temperature Thermal Zone (the ones that drive the Fan) - sampled every 30 seconds, increase to 5 seconds during a FAN Cycle\n    FAN RPM Thermal Zone (the ones that drive the Fan) - sampled only during Fan Cycles",
             "type": "object",
             "properties": {
                 "start_time": {
@@ -1790,22 +1740,22 @@
                 "num_cycles": {
                     "title": "Num Cycles",
                     "description": "Total number of finished Fan Cycles between `start_time` (inclusive) and `end_time` (exclusive)",
-                    "minimum": 5,
+                    "minimum": 20,
                     "type": "integer"
                 },
                 "cycle_length_percentile": {
                     "title": "Cycle Length Percentile",
-                    "description": "Percentiles of metric 'Cycle Length (in seconds)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of metric 'Cycle Length (in seconds)'\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 },
                 "time_to_max_speed_percentile": {
                     "title": "Time To Max Speed Percentile",
-                    "description": "Percentiles of metric 'Time To Max RPM Speed (in seconds)' \n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of metric 'Time To Max RPM Speed (in seconds)' \n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
@@ -1815,12 +1765,12 @@
                 },
                 "sum_speed_percentile": {
                     "title": "Sum Speed Percentile",
-                    "description": "Percentiles of metric 'Sum Speed in RPM (in rotations per minute)'\n        This metric accumulates the RPMs measured during the cycle.\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        Note: Keep the float values rounded to 2 decimal places.",
+                    "description": "Percentiles of metric 'Sum Speed in RPM (in rotations per minute)'\n        This metric accumulates the RPMs measured during the cycle.\n        \n        There should be 11 values with percentiles: 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100\n        ",
                     "minItems": 11,
                     "maxItems": 11,
                     "type": "array",
                     "items": {
-                        "type": "number"
+                        "type": "integer"
                     }
                 }
             },
@@ -1946,6 +1896,9 @@
             "description": "Example of DRIVER data from Linux (with extra headers):\n<code>\n    > lsmod | sort\n    Module Name     Size      Used By\n    =============== ========  ==========================================\n    aesni_intel       372736  2\n    ahci               40960  1\n    ashmen_linux       20480  0\n    bluetooth         544768  33 btrtl,btintel,btbcm,bnep,btusb,rfcom\n</code>",
             "type": "object",
             "properties": {
+                "state": {
+                    "$ref": "#/definitions/State"
+                },
                 "module_name": {
                     "title": "Module Name",
                     "description": "Driver Module Name (PRIMARY KEY)",
@@ -2046,6 +1999,7 @@
                 }
             },
             "required": [
+                "state",
                 "module_name",
                 "module_path",
                 "module_type"
@@ -2192,8 +2146,21 @@
             "title": "Firmware",
             "type": "object",
             "properties": {
+                "bios_uuid": {
+                    "title": "Bios Uuid",
+                    "description": "System BIOS UUID (PRIMARY KEY) - Universally Unique Identifier is a 16-octet (128-bit) number ",
+                    "examples": [
+                        "ab7ca61b-4c95-46ef-86d1-5754ebe07a31",
+                        "7F57D02D-7314-E311-A9BD-F7757856691A"
+                    ],
+                    "source": {
+                        "Linux": "/sys/class/dmi/id/product_uuid"
+                    },
+                    "type": "string"
+                },
                 "bios_vendor": {
                     "title": "Bios Vendor",
+                    "description": "BIOS Vendor name",
                     "examples": [
                         "HP"
                     ],
@@ -2278,6 +2245,9 @@
                     }
                 }
             },
+            "required": [
+                "bios_uuid"
+            ],
             "additionalProperties": false
         },
         "OperatingSystem": {
@@ -2331,10 +2301,6 @@
                     "type": "string"
                 }
             },
-            "required": [
-                "name",
-                "boot_device"
-            ],
             "additionalProperties": false
         },
         "LinuxKernel": {
@@ -2375,10 +2341,45 @@
                     "type": "string"
                 }
             },
+            "additionalProperties": false
+        },
+        "BootPerformance": {
+            "title": "BootPerformance",
+            "description": "Data on the performance of the last boot",
+            "type": "object",
+            "properties": {
+                "time": {
+                    "title": "Time",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "last_boot_time": {
+                    "title": "Last Boot Time",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "boot_time_total": {
+                    "title": "Boot Time Total",
+                    "description": "Total time to boot (in milliseconds)",
+                    "type": "integer"
+                },
+                "boot_time_details": {
+                    "title": "Boot Time Details",
+                    "description": "Breakdown of the Total time to boot (in milliseconds)",
+                    "examples": [
+                        "{'kernel': 521ms, 'userspace': 1.032sec}"
+                    ],
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                }
+            },
             "required": [
-                "name",
-                "release",
-                "version"
+                "time",
+                "last_boot_time",
+                "boot_time_total",
+                "boot_time_details"
             ],
             "additionalProperties": false
         },
@@ -2454,6 +2455,9 @@
                 },
                 "sw_linux_kernel": {
                     "$ref": "#/definitions/LinuxKernel"
+                },
+                "sw_boot_performance": {
+                    "$ref": "#/definitions/BootPerformance"
                 }
             },
             "additionalProperties": false

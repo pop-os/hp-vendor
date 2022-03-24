@@ -121,9 +121,9 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             let utsname = uname();
             events.push(
                 event::LinuxKernel {
-                    name: utsname.sysname().to_string(),
-                    release: utsname.release().to_string(),
-                    version: utsname.version().to_string(),
+                    name: Some(utsname.sysname().to_string()),
+                    release: Some(utsname.release().to_string()),
+                    version: Some(utsname.version().to_string()),
                 }
                 .into(),
             );
@@ -164,6 +164,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         .map(|x: i64| x / 1000)
                         .unwrap_or(-1),
                     serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
+                    timestamp: event::date_time(),
                     total_ac_charging_time: None, // XXX
                     total_ac_time: 0,             // XXX
                     total_dc_time: 0,             // XXX
@@ -177,7 +178,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     base_board_id: read_file("/sys/class/dmi/id/board_name"),
                     ct_number: String::new(), // XXX
                     manufacturer: read_file("/sys/class/dmi/id/board_vendor"),
-                    state: State::Added,
                     version: read_file("/sys/class/dmi/id/board_version"),
                 }
                 .into(),
@@ -214,6 +214,8 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     events.push(
                         event::Firmware {
                             bios_release_date: bios_date,
+                            bios_uuid: read_file("/sys/class/dmi/id/product_uuid")
+                                .unwrap_or_else(unknown),
                             bios_vendor: i.get_str(bios.vendor).cloned(),
                             bios_version: i.get_str(bios.version).cloned(),
                             capabilities: None, // XXX
@@ -240,8 +242,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                     serialnumber: read_file("/sys/class/dmi/id/product_serial")
                         .unwrap_or_else(unknown),
                     sku: read_file("/sys/class/dmi/id/product_sku"),
-                    state: State::Added,
-                    uuid: read_file("/sys/class/dmi/id/product_uuid").unwrap_or_else(unknown),
                     version: read_file("/sys/class/dmi/id/product_version"),
                 }
                 .into(),
@@ -251,11 +251,9 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             let os_release = OS_RELEASE.as_ref().ok();
             events.push(
                 event::OperatingSystem {
-                    boot_device: String::new(), // XXX
+                    boot_device: None, // XXX
                     codename: os_release.as_ref().map(|x| x.version_codename.to_owned()),
-                    name: os_release
-                        .as_ref()
-                        .map_or_else(unknown, |x| x.name.to_owned()),
+                    name: os_release.as_ref().map(|x| x.name.to_owned()),
                     version: os_release.map(|x| x.version.clone()),
                 }
                 .into(),
@@ -292,6 +290,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             module_path: modinfo("filename").unwrap_or_else(unknown),
                             module_type: String::new(), // XXX
                             size,
+                            state: State::Added,
                         }
                         .into(),
                     );
@@ -358,12 +357,10 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
 
                         events.push(
                             event::NvmestorageLogical {
-                                lba_size: None,         // XXX
                                 node_id: String::new(), // XXX
                                 partitions: partitions(device).ok(),
                                 serial_number: read_file(path.join("device/serial"))
                                     .unwrap_or_else(unknown),
-                                used_capacity: None, // XXX
                             }
                             .into(),
                         );
@@ -390,8 +387,8 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             .controller_busy_time
                             .try_into()
                             .unwrap_or(-1),
-                        critical_composite_temperature_threshold: controller_id.cctemp,
-                        critical_composite_temperature_time: smart_log.critical_comp_time,
+                        critical_composite_temp_threshold: controller_id.cctemp,
+                        critical_composite_temp_time: smart_log.critical_comp_time,
                         critical_warning: smart_log.critical_warning,
                         data_units_read: smart_log.data_units_read.try_into().unwrap_or(-1),
                         data_units_written: smart_log.data_units_written.try_into().unwrap_or(-1),
@@ -406,7 +403,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                         power_cycles: smart_log.power_cycles.try_into().unwrap_or(-1),
                         power_on_hours: smart_log.power_on_hours.try_into().unwrap_or(-1),
                         serial_number: controller_id.sn.trim().to_string(),
-                        temperature_sensor: smart_log.temperature_sensors(),
+                        temp_sensor: smart_log.temperature_sensors(),
                         thermal_management_total_time: vec![
                             smart_log.thm_temp1_total_time,
                             smart_log.thm_temp2_total_time,
@@ -415,9 +412,11 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                             smart_log.thm_temp1_trans_count,
                             smart_log.thm_temp2_trans_count,
                         ],
+                        timestamp: event::date_time(),
                         unsafe_shutdowns: smart_log.unsafe_shutdowns.try_into().unwrap_or(-1),
-                        warning_temperature_threshold: controller_id.wctemp,
-                        warning_temperature_time: smart_log.warning_temp_time,
+                        used_capacity: -1, // XXX
+                        warning_temp_threshold: controller_id.wctemp,
+                        warning_temp_time: smart_log.warning_temp_time,
                     }
                     .into(),
                 );

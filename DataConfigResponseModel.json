@@ -36,10 +36,7 @@
                     "$ref": "#/definitions/SamplingFrequency"
                 },
                 "hw_display": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/SamplingFrequency"
-                    }
+                    "$ref": "#/definitions/SamplingFrequency"
                 },
                 "hw_graphics_card": {
                     "$ref": "#/definitions/SamplingFrequency"
@@ -83,22 +80,22 @@
                 "hw_tpm": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "sw_driver": {
+                "sw_boot_performance": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "sw_linux_driver_crash": {
+                "sw_driver": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
                 "sw_firmware": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "sw_operating_system": {
+                "sw_linux_driver_crash": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
                 "sw_linux_kernel": {
                     "$ref": "#/definitions/SamplingFrequency"
                 },
-                "sw_boot_performance": {
+                "sw_operating_system": {
                     "$ref": "#/definitions/SamplingFrequency"
                 }
             },
@@ -121,12 +118,12 @@
                 "hw_thermal_summary",
                 "hw_cooling_fan_cycles_summary",
                 "hw_tpm",
+                "sw_boot_performance",
                 "sw_driver",
-                "sw_linux_driver_crash",
                 "sw_firmware",
-                "sw_operating_system",
+                "sw_linux_driver_crash",
                 "sw_linux_kernel",
-                "sw_boot_performance"
+                "sw_operating_system"
             ],
             "additionalProperties": false
         }

@@ -39,6 +39,14 @@ pub(crate) fn date_time() -> String {
         .unwrap()
 }
 
+#[derive(Clone, Debug)]
+pub struct DataCollectionConsent {
+    pub country: String,
+    pub locale: String,
+    pub purpose_id: String,
+    pub version: String,
+}
+
 impl DeviceOSIds {
     pub fn new(os_install_uuid: String) -> anyhow::Result<Self> {
         (|| {
@@ -101,7 +109,7 @@ pub fn data_provider() -> DataProviderInfo {
     }
 }
 
-fn data_header(consents: Vec<DataCollectionConsent>, ids: DeviceOSIds) -> TelemetryHeaderModel {
+fn data_header(consents: Vec<String>, ids: DeviceOSIds) -> TelemetryHeaderModel {
     TelemetryHeaderModel {
         consents,
         data_provider: data_provider(),
@@ -124,7 +132,7 @@ impl<'a> Events<'a> {
     ) -> Self {
         Self {
             data,
-            data_header: data_header(consents, ids),
+            data_header: data_header(consents.into_iter().map(|x| x.purpose_id).collect(), ids),
         }
     }
 

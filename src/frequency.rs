@@ -85,6 +85,7 @@ fn default_frequency(type_: TelemetryEventType) -> SamplingFrequency {
         TelemetryEventType::HwSystem => Daily,
         TelemetryEventType::HwThermalSummary => Daily,
         TelemetryEventType::HwTpm => Daily,
+        TelemetryEventType::SwBootPerformance => Daily,
         TelemetryEventType::SwDriver => Daily,
         TelemetryEventType::SwFirmware => Daily,
         TelemetryEventType::SwLinuxDriverCrash => Daily,
