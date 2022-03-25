@@ -136,7 +136,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
 
             events.push(
                 event::Battery {
-                    ct_number: String::new(), // XXX,
+                    ct_number: read_file(path.join("battery_ct_number")).unwrap_or_else(unknown),
                     devicename: read_file(path.join("model_name")),
                     energy_design: read_file(path.join("charge_full_design"))
                         .map(|x: i64| x / 1000),
@@ -158,7 +158,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
 
             events.push(
                 event::BatteryLife {
-                    ct_number: String::new(), // XXX
+                    ct_number: read_file(path.join("battery_ct_number")).unwrap_or_else(unknown),
                     cycle_count: read_file(path.join("cycle_count")).unwrap_or(-1),
                     energy_full: read_file(path.join("charge_full"))
                         .map(|x: i64| x / 1000)
