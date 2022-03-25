@@ -176,7 +176,7 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
             events.push(
                 event::BaseBoard {
                     base_board_id: read_file("/sys/class/dmi/id/board_name"),
-                    ct_number: String::new(), // XXX
+                    ct_number: read_file("/sys/class/dmi/id/board_serial").unwrap_or_else(unknown),
                     manufacturer: read_file("/sys/class/dmi/id/board_vendor"),
                     version: read_file("/sys/class/dmi/id/board_version"),
                 }
