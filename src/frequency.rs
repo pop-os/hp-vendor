@@ -27,7 +27,7 @@ impl SamplingFrequency {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Frequencies(HashMap<TelemetryEventType, SamplingFrequency>);
 
 impl Frequencies {

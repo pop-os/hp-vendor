@@ -12,7 +12,7 @@ use crate::{
 
 pub fn run(arg: Option<&str>) {
     // Get unique lock
-    let _lock = util::lock_file_or_panic("/var/hp-vendor/upload.lock");
+    let _lock = util::lock::lock_file_or_panic("/var/hp-vendor/upload.lock");
 
     // XXX handle db errors?
     let db = DB::open().unwrap();
@@ -35,10 +35,16 @@ pub fn run(arg: Option<&str>) {
     };
 
     if let Some(api) = &api {
-        // XXX try to get config before daily sampling
-        // XXX restart daemon if changed
         match api.config() {
-            Ok(config) => db.set_event_frequencies(config.frequencies()).unwrap(),
+            Ok(config) => {
+                let frequencies = db.get_event_frequencies().unwrap();
+                let new_frequencies = config.frequencies();
+                if frequencies != new_frequencies {
+                    db.set_event_frequencies(new_frequencies).unwrap();
+                    eprintln!("Config changed. Restarting daemon...");
+                    util::systemd::try_restart_daemon();
+                }
+            }
             Err(err) => eprintln!("Error getting frequencies from server: {}", err),
         }
     }

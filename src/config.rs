@@ -10,6 +10,7 @@ use crate::{event::TelemetryEventType, frequency::Frequencies};
 schemafy::schemafy!("DataConfigResponseModel.json");
 
 impl Copy for SamplingFrequency {}
+impl Eq for SamplingFrequency {}
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]

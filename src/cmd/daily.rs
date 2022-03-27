@@ -8,7 +8,7 @@ use crate::{config::SamplingFrequency, db::DB, util};
 
 pub fn run() {
     // Get unique lock
-    let _lock = util::lock_file_or_panic("/var/hp-vendor/daily.lock");
+    let _lock = util::lock::lock_file_or_panic("/var/hp-vendor/daily.lock");
 
     // XXX handle db errors?
     let db = DB::open().unwrap();

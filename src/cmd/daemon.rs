@@ -57,7 +57,7 @@ fn parse_kmsg(buf: &[u8]) -> Option<()> {
 
 pub fn run() {
     // Get unique lock
-    let _lock = util::lock_file_or_panic("/var/hp-vendor/daemon.lock");
+    let _lock = util::lock::lock_file_or_panic("/var/hp-vendor/daemon.lock");
 
     let db = DB::open().unwrap();
     let mut insert_statement = db.prepare_queue_insert().unwrap();
