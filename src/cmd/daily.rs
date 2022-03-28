@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::process;
-
 use crate::{config::SamplingFrequency, db::DB, util};
 
 pub fn run() {
@@ -12,12 +10,7 @@ pub fn run() {
 
     // XXX handle db errors?
     let db = DB::open().unwrap();
-
-    let consents = db.get_consents().unwrap();
-    if consents.is_empty() {
-        eprintln!("Need to opt-in with `hp-vendor consent``");
-        process::exit(0);
-    }
+    crate::exit_if_not_opted_in(&db);
 
     let freqs = db.get_event_frequencies().unwrap();
 

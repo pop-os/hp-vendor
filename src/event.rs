@@ -45,6 +45,7 @@ pub struct DataCollectionConsent {
     pub locale: String,
     pub purpose_id: String,
     pub version: String,
+    pub sent: bool,
 }
 
 impl DeviceOSIds {

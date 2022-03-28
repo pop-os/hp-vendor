@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::process;
-
 use crate::{
     api::{self, Api},
     db::DB,
@@ -16,12 +14,9 @@ pub fn run(arg: Option<&str>) {
 
     // XXX handle db errors?
     let db = DB::open().unwrap();
+    crate::exit_if_not_opted_in(&db);
 
     let consents = db.get_consents().unwrap();
-    if consents.is_empty() {
-        eprintln!("Need to opt-in with `hp-vendor consent``");
-        process::exit(0);
-    }
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = event::DeviceOSIds::new(os_install_id).unwrap();
 
@@ -35,6 +30,20 @@ pub fn run(arg: Option<&str>) {
     };
 
     if let Some(api) = &api {
+        for consent in &consents {
+            if !consent.sent {
+                let resp = api
+                    .consent(
+                        &consent.locale,
+                        &consent.country,
+                        &consent.purpose_id,
+                        &consent.version,
+                    )
+                    .unwrap();
+                println!("{:?}", resp);
+            }
+        }
+
         match api.config() {
             Ok(config) => {
                 let frequencies = db.get_event_frequencies().unwrap();

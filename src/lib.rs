@@ -6,7 +6,12 @@ use nix::sys::utsname::uname;
 use os_release::OS_RELEASE;
 use plain::Plain;
 use std::{
-    collections::HashMap, convert::TryInto, ffi::OsStr, fs, io, path::PathBuf, process::Command,
+    collections::HashMap,
+    convert::TryInto,
+    ffi::OsStr,
+    fs, io,
+    path::PathBuf,
+    process::{self, Command},
     str::FromStr,
 };
 
@@ -693,4 +698,18 @@ pub fn update_events_and_queue(
     db.replace_state(db::State::Frequency(freq), &new)?;
 
     Ok(())
+}
+
+pub fn exit_if_not_opted_in(db: &db::DB) {
+    let opted = db.get_opted().unwrap();
+    let consents = db.get_consents().unwrap();
+    if opted != Some(true) || consents.is_empty() {
+        // Explicit opt out
+        if opted == Some(false) {
+            eprintln!("Opted out of data collection.");
+        } else {
+            eprintln!("Need to opt-in with `hp-vendor consent`.");
+        }
+        process::exit(0);
+    }
 }

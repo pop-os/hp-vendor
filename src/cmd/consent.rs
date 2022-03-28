@@ -34,27 +34,24 @@ pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
     let mut consents = Vec::new();
     for purpose in purposes {
         println!("Purpose: {}", purpose.verbiage.statement);
-        print!("Agree? [yN]: ");
-        io::stdout().lock().flush().unwrap();
-        let mut answer = String::new();
-        io::stdin().read_line(&mut answer).unwrap();
-        if answer.trim() == "y" {
-            let resp = api
-                .consent(
-                    &purpose.verbiage.locale,
-                    country,
-                    &purpose.purpose_id,
-                    &purpose.verbiage.version,
-                )
-                .unwrap();
-            println!("{:?}", resp);
-            consents.push(event::DataCollectionConsent {
-                country: country.to_string(),
-                locale: purpose.verbiage.locale,
-                purpose_id: purpose.purpose_id,
-                version: purpose.verbiage.version,
-            });
-        }
+        consents.push(event::DataCollectionConsent {
+            country: country.to_string(),
+            locale: purpose.verbiage.locale,
+            purpose_id: purpose.purpose_id,
+            version: purpose.verbiage.version,
+            sent: false,
+        });
     }
-    db.set_consents(&consents).unwrap();
+
+    print!("Agree? [yN]: ");
+    io::stdout().lock().flush().unwrap();
+    let mut answer = String::new();
+    io::stdin().read_line(&mut answer).unwrap();
+
+    if answer.trim() == "y" {
+        db.set_opted(Some(true)).unwrap();
+        db.set_consents(&consents).unwrap();
+    } else {
+        db.set_opted(Some(false)).unwrap();
+    }
 }

@@ -46,12 +46,14 @@ fn create_tables(conn: &Connection) -> Result<()> {
              locale TEXT NOT NULL,
              country TEXT NOT NULL,
              purpose_id TEXT NOT NULL,
-             version TEXT NOT NULL
+             version TEXT NOT NULL,
+             sent INTEGER DEFAULT 0 NOT NULL
          );
          CREATE TABLE properties (
              id INTEGER PRIMARY KEY,
              os_install_id TEXT,
              last_weekly_time INTEGER,
+             opted INTEGER,
              CHECK (id = 0)
          );",
     )?;
@@ -108,8 +110,22 @@ fn migrate_2_to_3(conn: &Connection) -> Result<()> {
     )
 }
 
-static MIGRATIONS: &[fn(&Connection) -> Result<()>] =
-    &[migrate_0_to_1, migrate_1_to_2, migrate_2_to_3];
+fn migrate_3_to_4(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "ALTER TABLE properties ADD COLUMN opted INTEGER;
+         ALTER TABLE consents ADD COLUMN sent INTEGER DEFAULT 0 NOT NULL;
+         UPDATE properties SET opted = 1;
+         UPDATE consents SET sent = 1;
+        ",
+    )
+}
+
+static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[
+    migrate_0_to_1,
+    migrate_1_to_2,
+    migrate_2_to_3,
+    migrate_3_to_4,
+];
 
 pub struct DB(Connection);
 
@@ -152,13 +168,14 @@ impl DB {
     pub fn get_consents(&self) -> Result<Vec<DataCollectionConsent>> {
         let mut stmt = self
             .0
-            .prepare("SELECT locale, country, purpose_id, version from consents")?;
+            .prepare("SELECT locale, country, purpose_id, version, sent from consents")?;
         let rows = stmt.query_map([], |row| {
             Ok(DataCollectionConsent {
                 locale: row.get(0)?,
                 country: row.get(1)?,
                 purpose_id: row.get(2)?,
                 version: row.get(3)?,
+                sent: row.get(4)?,
             })
         })?;
         Ok(rows.filter_map(Result::ok).collect())
@@ -168,13 +185,31 @@ impl DB {
         let tx = self.0.unchecked_transaction()?;
         self.0.execute("DELETE FROM consents", [])?;
         let mut stmt = self.0.prepare(
-            "INSERT INTO consents (locale, country, purpose_id, version)
-             VALUES (?, ?, ?, ?)",
+            "INSERT INTO consents (locale, country, purpose_id, version, sent)
+             VALUES (?, ?, ?, ?, ?)",
         )?;
         for i in consent {
-            stmt.execute([&i.locale, &i.country, &i.purpose_id, &i.version])?;
+            stmt.execute(params![
+                &i.locale,
+                &i.country,
+                &i.purpose_id,
+                &i.version,
+                &i.sent
+            ])?;
         }
         tx.commit()
+    }
+
+    pub fn get_opted(&self) -> Result<Option<bool>> {
+        self.0.query_row("SELECT opted from properties", [], |row| {
+            row.get::<_, Option<bool>>(0)
+        })
+    }
+
+    pub fn set_opted(&self, opt: Option<bool>) -> Result<()> {
+        self.0
+            .execute("UPDATE properties SET opted = ?", [opt])
+            .map(|_| ())
     }
 
     pub fn get_os_install_id(&self) -> Result<String> {

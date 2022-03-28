@@ -20,7 +20,7 @@ use std::{
     fs::OpenOptions,
     io::{ErrorKind, Seek, SeekFrom},
     os::unix::{fs::OpenOptionsExt, io::AsRawFd},
-    process, str,
+    str,
     time::Duration,
 };
 
@@ -60,13 +60,8 @@ pub fn run() {
     let _lock = util::lock::lock_file_or_panic("/var/hp-vendor/daemon.lock");
 
     let db = DB::open().unwrap();
+    crate::exit_if_not_opted_in(&db);
     let mut insert_statement = db.prepare_queue_insert().unwrap();
-
-    let consents = db.get_consents().unwrap();
-    if consents.is_empty() {
-        eprintln!("Need to opt-in with `hp-vendor consent``");
-        process::exit(0);
-    }
 
     let mut poll = mio::Poll::new().unwrap();
 

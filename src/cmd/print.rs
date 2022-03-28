@@ -10,7 +10,7 @@ pub fn run(arg: Option<&str>) {
     let db = DB::open().unwrap();
 
     match arg {
-        Some("consent") => println!("{:#?}", db.get_consents().unwrap()),
+        Some("consents") => println!("{:#?}", db.get_consents().unwrap()),
         Some("frequencies") => println!("{:#?}", db.get_event_frequencies().unwrap()),
         Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
