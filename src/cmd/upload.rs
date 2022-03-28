@@ -16,7 +16,7 @@ pub fn run(arg: Option<&str>) {
     let db = DB::open().unwrap();
     crate::exit_if_not_opted_in(&db);
 
-    let consents = db.get_consents().unwrap();
+    let mut consents = db.get_consents().unwrap();
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = event::DeviceOSIds::new(os_install_id).unwrap();
 
@@ -30,8 +30,10 @@ pub fn run(arg: Option<&str>) {
     };
 
     if let Some(api) = &api {
-        for consent in &consents {
+        let mut changed = false;
+        for consent in &mut consents {
             if !consent.sent {
+                changed = true;
                 let resp = api
                     .consent(
                         &consent.locale,
@@ -41,7 +43,11 @@ pub fn run(arg: Option<&str>) {
                     )
                     .unwrap();
                 println!("{:?}", resp);
+                consent.sent = true;
             }
+        }
+        if changed {
+            db.set_consents(&consents).unwrap();
         }
 
         match api.config() {
