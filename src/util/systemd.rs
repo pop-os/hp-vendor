@@ -7,7 +7,7 @@
 use std::process::Command;
 
 const SERVICE: &str = "hp-vendor.service";
-const SERVICES_AND_TIMERS: &[&str] = &[SERVICE, "hp-vendor-daily.timer", "hp-vendor-upload.timer"];
+const TIMERS: &[&str] = &["hp-vendor-daily.timer", "hp-vendor-upload.timer"];
 
 /// Restarts daemon if running, to handle frequencies change
 pub fn try_restart_daemon() {
@@ -19,21 +19,25 @@ pub fn try_restart_daemon() {
 pub fn enable_services_and_timers() {
     let _ = Command::new("systemctl")
         .arg("enable")
-        .args(SERVICES_AND_TIMERS)
+        .arg(SERVICE)
+        .args(TIMERS)
         .status();
     let _ = Command::new("systemctl")
         .arg("start")
-        .args(SERVICES_AND_TIMERS)
+        .arg(SERVICE)
+        .args(TIMERS)
         .status();
 }
 
 pub fn disable_services_and_timers() {
     let _ = Command::new("systemctl")
         .arg("stop")
-        .args(SERVICES_AND_TIMERS)
+        .arg(SERVICE)
+        .args(TIMERS)
         .status();
     let _ = Command::new("systemctl")
         .arg("disable")
-        .args(SERVICES_AND_TIMERS)
+        .arg(SERVICE)
+        .args(TIMERS)
         .status();
 }

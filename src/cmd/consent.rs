@@ -11,6 +11,7 @@ use crate::{
     api::Api,
     db::DB,
     event::{self, DeviceOSIds},
+    util,
 };
 
 fn arg_err<'a>() -> &'a str {
@@ -51,7 +52,9 @@ pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
     if answer.trim() == "y" {
         db.set_opted(Some(true)).unwrap();
         db.set_consents(&consents).unwrap();
+        util::systemd::enable_services_and_timers();
     } else {
         db.set_opted(Some(false)).unwrap();
+        util::systemd::disable_services_and_timers();
     }
 }
