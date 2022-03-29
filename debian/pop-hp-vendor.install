@@ -1,2 +1,3 @@
 usr/lib/systemd
 usr/libexec
+usr/share/polkit-1

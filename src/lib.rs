@@ -15,9 +15,10 @@ use std::{
     str::FromStr,
 };
 
-pub mod api;
+mod api;
+pub mod cli;
 pub mod cmd;
-pub mod config;
+mod config;
 mod db;
 pub mod event;
 mod frequency;

@@ -48,7 +48,7 @@ pub struct DataCollectionConsent {
     pub sent: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct DataCollectionPurpose {
     pub locale: String,
     pub purpose_id: String,

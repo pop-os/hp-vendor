@@ -3,5 +3,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 fn main() {
-    hp_vendor::cli::run();
+    hp_vendor::cmd::purposes();
 }
