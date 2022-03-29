@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use crate::{api::Api, db::DB, event::DeviceOSIds};
+use crate::{api::Api, db::DB, event::DeviceOSIds, util};
 
 pub fn run() {
     let db = DB::open().unwrap();
@@ -12,4 +12,6 @@ pub fn run() {
     let api = Api::new(ids).unwrap();
 
     api.delete().unwrap();
+    util::systemd::disable_services_and_timers();
+    db.delete_and_disable().unwrap();
 }

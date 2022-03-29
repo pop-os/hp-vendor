@@ -439,6 +439,18 @@ impl DB {
         }
         tx.commit()
     }
+
+    pub fn delete_and_disable(&self) -> Result<()> {
+        let tx = self.0.unchecked_transaction()?;
+        self.0.execute_batch(
+            "DELETE from state;
+             DELETE from queued_events;
+             DELETE from consents;
+             UPDATE properties SET opted = 1;
+            ",
+        )?;
+        tx.commit()
+    }
 }
 
 pub struct QueueInsert<'a>(Statement<'a>);
