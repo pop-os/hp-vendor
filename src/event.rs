@@ -48,6 +48,15 @@ pub struct DataCollectionConsent {
     pub sent: bool,
 }
 
+#[derive(Clone, Debug)]
+pub struct DataCollectionPurpose {
+    pub locale: String,
+    pub purpose_id: String,
+    pub version: String,
+    pub min_version: String,
+    pub statement: String,
+}
+
 impl DeviceOSIds {
     pub fn new(os_install_uuid: String) -> anyhow::Result<Self> {
         (|| {

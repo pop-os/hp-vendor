@@ -32,14 +32,16 @@ pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
     let api = Api::new(ids).unwrap();
     let purposes = api.purposes(locale).unwrap();
 
+    db.set_purposes(locale, &purposes).unwrap();
+
     let mut consents = Vec::new();
     for purpose in purposes {
-        println!("Purpose: {}", purpose.verbiage.statement);
+        println!("Purpose: {}", purpose.statement);
         consents.push(event::DataCollectionConsent {
             country: country.to_string(),
-            locale: purpose.verbiage.locale,
+            locale: purpose.locale,
             purpose_id: purpose.purpose_id,
-            version: purpose.verbiage.version,
+            version: purpose.version,
             sent: false,
         });
     }

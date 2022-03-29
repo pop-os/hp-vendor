@@ -195,13 +195,23 @@ impl Api {
         Ok(())
     }
 
-    pub fn purposes(&self, locale: &str) -> anyhow::Result<Vec<Purpose>> {
-        Ok(self
+    pub fn purposes(&self, locale: &str) -> anyhow::Result<Vec<event::DataCollectionPurpose>> {
+        let purposes: Vec<Purpose> = self
             .request(
                 "DataCollectionPurposes",
                 &[("locale", locale), ("latest", "true")],
             )?
-            .json()?)
+            .json()?;
+        Ok(purposes
+            .into_iter()
+            .map(|purpose| event::DataCollectionPurpose {
+                locale: purpose.verbiage.locale,
+                purpose_id: purpose.purpose_id,
+                version: purpose.verbiage.version,
+                min_version: purpose.verbiage.min_version,
+                statement: purpose.verbiage.statement,
+            })
+            .collect())
     }
 
     pub fn consent(

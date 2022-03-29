@@ -12,7 +12,7 @@ use time::{Duration, OffsetDateTime};
 
 use crate::{
     config::SamplingFrequency,
-    event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType},
+    event::{DataCollectionConsent, DataCollectionPurpose, TelemetryEvent, TelemetryEventType},
     frequency::Frequencies,
 };
 
@@ -48,6 +48,14 @@ fn create_tables(conn: &Connection) -> Result<()> {
              purpose_id TEXT NOT NULL,
              version TEXT NOT NULL,
              sent INTEGER DEFAULT 0 NOT NULL
+         );
+         CREATE TABLE purposes (
+             id INTEGER PRIMARY KEY,
+             locale TEXT NOT NULL,
+             purpose_id TEXT NOT NULL,
+             version TEXT NOT NULL,
+             min_version TEXT NOT NULL,
+             statement TEXT NOT NULL
          );
          CREATE TABLE properties (
              id INTEGER PRIMARY KEY,
@@ -120,11 +128,26 @@ fn migrate_3_to_4(conn: &Connection) -> Result<()> {
     )
 }
 
+fn migrate_4_to_5(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "CREATE TABLE purposes (
+             id INTEGER PRIMARY KEY,
+             locale TEXT NOT NULL,
+             purpose_id TEXT NOT NULL,
+             version TEXT NOT NULL,
+             min_version TEXT NOT NULL,
+             statement TEXT NOT NULL
+         );
+        ",
+    )
+}
+
 static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[
     migrate_0_to_1,
     migrate_1_to_2,
     migrate_2_to_3,
     migrate_3_to_4,
+    migrate_4_to_5,
 ];
 
 pub struct DB(Connection);
@@ -195,6 +218,51 @@ impl DB {
                 &i.purpose_id,
                 &i.version,
                 &i.sent
+            ])?;
+        }
+        tx.commit()
+    }
+
+    pub fn get_purposes(&self, locale: Option<&str>) -> Result<Vec<DataCollectionPurpose>> {
+        let cb = |row: &rusqlite::Row| {
+            Ok(DataCollectionPurpose {
+                locale: row.get(0)?,
+                purpose_id: row.get(1)?,
+                version: row.get(2)?,
+                min_version: row.get(3)?,
+                statement: row.get(4)?,
+            })
+        };
+        if let Some(locale) = locale {
+            let mut stmt = self.0.prepare(
+                "SELECT locale, purpose_id, version, min_version, statement FROM purposes WHERE locale = ?",
+            )?;
+            let rows = stmt.query_map([locale], cb)?;
+            Ok(rows.filter_map(Result::ok).collect())
+        } else {
+            let mut stmt = self.0.prepare(
+                "SELECT locale, purpose_id, version, min_version, statement FROM purposes",
+            )?;
+            let rows = stmt.query_map([], cb)?;
+            Ok(rows.filter_map(Result::ok).collect())
+        }
+    }
+
+    pub fn set_purposes(&self, locale: &str, purposes: &[DataCollectionPurpose]) -> Result<()> {
+        let tx = self.0.unchecked_transaction()?;
+        self.0
+            .execute("DELETE FROM purposes where locale = ?", [locale])?;
+        let mut stmt = self.0.prepare(
+            "INSERT INTO purposes (locale, purpose_id, version, min_version, statement)
+             VALUES (?, ?, ?, ?, ?)",
+        )?;
+        for i in purposes {
+            stmt.execute(params![
+                &i.locale,
+                &i.purpose_id,
+                &i.version,
+                &i.min_version,
+                &i.statement,
             ])?;
         }
         tx.commit()
