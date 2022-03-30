@@ -7,7 +7,10 @@ use crate::{
     db::DB,
     event::DeviceOSIds,
 };
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    str::FromStr,
+};
 
 pub fn run(arg: Option<&str>) {
     let db = DB::open().unwrap();
@@ -16,11 +19,9 @@ pub fn run(arg: Option<&str>) {
 
     let api = Api::new(ids).unwrap();
 
-    let format = if arg == Some("--zip") {
-        DownloadFormat::Zip
-    } else {
-        DownloadFormat::Json
-    };
+    let format = arg
+        .map(|s| DownloadFormat::from_str(s).expect("Invalid format"))
+        .unwrap_or(DownloadFormat::Json);
     let res = api.download(format).unwrap();
     io::stdout().write_all(&res).unwrap();
 }

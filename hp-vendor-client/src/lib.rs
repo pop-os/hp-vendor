@@ -2,7 +2,14 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-use std::{fmt, io, process::Command};
+use std::{
+    fmt, io,
+    process::{Command, ExitStatus, Stdio},
+    str,
+};
+
+const PURPOSES_CMD: &str = "/usr/libexec/hp-vendor-purposes";
+const CMD: &str = "/usr/libexec/hp-vendor";
 
 #[derive(Debug)]
 pub enum Error {
@@ -58,10 +65,39 @@ pub struct PurposesOutput {
     pub purposes: Option<Vec<DataCollectionPurpose>>,
 }
 
-fn pkexec<T: serde::de::DeserializeOwned>(cmd: &[&str]) -> Result<T, Error> {
-    let output = Command::new("pkexec").args(cmd).output()?;
-    match output.status.code() {
-        Some(0) => Ok(serde_json::from_slice(&output.stdout)?),
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DownloadFormat {
+    Json,
+    Zip,
+    GZip,
+}
+
+impl fmt::Display for DownloadFormat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Json => write!(f, "json"),
+            Self::Zip => write!(f, "zip"),
+            Self::GZip => write!(f, "gzip"),
+        }
+    }
+}
+
+impl str::FromStr for DownloadFormat {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, ()> {
+        match s {
+            "json" => Ok(Self::Json),
+            "zip" => Ok(Self::Zip),
+            "gzip" => Ok(Self::GZip),
+            _ => Err(()),
+        }
+    }
+}
+
+fn check_pkexec_status(status: ExitStatus) -> Result<(), Error> {
+    match status.code() {
+        Some(0) => Ok(()),
         Some(126) => Err(Error::PkexecDismissed),
         Some(127) => Err(Error::PkexecNoauth),
         // TODO: Collect stderr, or something?
@@ -71,5 +107,35 @@ fn pkexec<T: serde::de::DeserializeOwned>(cmd: &[&str]) -> Result<T, Error> {
 
 /// Get data colection purposes and opt-in status. Does not prompt for authentication.
 pub fn purposes(locale: &str) -> Result<PurposesOutput, Error> {
-    pkexec(&["/usr/libexec/hp-vendor-purposes", locale])
+    let output = Command::new("pkexec")
+        .args(&[PURPOSES_CMD, locale])
+        .output()?;
+    check_pkexec_status(output.status)?;
+    Ok(serde_json::from_slice(&output.stdout)?)
+}
+
+pub fn consent(
+    _locale: &str,
+    _country: &str,
+    _purposes: &[DataCollectionPurpose],
+) -> Result<(), Error> {
+    todo!()
+}
+
+pub fn download<F: Into<Stdio>>(file: F, format: DownloadFormat) -> Result<(), Error> {
+    let status = Command::new("pkexec")
+        .args(&[CMD, "download", &format.to_string()])
+        .stdout(file)
+        .status()?;
+    check_pkexec_status(status)
+}
+
+// Or document that disable should be called first?
+pub fn delete_and_disable() -> Result<(), Error> {
+    let status = Command::new("pkexec").args(&[CMD, "delete"]).status()?;
+    check_pkexec_status(status)
+}
+
+pub fn disable() -> Result<(), Error> {
+    todo!()
 }

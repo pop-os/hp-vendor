@@ -14,15 +14,9 @@ use std::{cell::RefCell, collections::HashMap, error::Error, fmt, io::Read, str:
 
 use crate::event::{self, DeviceOSIds, Events};
 
-const BASE_URL: &str = "https://api.data.hpdevone.com";
+pub use hp_vendor_client::DownloadFormat;
 
-#[derive(Debug, Clone, Copy)]
-pub enum DownloadFormat {
-    Json,
-    Zip,
-    #[allow(dead_code)]
-    GZip,
-}
+const BASE_URL: &str = "https://api.data.hpdevone.com";
 
 #[derive(Debug, serde::Deserialize)]
 struct TokenResponse {
@@ -187,14 +181,12 @@ impl Api {
     }
 
     pub fn download(&self, format: DownloadFormat) -> anyhow::Result<Vec<u8>> {
-        let format = match format {
-            DownloadFormat::Json => "JSON",
-            DownloadFormat::Zip => "ZIP",
-            DownloadFormat::GZip => "GZIP",
-        };
-        let mut res = self.request("DataDownload", &[("fileFormat", format)])?;
+        let mut res = self.request(
+            "DataDownload",
+            &[("fileFormat", &format.to_string().to_ascii_uppercase())],
+        )?;
         let mut bytes = Vec::new();
-        if format != "JSON" {
+        if format != DownloadFormat::Json {
             DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
         } else {
             res.read_to_end(&mut bytes)?;
