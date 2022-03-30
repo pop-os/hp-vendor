@@ -10,11 +10,7 @@ use crate::{
     event::{DataCollectionPurpose, DeviceOSIds},
 };
 
-#[derive(serde::Serialize)]
-struct PurposesOutput {
-    opted: Option<bool>,
-    purposes: Option<Vec<DataCollectionPurpose>>,
-}
+use hp_vendor_client::PurposesOutput;
 
 // TODO: return parsable error?
 fn get_purposes_from_api(

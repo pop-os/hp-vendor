@@ -337,6 +337,7 @@ dependencies = [
  "base64",
  "convert_case",
  "drm",
+ "hp-vendor-client",
  "libc",
  "mio",
  "nix 0.23.1",
@@ -354,6 +355,14 @@ dependencies = [
  "udev",
  "uuid",
  "valico",
+]
+
+[[package]]
+name = "hp-vendor-client"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

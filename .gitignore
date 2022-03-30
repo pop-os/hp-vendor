@@ -7,6 +7,6 @@
 /debian/pop-hp-vendor
 /debian/pop-hp-vendor-dkms
 /debian/tmp
-/target
+target
 /vendor
 /vendor.tar

@@ -10,6 +10,7 @@ license = "GPL-3.0-only"
 anyhow = "1.0.53"
 base64 = "0.13.0"
 drm = "0.6.2"
+hp-vendor-client = { path = "hp-vendor-client" }
 libc = "0.2.104"
 mio = { version = "0.8", features = ["os-ext"] }
 nix = "0.23"

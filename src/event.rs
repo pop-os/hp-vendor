@@ -15,6 +15,8 @@ use uuid::Uuid;
 
 use crate::util::dmi::{dmi, SystemInfo24};
 
+pub use hp_vendor_client::DataCollectionPurpose;
+
 schemafy::schemafy!("DataUploadRequestModel.json");
 
 // Unlike genereated binding, an `enum` rather than a `struct`
@@ -46,15 +48,6 @@ pub struct DataCollectionConsent {
     pub purpose_id: String,
     pub version: String,
     pub sent: bool,
-}
-
-#[derive(Clone, Debug, serde::Serialize)]
-pub struct DataCollectionPurpose {
-    pub locale: String,
-    pub purpose_id: String,
-    pub version: String,
-    pub min_version: String,
-    pub statement: String,
 }
 
 impl DeviceOSIds {
