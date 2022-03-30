@@ -50,7 +50,11 @@ pub struct DataCollectionPurpose {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct PurposesOutput {
+    /// `true` for opted-in, `false` for opt-out, `None` if no opt-in/out has
+    /// been set.
     pub opted: Option<bool>,
+    /// May be `None` if purposes for given locale are not cached and
+    /// hp-vendor is unable to communicate with the server.
     pub purposes: Option<Vec<DataCollectionPurpose>>,
 }
 
@@ -65,9 +69,7 @@ fn pkexec<T: serde::de::DeserializeOwned>(cmd: &[&str]) -> Result<T, Error> {
     }
 }
 
-/// Get data colection purposes and opt-in status. Purposes may be `None`
-/// if purposes for `locale` are not cached and it is unable to communicate
-/// with server. Does not prompt for authentication.
+/// Get data colection purposes and opt-in status. Does not prompt for authentication.
 pub fn purposes(locale: &str) -> Result<PurposesOutput, Error> {
     pkexec(&["/usr/libexec/hp-vendor-purposes", locale])
 }
