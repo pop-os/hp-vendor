@@ -185,7 +185,7 @@ impl Api {
         if zip {
             DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
         } else {
-            bytes = res.json::<String>()?.into();
+            res.read_to_end(&mut bytes)?;
         }
         Ok(bytes)
     }
