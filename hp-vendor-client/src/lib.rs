@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-use std::{fmt, io, process::Command};
+use std::{fmt, fs, io, process::Command};
 
 #[derive(Debug)]
 pub enum Error {
@@ -72,4 +72,28 @@ fn pkexec<T: serde::de::DeserializeOwned>(cmd: &[&str]) -> Result<T, Error> {
 /// Get data colection purposes and opt-in status. Does not prompt for authentication.
 pub fn purposes(locale: &str) -> Result<PurposesOutput, Error> {
     pkexec(&["/usr/libexec/hp-vendor-purposes", locale])
+}
+
+pub fn consent(
+    locale: &str,
+    country: &str,
+    purposes: &[DataCollectionPurpose],
+) -> Result<(), Error> {
+    todo!()
+}
+
+pub fn download(file: &mut fs::File, zip: bool) -> Result<(), Error> {
+    // Can't use this pkexec function here...
+    todo!()
+}
+
+// Or document that disable should be called first?
+pub fn delete_and_disable() -> Result<(), Error> {
+    // pkexec(&["/usr/libexec/hp-vendor", "delete"])
+    // Doesn't need json?
+    todo!()
+}
+
+pub fn disable() -> Result<(), Error> {
+    todo!()
 }
