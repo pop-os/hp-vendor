@@ -10,6 +10,7 @@ pub enum Error {
     Io(io::Error),
     PkexecNoauth,
     PkexecDismissed,
+    HpVendorFailed,
 }
 
 impl fmt::Display for Error {
@@ -19,6 +20,7 @@ impl fmt::Display for Error {
             Self::Io(err) => write!(f, "{}", err),
             Self::PkexecNoauth => write!(f, "Polkit authorization failed"),
             Self::PkexecDismissed => write!(f, "Polkit dialog dismissed"),
+            Self::HpVendorFailed => write!(f, "Call to hp-vendor failed"),
         }
     }
 }
@@ -52,12 +54,15 @@ pub struct PurposesOutput {
     pub purposes: Option<Vec<DataCollectionPurpose>>,
 }
 
-// XXX handle return code from pkexec? Non-zero exit code from hp-vendor-purposes?
 fn pkexec<T: serde::de::DeserializeOwned>(cmd: &[&str]) -> Result<T, Error> {
-    let output = Command::new("pkexec")
-        .args(cmd)
-        .output()?;
-    Ok(serde_json::from_slice(&output.stdout)?)
+    let output = Command::new("pkexec").args(cmd).output()?;
+    match output.status.code() {
+        Some(0) => Ok(serde_json::from_slice(&output.stdout)?),
+        Some(126) => Err(Error::PkexecDismissed),
+        Some(127) => Err(Error::PkexecNoauth),
+        // TODO: Collect stderr, or something?
+        _ => Err(Error::HpVendorFailed),
+    }
 }
 
 /// Get data colection purposes and opt-in status. Purposes may be `None`
