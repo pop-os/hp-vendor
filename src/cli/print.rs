@@ -16,7 +16,7 @@ pub fn run(arg: Option<&str>) {
         Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
         _ => {
-            eprintln!("Usage: hp-vendor print (consent|frequencies|queued|state)");
+            eprintln!("Usage: hp-vendor print (consents|frequencies|purposes|queued|state)");
             process::exit(1);
         }
     }
