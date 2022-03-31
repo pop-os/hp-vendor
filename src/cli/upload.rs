@@ -16,7 +16,9 @@ pub fn run(arg: Option<&str>) {
     let db = DB::open().unwrap();
     crate::exit_if_not_opted_in(&db);
 
-    let mut consents = db.get_consents().unwrap();
+    // Would have exited above if consent is `None`
+    let mut consent = db.get_consent().unwrap().unwrap();
+
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = event::DeviceOSIds::new(os_install_id).unwrap();
 
@@ -30,24 +32,19 @@ pub fn run(arg: Option<&str>) {
     };
 
     if let Some(api) = &api {
-        let mut changed = false;
-        for consent in &mut consents {
-            if !consent.sent {
-                changed = true;
-                let resp = api
-                    .consent(
-                        &consent.locale,
-                        &consent.country,
-                        &consent.purpose_id,
-                        &consent.version,
-                    )
-                    .unwrap();
-                println!("{:?}", resp);
-                consent.sent = true;
-            }
-        }
-        if changed {
-            db.set_consents(&consents).unwrap();
+        if !consent.sent {
+            let resp = api
+                .consent(
+                    &consent.locale,
+                    &consent.country,
+                    &consent.purpose_id,
+                    &consent.version,
+                )
+                .unwrap();
+            println!("{:?}", resp);
+
+            consent.sent = true;
+            db.set_consent(Some(&consent)).unwrap();
         }
 
         match api.config() {
@@ -65,7 +62,7 @@ pub fn run(arg: Option<&str>) {
     }
 
     let (queued_ids, queued) = db.get_queued().unwrap();
-    let mut events = event::Events::new(consents, ids, &[]);
+    let mut events = event::Events::new(vec![consent], ids, &[]);
     for (chunk_ids, chunk) in queued_ids.chunks(100).zip(queued.chunks(100)) {
         events.data = chunk;
 

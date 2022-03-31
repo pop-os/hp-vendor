@@ -703,8 +703,8 @@ pub fn update_events_and_queue(
 
 pub fn exit_if_not_opted_in(db: &db::DB) {
     let opted = db.get_opted().unwrap();
-    let consents = db.get_consents().unwrap();
-    if opted != Some(true) || consents.is_empty() {
+    let consent = db.get_consent().unwrap();
+    if opted != Some(true) || consent.is_none() {
         // Explicit opt out
         if opted == Some(false) {
             eprintln!("Opted out of data collection.");

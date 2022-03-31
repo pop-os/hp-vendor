@@ -10,13 +10,13 @@ pub fn run(arg: Option<&str>) {
     let db = DB::open().unwrap();
 
     match arg {
-        Some("consents") => println!("{:#?}", db.get_consents().unwrap()),
+        Some("consent") => println!("{:#?}", db.get_consent().unwrap()),
         Some("frequencies") => println!("{:#?}", db.get_event_frequencies().unwrap()),
         Some("purposes") => println!("{:#?}", db.get_purposes(None).unwrap()),
         Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
         _ => {
-            eprintln!("Usage: hp-vendor print (consents|frequencies|purposes|queued|state)");
+            eprintln!("Usage: hp-vendor print (consent|frequencies|purposes|queued|state)");
             process::exit(1);
         }
     }

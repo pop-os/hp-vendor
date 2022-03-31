@@ -188,11 +188,11 @@ impl DB {
     }
 
     // Should be checked before upload, etc.
-    pub fn get_consents(&self) -> Result<Vec<DataCollectionConsent>> {
+    pub fn get_consent(&self) -> Result<Option<DataCollectionConsent>> {
         let mut stmt = self
             .0
             .prepare("SELECT locale, country, purpose_id, version, sent from consents")?;
-        let rows = stmt.query_map([], |row| {
+        stmt.query_row([], |row| {
             Ok(DataCollectionConsent {
                 locale: row.get(0)?,
                 country: row.get(1)?,
@@ -200,24 +200,24 @@ impl DB {
                 version: row.get(3)?,
                 sent: row.get(4)?,
             })
-        })?;
-        Ok(rows.filter_map(Result::ok).collect())
+        })
+        .optional()
     }
 
-    pub fn set_consents(&self, consent: &[DataCollectionConsent]) -> Result<()> {
+    pub fn set_consent(&self, consent: Option<&DataCollectionConsent>) -> Result<()> {
         let tx = self.0.unchecked_transaction()?;
         self.0.execute("DELETE FROM consents", [])?;
         let mut stmt = self.0.prepare(
             "INSERT INTO consents (locale, country, purpose_id, version, sent)
              VALUES (?, ?, ?, ?, ?)",
         )?;
-        for i in consent {
+        if let Some(consent) = consent {
             stmt.execute(params![
-                &i.locale,
-                &i.country,
-                &i.purpose_id,
-                &i.version,
-                &i.sent
+                &consent.locale,
+                &consent.country,
+                &consent.purpose_id,
+                &consent.version,
+                &consent.sent
             ])?;
         }
         tx.commit()
