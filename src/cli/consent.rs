@@ -30,7 +30,7 @@ pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
     // XXX show existing consent
 
     let api = Api::new(ids).unwrap();
-    let purposes = api.purposes(locale).unwrap();
+    let purposes = api.purposes(Some(locale)).unwrap();
 
     db.set_purposes(locale, &purposes).unwrap();
 

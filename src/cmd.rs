@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{env, io};
+use std::{env, fs, io};
 
 use crate::{
     api::Api,
@@ -19,7 +19,7 @@ fn get_purposes_from_api(
 ) -> Option<Vec<DataCollectionPurpose>> {
     let ids = DeviceOSIds::new(os_install_id).ok()?;
     let api = Api::new(ids).ok()?;
-    api.purposes(locale).ok()
+    api.purposes(Some(locale)).ok()
 }
 
 pub fn purposes() {
@@ -46,4 +46,18 @@ pub fn purposes() {
     };
 
     serde_json::to_writer(io::stdout(), &PurposesOutput { opted, purposes }).unwrap();
+}
+
+pub fn update_purposes() {
+    let db = DB::open().unwrap();
+    let os_install_id = db.get_os_install_id().unwrap();
+    let ids = DeviceOSIds::new(os_install_id).ok().unwrap();
+    let api = Api::new(ids).ok().unwrap();
+
+    let purposes = api.purposes(None).unwrap();
+
+    let file = fs::File::create("purposes.json").unwrap();
+    serde_json::to_writer_pretty(file, &purposes).unwrap();
+
+    eprintln!("Purposes written to `purposes.json`.");
 }
