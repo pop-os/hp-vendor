@@ -202,7 +202,7 @@ impl Api {
     pub fn purposes(
         &self,
         locale: Option<&str>,
-    ) -> anyhow::Result<Vec<event::DataCollectionPurpose>> {
+    ) -> anyhow::Result<HashMap<String, event::DataCollectionPurpose>> {
         let params = match locale {
             Some(locale) => vec![("locale", locale), ("latest", "true")],
             None => vec![("latest", "true")],
@@ -210,12 +210,16 @@ impl Api {
         let purposes: Vec<Purpose> = self.request("DataCollectionPurposes", &params)?.json()?;
         Ok(purposes
             .into_iter()
-            .map(|purpose| event::DataCollectionPurpose {
-                locale: purpose.verbiage.locale,
-                purpose_id: purpose.purpose_id,
-                version: purpose.verbiage.version,
-                min_version: purpose.verbiage.min_version,
-                statement: purpose.verbiage.statement,
+            .map(|purpose| {
+                (
+                    purpose.verbiage.locale.clone(),
+                    event::DataCollectionPurpose {
+                        purpose_id: purpose.purpose_id,
+                        version: purpose.verbiage.version,
+                        min_version: purpose.verbiage.min_version,
+                        statement: purpose.verbiage.statement,
+                    },
+                )
             })
             .collect())
     }

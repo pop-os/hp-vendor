@@ -7,7 +7,7 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef},
     Connection, OptionalExtension, Result, Statement,
 };
-use std::{error::Error, fmt, str};
+use std::{collections::HashMap, error::Error, fmt, str};
 use time::{Duration, OffsetDateTime};
 
 use crate::{
@@ -223,15 +223,20 @@ impl DB {
         tx.commit()
     }
 
-    pub fn get_purposes(&self, locale: Option<&str>) -> Result<Vec<DataCollectionPurpose>> {
+    pub fn get_purposes(
+        &self,
+        locale: Option<&str>,
+    ) -> Result<HashMap<String, DataCollectionPurpose>> {
         let cb = |row: &rusqlite::Row| {
-            Ok(DataCollectionPurpose {
-                locale: row.get(0)?,
-                purpose_id: row.get(1)?,
-                version: row.get(2)?,
-                min_version: row.get(3)?,
-                statement: row.get(4)?,
-            })
+            Ok((
+                row.get(0)?,
+                DataCollectionPurpose {
+                    purpose_id: row.get(1)?,
+                    version: row.get(2)?,
+                    min_version: row.get(3)?,
+                    statement: row.get(4)?,
+                },
+            ))
         };
         if let Some(locale) = locale {
             let mut stmt = self.0.prepare(
@@ -248,17 +253,16 @@ impl DB {
         }
     }
 
-    pub fn set_purposes(&self, locale: &str, purposes: &[DataCollectionPurpose]) -> Result<()> {
+    pub fn set_purposes(&self, purposes: &HashMap<String, DataCollectionPurpose>) -> Result<()> {
         let tx = self.0.unchecked_transaction()?;
-        self.0
-            .execute("DELETE FROM purposes where locale = ?", [locale])?;
+        self.0.execute("DELETE FROM purposes", [])?;
         let mut stmt = self.0.prepare(
             "INSERT INTO purposes (locale, purpose_id, version, min_version, statement)
              VALUES (?, ?, ?, ?, ?)",
         )?;
-        for i in purposes {
+        for (locale, i) in purposes.iter() {
             stmt.execute(params![
-                &i.locale,
+                &locale,
                 &i.purpose_id,
                 &i.version,
                 &i.min_version,

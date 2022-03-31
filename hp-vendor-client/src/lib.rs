@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 use std::{
+    collections::HashMap,
     fmt, io,
     process::{Command, ExitStatus, Stdio},
     str,
@@ -48,7 +49,6 @@ impl From<io::Error> for Error {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataCollectionPurpose {
-    pub locale: String,
     pub purpose_id: String,
     pub version: String,
     pub min_version: String,
@@ -62,7 +62,7 @@ pub struct PurposesOutput {
     pub opted: Option<bool>,
     /// May be `None` if purposes for given locale are not cached and
     /// hp-vendor is unable to communicate with the server.
-    pub purposes: Option<Vec<DataCollectionPurpose>>,
+    pub purposes: Option<HashMap<String, DataCollectionPurpose>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -106,10 +106,8 @@ fn check_pkexec_status(status: ExitStatus) -> Result<(), Error> {
 }
 
 /// Get data colection purposes and opt-in status. Does not prompt for authentication.
-pub fn purposes(locale: &str) -> Result<PurposesOutput, Error> {
-    let output = Command::new("pkexec")
-        .args(&[PURPOSES_CMD, locale])
-        .output()?;
+pub fn purposes() -> Result<PurposesOutput, Error> {
+    let output = Command::new("pkexec").args(&[PURPOSES_CMD]).output()?;
     check_pkexec_status(output.status)?;
     Ok(serde_json::from_slice(&output.stdout)?)
 }

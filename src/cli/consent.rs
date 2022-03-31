@@ -20,7 +20,7 @@ fn arg_err<'a>() -> &'a str {
 }
 
 pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
-    let locale = arg1.unwrap_or_else(arg_err);
+    let mut locale = arg1.unwrap_or_else(arg_err);
     let country = arg2.unwrap_or_else(arg_err);
 
     let db = DB::open().unwrap();
@@ -30,25 +30,29 @@ pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
     // XXX show existing consent
 
     let api = Api::new(ids).unwrap();
-    let purposes = api.purposes(Some(locale)).unwrap();
-    // Should be exactly one per language
-    let purpose = purposes.into_iter().next().unwrap();
+    let purposes = api.purposes(None).unwrap();
+    db.set_purposes(&purposes).unwrap();
+
+    let purpose = if let Some(purpose) = purposes.get(locale) {
+        purpose
+    } else {
+        locale = "en";
+        &purposes["en"]
+    };
 
     let consent = event::DataCollectionConsent {
         country: country.to_string(),
-        locale: purpose.locale.clone(),
+        locale: locale.to_string(),
         purpose_id: purpose.purpose_id.clone(),
         version: purpose.version.clone(),
         sent: false,
     };
 
-    println!("Purpose: {}", purpose.statement);
+    println!("{}", purpose.statement);
     print!("Agree? [yN]: ");
     io::stdout().lock().flush().unwrap();
     let mut answer = String::new();
     io::stdin().read_line(&mut answer).unwrap();
-
-    db.set_purposes(locale, &[purpose]).unwrap();
 
     if answer.trim() == "y" {
         db.set_opted(Some(true)).unwrap();
