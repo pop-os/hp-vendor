@@ -2,7 +2,11 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use crate::{api::Api, db::DB, event::DeviceOSIds};
+use crate::{
+    api::{Api, DownloadFormat},
+    db::DB,
+    event::DeviceOSIds,
+};
 use std::io::{self, Write};
 
 pub fn run(arg: Option<&str>) {
@@ -12,7 +16,11 @@ pub fn run(arg: Option<&str>) {
 
     let api = Api::new(ids).unwrap();
 
-    let zip = arg == Some("--zip");
-    let res = api.download(zip).unwrap();
+    let format = if arg == Some("--zip") {
+        DownloadFormat::Zip
+    } else {
+        DownloadFormat::Json
+    };
+    let res = api.download(format).unwrap();
     io::stdout().write_all(&res).unwrap();
 }

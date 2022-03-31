@@ -16,6 +16,14 @@ use crate::event::{self, DeviceOSIds, Events};
 
 const BASE_URL: &str = "https://api.data.hpdevone.com";
 
+#[derive(Debug, Clone, Copy)]
+pub enum DownloadFormat {
+    Json,
+    Zip,
+    #[allow(dead_code)]
+    GZip,
+}
+
 #[derive(Debug, serde::Deserialize)]
 struct TokenResponse {
     #[allow(dead_code)]
@@ -178,11 +186,15 @@ impl Api {
         Ok(self.request_json("DataUpload", &[], events)?.json()?)
     }
 
-    pub fn download(&self, zip: bool) -> anyhow::Result<Vec<u8>> {
-        let format = if zip { "ZIP" } else { "JSON" };
+    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<Vec<u8>> {
+        let format = match format {
+            DownloadFormat::Json => "JSON",
+            DownloadFormat::Zip => "ZIP",
+            DownloadFormat::GZip => "GZIP",
+        };
         let mut res = self.request("DataDownload", &[("fileFormat", format)])?;
         let mut bytes = Vec::new();
-        if zip {
+        if format != "JSON" {
             DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
         } else {
             res.read_to_end(&mut bytes)?;
