@@ -60,9 +60,8 @@ pub struct PurposesOutput {
     /// `true` for opted-in, `false` for opt-out, `None` if no opt-in/out has
     /// been set.
     pub opted: Option<bool>,
-    /// May be `None` if purposes for given locale are not cached and
-    /// hp-vendor is unable to communicate with the server.
-    pub purposes: Option<HashMap<String, DataCollectionPurpose>>,
+    /// Purpose, by language. Treat `en` as default.
+    pub purposes: HashMap<String, DataCollectionPurpose>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -115,7 +114,8 @@ pub fn purposes() -> Result<PurposesOutput, Error> {
 pub fn consent(
     _locale: &str,
     _country: &str,
-    _purposes: &[DataCollectionPurpose],
+    _purpose_id: &str,
+    _version: &str,
 ) -> Result<(), Error> {
     todo!()
 }

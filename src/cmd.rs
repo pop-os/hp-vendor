@@ -28,13 +28,11 @@ pub fn purposes() {
     let purposes = if purposes.is_empty() {
         eprintln!("No purposes. Requesting from server.",);
         let os_install_id = db.get_os_install_id().unwrap();
-        let purposes = get_purposes_from_api(os_install_id);
-        if let Some(purposes) = &purposes {
-            db.set_purposes(purposes).unwrap();
-        }
+        let purposes = get_purposes_from_api(os_install_id).unwrap(); // XXX use hard-coded default
+        db.set_purposes(&purposes).unwrap();
         purposes
     } else {
-        Some(purposes)
+        purposes
     };
 
     serde_json::to_writer(io::stdout(), &PurposesOutput { opted, purposes }).unwrap();
