@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{collections::HashMap, env, fs, io};
+use std::{collections::HashMap, fs, io};
 
 use crate::{
     api::Api,
@@ -24,7 +24,7 @@ pub fn purposes() {
 
     let opted = db.get_opted().unwrap();
 
-    let purposes = db.get_purposes(None).unwrap();
+    let purposes = db.get_purposes().unwrap();
     let purposes = if purposes.is_empty() {
         eprintln!("No purposes. Requesting from server.",);
         let os_install_id = db.get_os_install_id().unwrap();

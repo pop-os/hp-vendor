@@ -223,11 +223,11 @@ impl DB {
         tx.commit()
     }
 
-    pub fn get_purposes(
-        &self,
-        locale: Option<&str>,
-    ) -> Result<HashMap<String, DataCollectionPurpose>> {
-        let cb = |row: &rusqlite::Row| {
+    pub fn get_purposes(&self) -> Result<HashMap<String, DataCollectionPurpose>> {
+        let mut stmt = self
+            .0
+            .prepare("SELECT locale, purpose_id, version, min_version, statement FROM purposes")?;
+        let rows = stmt.query_map([], |row| {
             Ok((
                 row.get(0)?,
                 DataCollectionPurpose {
@@ -237,20 +237,8 @@ impl DB {
                     statement: row.get(4)?,
                 },
             ))
-        };
-        if let Some(locale) = locale {
-            let mut stmt = self.0.prepare(
-                "SELECT locale, purpose_id, version, min_version, statement FROM purposes WHERE locale = ?",
-            )?;
-            let rows = stmt.query_map([locale], cb)?;
-            Ok(rows.filter_map(Result::ok).collect())
-        } else {
-            let mut stmt = self.0.prepare(
-                "SELECT locale, purpose_id, version, min_version, statement FROM purposes",
-            )?;
-            let rows = stmt.query_map([], cb)?;
-            Ok(rows.filter_map(Result::ok).collect())
-        }
+        })?;
+        Ok(rows.filter_map(Result::ok).collect())
     }
 
     pub fn set_purposes(&self, purposes: &HashMap<String, DataCollectionPurpose>) -> Result<()> {
