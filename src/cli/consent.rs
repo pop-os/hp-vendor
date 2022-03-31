@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
+    env,
     io::{self, Write},
     process,
 };
@@ -14,14 +15,14 @@ use crate::{
     util,
 };
 
-fn arg_err<'a>() -> &'a str {
+fn arg_err<'a>() -> String {
     eprintln!("Usage: hp-vendor consent <locale> <country>");
     process::exit(1)
 }
 
-pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
-    let mut locale = arg1.unwrap_or_else(arg_err);
-    let country = arg2.unwrap_or_else(arg_err);
+pub fn run(mut args: env::Args) {
+    let mut locale = args.next().unwrap_or_else(arg_err);
+    let country = args.next().unwrap_or_else(arg_err);
 
     let db = DB::open().unwrap();
     let os_install_id = db.get_os_install_id().unwrap();
@@ -33,10 +34,10 @@ pub fn run(arg1: Option<&str>, arg2: Option<&str>) {
     let purposes = api.purposes(None).unwrap();
     db.set_purposes(&purposes).unwrap();
 
-    let purpose = if let Some(purpose) = purposes.get(locale) {
+    let purpose = if let Some(purpose) = purposes.get(&locale) {
         purpose
     } else {
-        locale = "en";
+        locale = "en".to_string();
         &purposes["en"]
     };
 

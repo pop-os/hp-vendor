@@ -35,18 +35,17 @@ pub fn run() {
         }
     }
 
-    let mut args = env::args().skip(1);
+    let mut args = env::args();
+    let _ = args.next();
     let cmd = args.next();
-    let arg1 = args.next();
-    let arg2 = args.next();
     match cmd.as_deref() {
-        Some("consent") => consent::run(arg1.as_deref(), arg2.as_deref()),
+        Some("consent") => consent::run(args),
         Some("daemon") => daemon::run(),
         Some("daily") => daily::run(),
         Some("delete") => delete::run(),
-        Some("download") => download::run(arg1.as_deref()),
-        Some("print") => print::run(arg1.as_deref()),
-        Some("upload") => upload::run(arg1.as_deref()),
+        Some("download") => download::run(args),
+        Some("print") => print::run(args),
+        Some("upload") => upload::run(args),
         _ => {
             eprintln!("Usage: hp-vendor (consent|daemon|daily|delete|download|print|upload)");
             process::exit(1);

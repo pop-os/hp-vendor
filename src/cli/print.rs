@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::process;
+use std::{env, process};
 
 use crate::db::{self, DB};
 
-pub fn run(arg: Option<&str>) {
+pub fn run(mut args: env::Args) {
     let db = DB::open().unwrap();
 
-    match arg {
+    match args.next().as_deref() {
         Some("consent") => println!("{:#?}", db.get_consent().unwrap()),
         Some("frequencies") => println!("{:#?}", db.get_event_frequencies().unwrap()),
         Some("purposes") => println!("{:#?}", db.get_purposes().unwrap()),

@@ -8,11 +8,12 @@ use crate::{
     event::DeviceOSIds,
 };
 use std::{
+    env,
     io::{self, Write},
     str::FromStr,
 };
 
-pub fn run(arg: Option<&str>) {
+pub fn run(mut arg: env::Args) {
     let db = DB::open().unwrap();
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = DeviceOSIds::new(os_install_id).unwrap();
@@ -20,7 +21,8 @@ pub fn run(arg: Option<&str>) {
     let api = Api::new(ids).unwrap();
 
     let format = arg
-        .map(|s| DownloadFormat::from_str(s).expect("Invalid format"))
+        .next()
+        .map(|s| DownloadFormat::from_str(&s).expect("Invalid format"))
         .unwrap_or(DownloadFormat::Json);
     let res = api.download(format).unwrap();
     io::stdout().write_all(&res).unwrap();

@@ -2,13 +2,17 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
+use std::env;
+
 use crate::{
     api::{self, Api},
     db::DB,
     event, util,
 };
 
-pub fn run(arg: Option<&str>) {
+pub fn run(mut args: env::Args) {
+    let arg = args.next();
+
     // Get unique lock
     let _lock = util::lock::lock_file_or_panic("/var/hp-vendor/upload.lock");
 
@@ -22,7 +26,7 @@ pub fn run(arg: Option<&str>) {
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = event::DeviceOSIds::new(os_install_id).unwrap();
 
-    let api = if arg != Some("--dequeue-no-upload") {
+    let api = if arg.as_deref() != Some("--dequeue-no-upload") {
         match Api::new(ids.clone()) {
             Ok(api) => Some(api),
             Err(err) => panic!("Failed to authenticate with server: {}", err),
