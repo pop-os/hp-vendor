@@ -38,7 +38,7 @@ fn migration1(conn: &Connection) -> Result<()> {
          );
          CREATE TABLE queued_events (
              id INTEGER PRIMARY KEY,
-             value TEXT NOT NULL,
+             value TEXT NOT NULL
          );
          CREATE TABLE consents (
              id INTEGER PRIMARY KEY,
