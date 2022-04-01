@@ -8,6 +8,7 @@ use crate::{
     api::Api,
     db::DB,
     event::{DataCollectionPurpose, DeviceOSIds},
+    util,
 };
 
 use hp_vendor_client::PurposesOutput;
@@ -20,6 +21,8 @@ fn get_purposes_from_api(os_install_id: String) -> Option<HashMap<String, DataCo
 }
 
 pub fn purposes() {
+    util::check_supported_and_create_dir();
+
     let db = DB::open().unwrap();
 
     let consent = db.get_consent().unwrap();
@@ -38,6 +41,8 @@ pub fn purposes() {
 }
 
 pub fn update_purposes() {
+    util::check_supported_and_create_dir();
+
     let db = DB::open().unwrap();
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = DeviceOSIds::new(os_install_id).ok().unwrap();

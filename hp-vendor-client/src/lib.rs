@@ -119,6 +119,7 @@ pub fn purposes() -> Result<PurposesOutput, Error> {
     Ok(serde_json::from_slice(&output.stdout)?)
 }
 
+/// Sets consent info in db, and enables daemon
 pub fn consent(locale: &str, country: &str, purpose_id: &str, version: &str) -> Result<(), Error> {
     let status = Command::new("pkexec")
         .args(&[CMD, "consent", locale, country, purpose_id, version])
@@ -140,6 +141,7 @@ pub fn delete_and_disable() -> Result<(), Error> {
     check_pkexec_status(status)
 }
 
+/// Disable daemon
 pub fn disable() -> Result<(), Error> {
     let status = Command::new("pkexec").args(&[CMD, "disable"]).status()?;
     check_pkexec_status(status)
