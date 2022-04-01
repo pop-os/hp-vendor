@@ -24,7 +24,7 @@ pub enum State<'a> {
     Ids(&'a [i64]),
 }
 
-fn create_tables(conn: &Connection) -> Result<()> {
+fn migration1(conn: &Connection) -> Result<()> {
     conn.execute_batch(
         "CREATE TABLE event_types (
              type TEXT NOT NULL PRIMARY KEY,
@@ -61,7 +61,6 @@ fn create_tables(conn: &Connection) -> Result<()> {
              id INTEGER PRIMARY KEY,
              os_install_id TEXT,
              last_weekly_time INTEGER,
-             opted INTEGER,
              CHECK (id = 0)
          );",
     )?;
@@ -73,82 +72,7 @@ fn create_tables(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-fn migrate_0_to_1(conn: &Connection) -> Result<()> {
-    // Add explicit integer primary keys; same as rowid, but if not explicitly
-    // defined it can change.
-    conn.execute_batch(
-        "CREATE TABLE state_new (
-             id INTEGER PRIMARY KEY,
-             type TEXT NOT NULL,
-             value TEXT NOT NULL,
-             FOREIGN KEY(type) REFERENCES event_types(type) ON DELETE CASCADE
-         );
-         CREATE TABLE queued_events_new (
-             id INTEGER PRIMARY KEY,
-             value TEXT NOT NULL,
-             seen INTEGER DEFAULT 0 NOT NULL
-         );
-         INSERT INTO state_new (type, value)
-             SELECT type, value FROM state;
-         INSERT INTO queued_events_new (value, seen)
-             SELECT value, seen FROM queued_events;
-         DROP TABLE state;
-         DROP TABLE queued_events;
-         ALTER TABLE state_new RENAME TO state;
-         ALTER TABLE queued_events_new RENAME TO queued_events;
-        ",
-    )
-}
-
-fn migrate_1_to_2(conn: &Connection) -> Result<()> {
-    conn.execute_batch("ALTER TABLE properties ADD COLUMN last_weekly_time INTEGER")
-}
-
-fn migrate_2_to_3(conn: &Connection) -> Result<()> {
-    conn.execute_batch(
-        "DROP TABLE consent;
-         CREATE TABLE consents (
-             id INTEGER PRIMARY KEY,
-             locale TEXT NOT NULL,
-             country TEXT NOT NULL,
-             purpose_id TEXT NOT NULL,
-             version TEXT NOT NULL
-         );
-         ",
-    )
-}
-
-fn migrate_3_to_4(conn: &Connection) -> Result<()> {
-    conn.execute_batch(
-        "ALTER TABLE properties ADD COLUMN opted INTEGER;
-         ALTER TABLE consents ADD COLUMN sent INTEGER DEFAULT 0 NOT NULL;
-         UPDATE properties SET opted = 1;
-         UPDATE consents SET sent = 1;
-        ",
-    )
-}
-
-fn migrate_4_to_5(conn: &Connection) -> Result<()> {
-    conn.execute_batch(
-        "CREATE TABLE purposes (
-             id INTEGER PRIMARY KEY,
-             locale TEXT NOT NULL,
-             purpose_id TEXT NOT NULL,
-             version TEXT NOT NULL,
-             min_version TEXT NOT NULL,
-             statement TEXT NOT NULL
-         );
-        ",
-    )
-}
-
-static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[
-    migrate_0_to_1,
-    migrate_1_to_2,
-    migrate_2_to_3,
-    migrate_3_to_4,
-    migrate_4_to_5,
-];
+static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[migration1];
 
 pub struct DB(Connection);
 
@@ -158,15 +82,8 @@ impl DB {
 
         let tx = conn.unchecked_transaction()?;
         let user_version: usize = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
-        let empty = !conn
-            .prepare("SELECT 1 FROM sqlite_schema where type='table'")?
-            .exists([])?;
-        if empty {
-            create_tables(&conn)?;
-        } else {
-            for migration in &MIGRATIONS[user_version..] {
-                migration(&conn)?;
-            }
+        for migration in &MIGRATIONS[user_version..] {
+            migration(&conn)?;
         }
         conn.pragma_update(None, "user_version", MIGRATIONS.len())?;
         tx.commit()?;
@@ -426,7 +343,6 @@ impl DB {
             "DELETE from state;
              DELETE from queued_events;
              DELETE from consents;
-             UPDATE properties SET opted = 1;
             ",
         )?;
         tx.commit()
