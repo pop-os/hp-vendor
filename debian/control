@@ -25,6 +25,8 @@ Depends:
   systemd,
   ${misc:Depends},
   ${shlibs:Depends}
+Recommends:
+  pop-hp-wallpapers
 Description: HP vendor support
 
 Package: pop-hp-vendor-dkms
