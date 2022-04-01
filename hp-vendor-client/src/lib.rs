@@ -112,12 +112,15 @@ pub fn purposes() -> Result<PurposesOutput, Error> {
 }
 
 pub fn consent(
-    _locale: &str,
-    _country: &str,
-    _purpose_id: &str,
-    _version: &str,
+    locale: &str,
+    country: &str,
+    purpose_id: &str,
+    version: &str,
 ) -> Result<(), Error> {
-    todo!()
+    let status = Command::new("pkexec")
+        .args(&[CMD, "consent", locale, country, purpose_id, version])
+        .status()?;
+    check_pkexec_status(status)
 }
 
 pub fn download<F: Into<Stdio>>(file: F, format: DownloadFormat) -> Result<(), Error> {
@@ -135,5 +138,8 @@ pub fn delete_and_disable() -> Result<(), Error> {
 }
 
 pub fn disable() -> Result<(), Error> {
-    todo!()
+    let status = Command::new("pkexec")
+        .args(&[CMD, "disable"])
+        .status()?;
+    check_pkexec_status(status)
 }
