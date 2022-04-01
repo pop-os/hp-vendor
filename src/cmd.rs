@@ -22,8 +22,7 @@ fn get_purposes_from_api(os_install_id: String) -> Option<HashMap<String, DataCo
 pub fn purposes() {
     let db = DB::open().unwrap();
 
-    let opted = db.get_opted().unwrap();
-
+    let consent = db.get_consent().unwrap();
     let purposes = db.get_purposes().unwrap();
     let purposes = if purposes.is_empty() {
         eprintln!("No purposes. Requesting from server.",);
@@ -35,7 +34,7 @@ pub fn purposes() {
         purposes
     };
 
-    serde_json::to_writer(io::stdout(), &PurposesOutput { opted, purposes }).unwrap();
+    serde_json::to_writer(io::stdout(), &PurposesOutput { consent, purposes }).unwrap();
 }
 
 pub fn update_purposes() {

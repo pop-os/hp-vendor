@@ -260,18 +260,6 @@ impl DB {
         tx.commit()
     }
 
-    pub fn get_opted(&self) -> Result<Option<bool>> {
-        self.0.query_row("SELECT opted from properties", [], |row| {
-            row.get::<_, Option<bool>>(0)
-        })
-    }
-
-    pub fn set_opted(&self, opt: Option<bool>) -> Result<()> {
-        self.0
-            .execute("UPDATE properties SET opted = ?", [opt])
-            .map(|_| ())
-    }
-
     pub fn get_os_install_id(&self) -> Result<String> {
         self.0
             .query_row("SELECT os_install_id from properties", [], |row| row.get(0))

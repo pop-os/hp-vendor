@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::util::dmi::{dmi, SystemInfo24};
 
-pub use hp_vendor_client::DataCollectionPurpose;
+pub use hp_vendor_client::{DataCollectionConsent, DataCollectionPurpose};
 
 schemafy::schemafy!("DataUploadRequestModel.json");
 
@@ -39,15 +39,6 @@ pub(crate) fn date_time() -> String {
     now.replace_time(Time::from_hms(time.hour(), time.minute(), time.second()).unwrap())
         .format(&Rfc3339)
         .unwrap()
-}
-
-#[derive(Clone, Debug)]
-pub struct DataCollectionConsent {
-    pub country: String,
-    pub locale: String,
-    pub purpose_id: String,
-    pub version: String,
-    pub sent: bool,
 }
 
 impl DeviceOSIds {

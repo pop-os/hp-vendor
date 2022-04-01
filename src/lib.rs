@@ -702,15 +702,9 @@ pub fn update_events_and_queue(
 }
 
 pub fn exit_if_not_opted_in(db: &db::DB) {
-    let opted = db.get_opted().unwrap();
     let consent = db.get_consent().unwrap();
-    if opted != Some(true) || consent.is_none() {
-        // Explicit opt out
-        if opted == Some(false) {
-            eprintln!("Opted out of data collection.");
-        } else {
-            eprintln!("Need to opt-in with `hp-vendor consent`.");
-        }
+    if consent.is_none() {
+        eprintln!("Not opted in to data colection.");
         process::exit(0);
     }
 }

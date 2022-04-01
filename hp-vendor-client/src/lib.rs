@@ -56,10 +56,18 @@ pub struct DataCollectionPurpose {
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct DataCollectionConsent {
+    pub country: String,
+    pub locale: String,
+    pub purpose_id: String,
+    pub version: String,
+    pub sent: bool,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct PurposesOutput {
-    /// `true` for opted-in, `false` for opt-out, `None` if no opt-in/out has
-    /// been set.
-    pub opted: Option<bool>,
+    /// Purpose opted in to, if any
+    pub consent: Option<DataCollectionConsent>,
     /// Purpose, by language. Treat `en` as default.
     pub purposes: HashMap<String, DataCollectionPurpose>,
 }
@@ -111,12 +119,7 @@ pub fn purposes() -> Result<PurposesOutput, Error> {
     Ok(serde_json::from_slice(&output.stdout)?)
 }
 
-pub fn consent(
-    locale: &str,
-    country: &str,
-    purpose_id: &str,
-    version: &str,
-) -> Result<(), Error> {
+pub fn consent(locale: &str, country: &str, purpose_id: &str, version: &str) -> Result<(), Error> {
     let status = Command::new("pkexec")
         .args(&[CMD, "consent", locale, country, purpose_id, version])
         .status()?;
@@ -138,8 +141,6 @@ pub fn delete_and_disable() -> Result<(), Error> {
 }
 
 pub fn disable() -> Result<(), Error> {
-    let status = Command::new("pkexec")
-        .args(&[CMD, "disable"])
-        .status()?;
+    let status = Command::new("pkexec").args(&[CMD, "disable"]).status()?;
     check_pkexec_status(status)
 }

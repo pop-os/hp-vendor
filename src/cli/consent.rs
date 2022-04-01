@@ -76,7 +76,6 @@ pub fn run(mut args: env::Args) {
         }
     };
 
-    db.set_opted(Some(true)).unwrap();
     db.set_consent(Some(&consent)).unwrap();
     util::systemd::enable_services_and_timers();
 }
