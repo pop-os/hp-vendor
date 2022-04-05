@@ -8,6 +8,7 @@ mod daily;
 mod delete;
 mod disable;
 mod download;
+mod exists;
 mod print;
 mod upload;
 
@@ -28,11 +29,12 @@ pub fn run() {
         Some("delete") => delete::run(),
         Some("disable") => disable::run(),
         Some("download") => download::run(args),
+        Some("exists") => exists::run(args),
         Some("print") => print::run(args),
         Some("upload") => upload::run(args),
         _ => {
             eprintln!(
-                "Usage: hp-vendor (consent|daemon|daily|delete|disable|download|print|upload)"
+                "Usage: hp-vendor (consent|daemon|daily|delete|disable|download|exists|print|upload)"
             );
             process::exit(1);
         }

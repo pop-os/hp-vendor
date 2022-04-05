@@ -246,7 +246,6 @@ impl Api {
             .json()?)
     }
 
-    #[allow(dead_code)]
     pub fn exists(&self) -> anyhow::Result<bool> {
         Ok(self
             .request("DataExists", &[])?
