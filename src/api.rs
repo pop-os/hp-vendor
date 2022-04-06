@@ -12,11 +12,12 @@ use reqwest::{
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, error::Error, fmt, io::Read, str::FromStr};
 
-use crate::event::{self, DeviceOSIds, Events};
+use crate::{
+    event::{self, DeviceOSIds, Events},
+    util,
+};
 
 pub use hp_vendor_client::DownloadFormat;
-
-const BASE_URL: &str = "https://api.data.hpdevone.com";
 
 #[derive(Debug, serde::Deserialize)]
 struct TokenResponse {
@@ -89,7 +90,10 @@ pub struct Api {
 
 fn authenticate(client: &Client, ids: &DeviceOSIds) -> anyhow::Result<TokenResponse> {
     let resp = client
-        .post(format!("{}/data/token", BASE_URL))
+        .post(format!(
+            "{}/data/token",
+            util::hp_vendor_conf().endpoint_url()
+        ))
         .json(&event::DeviceIds::from(ids))
         .send()?;
     Ok(err_from_resp(resp)?.json()?)
@@ -123,7 +127,10 @@ impl Api {
         let dID = &token_resp.dID;
         let osID = &self.ids.os_install_uuid;
         let path = path.replace("{dID}", dID).replace("{osID}", osID);
-        Ok((method, format!("{}{}", BASE_URL, path)))
+        Ok((
+            method,
+            format!("{}{}", util::hp_vendor_conf().endpoint_url(), path),
+        ))
     }
 
     fn request_inner<T: serde::Serialize>(

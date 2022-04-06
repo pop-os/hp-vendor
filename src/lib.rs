@@ -33,6 +33,10 @@ use util::{
 };
 
 pub fn supported_hardware() -> Result<(), String> {
+    if util::hp_vendor_conf().allow_unsupported_hardware {
+        eprintln!("Skipping `supported_hardware` check due to config setting.");
+        return Ok(());
+    }
     let board_vendor: String =
         read_file("/sys/class/dmi/id/board_vendor").ok_or_else(|| "`board_vendor` not defined")?;
     let board_name: String =
