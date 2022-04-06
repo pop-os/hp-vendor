@@ -7,12 +7,12 @@ use rusqlite::{
     types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef},
     Connection, OptionalExtension, Result, Statement,
 };
-use std::{collections::HashMap, error::Error, fmt, str};
+use std::{error::Error, fmt, str};
 use time::{Duration, OffsetDateTime};
 
 use crate::{
     config::SamplingFrequency,
-    event::{DataCollectionConsent, DataCollectionPurpose, TelemetryEvent, TelemetryEventType},
+    event::{DataCollectionConsent, TelemetryEvent, TelemetryEventType},
     frequency::Frequencies,
 };
 
@@ -134,43 +134,6 @@ impl DB {
                 &consent.purpose_id,
                 &consent.version,
                 &consent.sent
-            ])?;
-        }
-        tx.commit()
-    }
-
-    pub fn get_purposes(&self) -> Result<HashMap<String, DataCollectionPurpose>> {
-        let mut stmt = self
-            .0
-            .prepare("SELECT locale, purpose_id, version, min_version, statement FROM purposes")?;
-        let rows = stmt.query_map([], |row| {
-            Ok((
-                row.get(0)?,
-                DataCollectionPurpose {
-                    purpose_id: row.get(1)?,
-                    version: row.get(2)?,
-                    min_version: row.get(3)?,
-                    statement: row.get(4)?,
-                },
-            ))
-        })?;
-        Ok(rows.filter_map(Result::ok).collect())
-    }
-
-    pub fn set_purposes(&self, purposes: &HashMap<String, DataCollectionPurpose>) -> Result<()> {
-        let tx = self.0.unchecked_transaction()?;
-        self.0.execute("DELETE FROM purposes", [])?;
-        let mut stmt = self.0.prepare(
-            "INSERT INTO purposes (locale, purpose_id, version, min_version, statement)
-             VALUES (?, ?, ?, ?, ?)",
-        )?;
-        for (locale, i) in purposes.iter() {
-            stmt.execute(params![
-                &locale,
-                &i.purpose_id,
-                &i.version,
-                &i.min_version,
-                &i.statement,
             ])?;
         }
         tx.commit()

@@ -712,3 +712,7 @@ pub fn exit_if_not_opted_in(db: &db::DB) {
         process::exit(0);
     }
 }
+
+fn purposes() -> HashMap<String, event::DataCollectionPurpose> {
+    serde_json::from_slice(include_bytes!("../purposes.json")).unwrap()
+}

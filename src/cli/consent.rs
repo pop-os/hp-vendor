@@ -8,12 +8,7 @@ use std::{
     process,
 };
 
-use crate::{
-    api::Api,
-    db::DB,
-    event::{self, DeviceOSIds},
-    util,
-};
+use crate::{db::DB, event, util};
 
 fn arg_err<'a>() -> String {
     eprintln!("Usage: hp-vendor consent <locale> <country> [purpose_id version]");
@@ -32,8 +27,6 @@ pub fn run(mut args: env::Args) {
     };
 
     let db = DB::open().unwrap();
-    let os_install_id = db.get_os_install_id().unwrap();
-    let ids = DeviceOSIds::new(os_install_id).unwrap();
 
     let consent = if let Some((purpose_id, version)) = purpose_version {
         event::DataCollectionConsent {
@@ -46,9 +39,7 @@ pub fn run(mut args: env::Args) {
     } else {
         // XXX show existing consent
 
-        let api = Api::new(ids).unwrap();
-        let purposes = api.purposes(None).unwrap();
-        db.set_purposes(&purposes).unwrap();
+        let purposes = crate::purposes();
 
         let purpose = if let Some(purpose) = purposes.get(&locale) {
             purpose

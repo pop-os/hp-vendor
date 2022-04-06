@@ -1,0 +1,38 @@
+{
+  "it": {
+    "purpose_id": "prodsupport.device.telemetry.unmanaged.product_improvement.ps",
+    "version": "1",
+    "min_version": "1",
+    "statement": "Autorizzo HP a usare informazioni sul mio sistema per migliorare i suoi prodotti e servizi."
+  },
+  "ja": {
+    "purpose_id": "prodsupport.device.telemetry.unmanaged.product_improvement.ps",
+    "version": "1",
+    "min_version": "1",
+    "statement": "HPの製品やサービス向上のために、HPが自分のシステムに関する情報を使用することを許可します。"
+  },
+  "en": {
+    "purpose_id": "prodsupport.device.telemetry.unmanaged.product_improvement.ps",
+    "version": "1",
+    "min_version": "1",
+    "statement": "HP may use information about my system to improve HP products and services"
+  },
+  "fr": {
+    "purpose_id": "prodsupport.device.telemetry.unmanaged.product_improvement.ps",
+    "version": "1",
+    "min_version": "1",
+    "statement": "HP peut utiliser les informations concernant mon système pour améliorer les produits et services HP."
+  },
+  "es": {
+    "purpose_id": "prodsupport.device.telemetry.unmanaged.product_improvement.ps",
+    "version": "1",
+    "min_version": "1",
+    "statement": "HP puede usar información sobre mi sistema para mejorar los productos y servicios de HP."
+  },
+  "de": {
+    "purpose_id": "prodsupport.device.telemetry.unmanaged.product_improvement.ps",
+    "version": "1",
+    "min_version": "1",
+    "statement": "HP darf Informationen zu meinem System nutzen, um Produkte und Services von HP zu verbessern."
+  }
+}

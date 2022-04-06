@@ -12,7 +12,7 @@ pub fn run(mut args: env::Args) {
     match args.next().as_deref() {
         Some("consent") => println!("{:#?}", db.get_consent().unwrap()),
         Some("frequencies") => println!("{:#?}", db.get_event_frequencies().unwrap()),
-        Some("purposes") => println!("{:#?}", db.get_purposes().unwrap()),
+        Some("purposes") => println!("{:#?}", crate::purposes()),
         Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
         _ => {
