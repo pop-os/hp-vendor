@@ -8,7 +8,7 @@ license = "GPL-3.0-only"
 
 [dependencies]
 anyhow = "1.0.53"
-base64 = "0.13.0"
+base64 = "0.20.0-alpha.1"
 drm = "0.6.2"
 hp-vendor-client = { path = "hp-vendor-client" }
 libc = "0.2.104"

@@ -7,11 +7,7 @@ use crate::{
     db::DB,
     event::DeviceOSIds,
 };
-use std::{
-    env,
-    io::{self, Write},
-    str::FromStr,
-};
+use std::{env, io, str::FromStr};
 
 pub fn run(mut arg: env::Args) {
     let db = DB::open().unwrap();
@@ -24,6 +20,6 @@ pub fn run(mut arg: env::Args) {
         .next()
         .map(|s| DownloadFormat::from_str(&s).expect("Invalid format"))
         .unwrap_or(DownloadFormat::Json);
-    let res = api.download(format).unwrap();
-    io::stdout().write_all(&res).unwrap();
+    let mut res = api.download(format).unwrap();
+    io::copy(&mut res, &mut io::stdout().lock()).unwrap();
 }

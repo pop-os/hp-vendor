@@ -187,18 +187,19 @@ impl Api {
         Ok(self.request_json("DataUpload", &[], events)?.json()?)
     }
 
-    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<Vec<u8>> {
-        let mut res = self.request(
+    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<Box<dyn Read>> {
+        let res = self.request(
             "DataDownload",
             &[("fileFormat", &format.to_string().to_ascii_uppercase())],
         )?;
-        let mut bytes = Vec::new();
         if format != DownloadFormat::Json {
-            DecoderReader::new(&mut res, base64::STANDARD).read_to_end(&mut bytes)?;
+            Ok(Box::new(DecoderReader::from(
+                res,
+                &base64::engine::DEFAULT_ENGINE,
+            )))
         } else {
-            res.read_to_end(&mut bytes)?;
+            Ok(Box::new(res))
         }
-        Ok(bytes)
     }
 
     pub fn delete(&self) -> anyhow::Result<()> {
