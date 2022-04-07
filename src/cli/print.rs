@@ -4,7 +4,17 @@
 
 use std::{env, process};
 
-use crate::db::{self, DB};
+use crate::{
+    api::Api,
+    db::{self, DB},
+    event::DeviceOSIds,
+};
+
+fn api(db: &DB) -> Option<Api> {
+    let os_install_id = db.get_os_install_id().unwrap();
+    let ids = DeviceOSIds::new(os_install_id).ok()?;
+    Api::new(ids).ok()
+}
 
 pub fn run(mut args: env::Args) {
     let db = DB::open().unwrap();
@@ -12,7 +22,7 @@ pub fn run(mut args: env::Args) {
     match args.next().as_deref() {
         Some("consent") => println!("{:#?}", db.get_consent().unwrap()),
         Some("frequencies") => println!("{:#?}", db.get_event_frequencies().unwrap()),
-        Some("purposes") => println!("{:#?}", crate::purposes()),
+        Some("purposes") => println!("{:#?}", crate::purposes(&db, api(&db).as_ref())),
         Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
         _ => {

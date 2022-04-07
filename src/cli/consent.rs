@@ -8,11 +8,22 @@ use std::{
     process,
 };
 
-use crate::{db::DB, event, util};
+use crate::{
+    api::Api,
+    db::DB,
+    event::{self, DeviceOSIds},
+    util,
+};
 
 fn arg_err<'a>() -> String {
     eprintln!("Usage: hp-vendor consent <locale> <country> [purpose_id version]");
     process::exit(1)
+}
+
+fn api(db: &DB) -> Option<Api> {
+    let os_install_id = db.get_os_install_id().unwrap();
+    let ids = DeviceOSIds::new(os_install_id).ok()?;
+    Api::new(ids).ok()
 }
 
 pub fn run(mut args: env::Args) {
@@ -39,7 +50,7 @@ pub fn run(mut args: env::Args) {
     } else {
         // XXX show existing consent
 
-        let purposes = crate::purposes();
+        let purposes = crate::purposes(&db, api(&db).as_ref());
 
         let purpose = if let Some(purpose) = purposes.get(&locale) {
             purpose

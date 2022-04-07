@@ -8,13 +8,19 @@ use crate::{api::Api, db::DB, event::DeviceOSIds, util};
 
 use hp_vendor_client::PurposesOutput;
 
+fn api(db: &DB) -> Option<Api> {
+    let os_install_id = db.get_os_install_id().unwrap();
+    let ids = DeviceOSIds::new(os_install_id).ok()?;
+    Api::new(ids).ok()
+}
+
 pub fn purposes() {
     util::check_supported_and_create_dir();
 
     let db = DB::open().unwrap();
 
     let consent = db.get_consent().unwrap();
-    let purposes = crate::purposes();
+    let purposes = crate::purposes(&db, api(&db).as_ref());
 
     serde_json::to_writer(io::stdout(), &PurposesOutput { consent, purposes }).unwrap();
 }

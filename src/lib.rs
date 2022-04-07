@@ -713,6 +713,17 @@ pub fn exit_if_not_opted_in(db: &db::DB) {
     }
 }
 
-fn purposes() -> HashMap<String, event::DataCollectionPurpose> {
-    serde_json::from_slice(include_bytes!("../purposes.json")).unwrap()
+fn purposes(db: &db::DB, api: Option<&api::Api>) -> HashMap<String, event::DataCollectionPurpose> {
+    if let Some(api) = api {
+        if let Ok(purposes) = api.purposes(None) {
+            db.set_purposes(&purposes).unwrap();
+            return purposes;
+        }
+    }
+    let purposes = db.get_purposes().unwrap();
+    if !purposes.is_empty() {
+        purposes
+    } else {
+        serde_json::from_slice(include_bytes!("../purposes.json")).unwrap()
+    }
 }
