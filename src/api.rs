@@ -187,18 +187,19 @@ impl Api {
         Ok(self.request_json("DataUpload", &[], events)?.json()?)
     }
 
-    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<Box<dyn Read>> {
+    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<(u64, Box<dyn Read>)> {
         let res = self.request(
             "DataDownload",
             &[("fileFormat", &format.to_string().to_ascii_uppercase())],
         )?;
+        let length = res.content_length().unwrap_or(0);
         if format != DownloadFormat::Json {
-            Ok(Box::new(DecoderReader::from(
-                res,
-                &base64::engine::DEFAULT_ENGINE,
-            )))
+            Ok((
+                length * 3 / 4,
+                Box::new(DecoderReader::from(res, &base64::engine::DEFAULT_ENGINE)),
+            ))
         } else {
-            Ok(Box::new(res))
+            Ok((length, Box::new(res)))
         }
     }
 

@@ -6,20 +6,26 @@ use crate::{
     api::{Api, DownloadFormat},
     db::DB,
     event::DeviceOSIds,
+    io::Write,
 };
 use std::{env, io, str::FromStr};
 
-pub fn run(mut arg: env::Args) {
+pub fn run(mut args: env::Args) {
     let db = DB::open().unwrap();
     let os_install_id = db.get_os_install_id().unwrap();
     let ids = DeviceOSIds::new(os_install_id).unwrap();
 
     let api = Api::new(ids).unwrap();
 
-    let format = arg
+    let format = args
         .next()
         .map(|s| DownloadFormat::from_str(&s).expect("Invalid format"))
         .unwrap_or(DownloadFormat::Json);
-    let mut res = api.download(format).unwrap();
-    io::copy(&mut res, &mut io::stdout().lock()).unwrap();
+    let (length, mut data) = api.download(format).unwrap();
+    let stdout = io::stdout();
+    let mut stdout = stdout.lock();
+    if args.next().as_deref() == Some("--binary-content-length") {
+        stdout.write_all(&u64::to_le_bytes(length)).unwrap();
+    }
+    io::copy(&mut data, &mut stdout).unwrap();
 }

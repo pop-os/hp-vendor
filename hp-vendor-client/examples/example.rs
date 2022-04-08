@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-use std::fs;
+use std::{fs, io};
 
 fn main() {
     let hp_vendor_client::PurposesOutput {
@@ -18,11 +18,9 @@ fn main() {
     println!("Opting in...");
     hp_vendor_client::consent("en", "US", &purpose.purpose_id, &purpose.version).unwrap();
     println!("Downloading to 'hp-vendor-data.json'...");
-    hp_vendor_client::download(
-        fs::File::create("hp-vendor-data.json").unwrap(),
-        hp_vendor_client::DownloadFormat::Json,
-    )
-    .unwrap();
+    let mut file = fs::File::create("hp-vendor-data.json").unwrap();
+    let mut download = hp_vendor_client::download(hp_vendor_client::DownloadFormat::Json).unwrap();
+    io::copy(&mut download, &mut file).unwrap();
     println!("Disabling...");
     hp_vendor_client::disable().unwrap();
     println!("Deleting...");
