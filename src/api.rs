@@ -4,7 +4,6 @@
 
 #![allow(non_snake_case)]
 
-use base64::read::DecoderReader;
 use reqwest::{
     blocking::{Client, Response},
     header, Method, StatusCode,
@@ -137,6 +136,7 @@ impl Api {
         &self,
         name: &str,
         query: &[(&str, &str)],
+        accept: Option<&str>,
         body: Option<&T>,
     ) -> anyhow::Result<Response> {
         let mut reauthenticated = false;
@@ -156,6 +156,9 @@ impl Api {
                 req = req.header(header::CONTENT_TYPE, "application/json");
                 req = req.body(body);
             }
+            if let Some(accept) = accept {
+                req = req.header(header::ACCEPT, accept);
+            }
             let resp = req.send()?;
             if !reauthenticated
                 && resp.status() == StatusCode::FORBIDDEN
@@ -170,8 +173,13 @@ impl Api {
         }
     }
 
-    fn request(&self, name: &str, query: &[(&str, &str)]) -> anyhow::Result<Response> {
-        self.request_inner(name, query, None::<&()>)
+    fn request(
+        &self,
+        name: &str,
+        query: &[(&str, &str)],
+        accept: Option<&str>,
+    ) -> anyhow::Result<Response> {
+        self.request_inner(name, query, accept, None::<&()>)
     }
 
     fn request_json<T: serde::Serialize>(
@@ -180,31 +188,30 @@ impl Api {
         query: &[(&str, &str)],
         json: &T,
     ) -> anyhow::Result<Response> {
-        self.request_inner(name, query, Some(json))
+        self.request_inner(name, query, Some("application/json"), Some(json))
     }
 
     pub fn upload(&self, events: &Events) -> anyhow::Result<serde_json::Value> {
         Ok(self.request_json("DataUpload", &[], events)?.json()?)
     }
 
-    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<(u64, Box<dyn Read>)> {
+    pub fn download(&self, format: DownloadFormat) -> anyhow::Result<(u64, impl Read + 'static)> {
+        let accept = match format {
+            DownloadFormat::Json => "application/json",
+            DownloadFormat::Zip => "application/zip",
+            DownloadFormat::GZip => "application/gzip",
+        };
         let res = self.request(
             "DataDownload",
             &[("fileFormat", &format.to_string().to_ascii_uppercase())],
+            Some(accept),
         )?;
         let length = res.content_length().unwrap_or(0);
-        if format != DownloadFormat::Json {
-            Ok((
-                length * 3 / 4,
-                Box::new(DecoderReader::from(res, &base64::engine::DEFAULT_ENGINE)),
-            ))
-        } else {
-            Ok((length, Box::new(res)))
-        }
+        Ok((length, Box::new(res)))
     }
 
     pub fn delete(&self) -> anyhow::Result<()> {
-        self.request("DataDelete", &[])?;
+        self.request("DataDelete", &[], None)?;
         Ok(())
     }
 
@@ -216,7 +223,9 @@ impl Api {
             Some(locale) => vec![("locale", locale), ("latest", "true")],
             None => vec![("latest", "true")],
         };
-        let purposes: Vec<Purpose> = self.request("DataCollectionPurposes", &params)?.json()?;
+        let purposes: Vec<Purpose> = self
+            .request("DataCollectionPurposes", &params, None)?
+            .json()?;
         Ok(purposes
             .into_iter()
             .map(|purpose| {
@@ -257,7 +266,7 @@ impl Api {
 
     pub fn exists(&self) -> anyhow::Result<bool> {
         Ok(self
-            .request("DataExists", &[])?
+            .request("DataExists", &[], None)?
             .json::<ExistsResponse>()?
             .has_data)
     }
@@ -273,6 +282,7 @@ impl Api {
                     ("osName", &data_provider.os_name),
                     ("osVersion", &data_provider.os_version),
                 ],
+                None,
             )?
             .json()?)
     }
