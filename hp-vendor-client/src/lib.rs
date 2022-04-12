@@ -236,7 +236,7 @@ pub fn supported_hardware() -> Result<(), String> {
     }
     let board_vendor = fs::read_to_string("/sys/class/dmi/id/board_vendor")
         .map_err(|_| "`board_vendor` not defined")?;
-    let board_name = fs::read_to_string("/sys/class/dmi/id/board_vendor")
+    let board_name = fs::read_to_string("/sys/class/dmi/id/board_name")
         .map_err(|_| "`board_name` not defined")?;
     if (board_vendor.trim(), board_name.trim()) != ("HP", "8A78") {
         Err(format!("`{} {}` unrecognized", board_vendor, board_name))
