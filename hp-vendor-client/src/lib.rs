@@ -171,8 +171,13 @@ fn check_pkexec_status(status: ExitStatus) -> Result<(), Error> {
 }
 
 /// Get data colection purposes and opt-in status. Does not prompt for authentication.
-pub fn purposes() -> Result<PurposesOutput, Error> {
-    let output = Command::new("pkexec").args(&[PURPOSES_CMD]).output()?;
+pub fn purposes(fetch: bool) -> Result<PurposesOutput, Error> {
+    let mut cmd = Command::new("pkexec");
+    cmd.arg(PURPOSES_CMD);
+    if !fetch {
+        cmd.arg("--no-fetch");
+    }
+    let output = cmd.output()?;
     check_pkexec_status(output.status)?;
     Ok(serde_json::from_slice(&output.stdout)?)
 }

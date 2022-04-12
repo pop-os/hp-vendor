@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{fs, io};
+use std::{env, fs, io};
 
 use crate::{api::Api, db::DB, event::DeviceOSIds, util};
 
@@ -15,12 +15,20 @@ fn api(db: &DB) -> Option<Api> {
 }
 
 pub fn purposes() {
+    let arg = env::args().skip(1).next();
+
     util::check_supported_and_create_dir();
 
     let db = DB::open().unwrap();
 
+    let api = if arg.as_deref() == Some("--no-fetch") {
+        None
+    } else {
+        api(&db)
+    };
+
     let consent = db.get_consent().unwrap();
-    let purposes = crate::purposes(&db, api(&db).as_ref());
+    let purposes = crate::purposes(&db, api.as_ref());
 
     serde_json::to_writer(io::stdout(), &PurposesOutput { consent, purposes }).unwrap();
 }

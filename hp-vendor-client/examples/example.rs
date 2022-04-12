@@ -7,7 +7,7 @@ use std::{fs, io};
 fn main() {
     let hp_vendor_client::PurposesOutput {
         purposes, consent, ..
-    } = hp_vendor_client::purposes().unwrap();
+    } = hp_vendor_client::purposes(false).unwrap();
     let purpose = &purposes["en"];
     if consent.is_some() {
         println!("Opted in");
