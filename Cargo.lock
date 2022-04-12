@@ -340,7 +340,6 @@ dependencies = [
  "libc",
  "mio",
  "nix 0.23.1",
- "once_cell",
  "os-release",
  "plain",
  "proc-macro2",
@@ -352,7 +351,6 @@ dependencies = [
  "serde",
  "serde_json",
  "time 0.3.7",
- "toml",
  "udev",
  "uuid",
  "valico",
@@ -362,8 +360,10 @@ dependencies = [
 name = "hp-vendor-client"
 version = "0.1.0"
 dependencies = [
+ "once_cell",
  "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]

@@ -2,16 +2,51 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
+use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
-    fmt,
+    fmt, fs,
     io::{self, Read},
+    path::Path,
     process::{self, Command, ExitStatus, Stdio},
     str,
 };
 
+const DEFAULT_ENDPOINT_URL: &str = "https://api.data.hpdevone.com";
 const PURPOSES_CMD: &str = "/usr/libexec/hp-vendor-purposes";
 const CMD: &str = "/usr/libexec/hp-vendor";
+const CONF_PATH: &str = "/etc/hp-vendor.conf";
+
+#[doc(hidden)]
+#[derive(Default, serde::Deserialize)]
+pub struct HpVendorConf {
+    endpoint_url: Option<String>,
+    #[serde(default)]
+    pub allow_unsupported_hardware: bool,
+}
+
+impl HpVendorConf {
+    pub fn endpoint_url(&self) -> &str {
+        self.endpoint_url.as_deref().unwrap_or(DEFAULT_ENDPOINT_URL)
+    }
+}
+
+#[doc(hidden)]
+pub fn hp_vendor_conf() -> &'static HpVendorConf {
+    static CONF: Lazy<HpVendorConf> = Lazy::new(|| {
+        let bytes = match fs::read(CONF_PATH) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                return HpVendorConf::default();
+            }
+        };
+        toml::from_slice(&bytes).unwrap_or_else(|err| {
+            eprintln!("Failed to parse `{}`: {}", CONF_PATH, err);
+            HpVendorConf::default()
+        })
+    });
+    &CONF
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -188,4 +223,24 @@ pub fn delete_and_disable() -> Result<(), Error> {
 pub fn disable() -> Result<(), Error> {
     let status = Command::new("pkexec").args(&[CMD, "disable"]).status()?;
     check_pkexec_status(status)
+}
+
+pub fn has_hp_vendor() -> bool {
+    Path::new(CMD).exists()
+}
+
+pub fn supported_hardware() -> Result<(), String> {
+    if hp_vendor_conf().allow_unsupported_hardware {
+        eprintln!("Skipping `supported_hardware` check due to config setting.");
+        return Ok(());
+    }
+    let board_vendor = fs::read_to_string("/sys/class/dmi/id/board_vendor")
+        .map_err(|_| "`board_vendor` not defined")?;
+    let board_name = fs::read_to_string("/sys/class/dmi/id/board_vendor")
+        .map_err(|_| "`board_name` not defined")?;
+    if (board_vendor.trim(), board_name.trim()) != ("HP", "8A78") {
+        Err(format!("`{} {}` unrecognized", board_vendor, board_name))
+    } else {
+        Ok(())
+    }
 }

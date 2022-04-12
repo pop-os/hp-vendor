@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use once_cell::sync::Lazy;
 use std::{fs, io, os::unix::fs::PermissionsExt, process};
 
 pub mod dmi;
@@ -13,37 +12,7 @@ pub mod pcie;
 pub mod sensors;
 pub mod systemd;
 
-const CONF_PATH: &str = "/etc/hp-vendor.conf";
-const DEFAULT_ENDPOINT_URL: &str = "https://api.data.hpdevone.com";
-
-#[derive(Default, serde::Deserialize)]
-pub struct HpVendorConf {
-    endpoint_url: Option<String>,
-    #[serde(default)]
-    pub allow_unsupported_hardware: bool,
-}
-
-impl HpVendorConf {
-    pub fn endpoint_url(&self) -> &str {
-        self.endpoint_url.as_deref().unwrap_or(DEFAULT_ENDPOINT_URL)
-    }
-}
-
-pub fn hp_vendor_conf() -> &'static HpVendorConf {
-    static CONF: Lazy<HpVendorConf> = Lazy::new(|| {
-        let bytes = match fs::read(CONF_PATH) {
-            Ok(bytes) => bytes,
-            Err(_) => {
-                return HpVendorConf::default();
-            }
-        };
-        toml::from_slice(&bytes).unwrap_or_else(|err| {
-            eprintln!("Failed to parse `{}`: {}", CONF_PATH, err);
-            HpVendorConf::default()
-        })
-    });
-    &CONF
-}
+pub use hp_vendor_client::{hp_vendor_conf, HpVendorConf};
 
 fn create_var_dir() -> io::Result<()> {
     fs::create_dir("/var/hp-vendor")?;
@@ -57,7 +26,7 @@ pub fn check_supported_and_create_dir() {
         process::exit(1);
     }
 
-    if let Err(err) = crate::supported_hardware() {
+    if let Err(err) = hp_vendor_client::supported_hardware() {
         eprintln!("Unsupported hardware: {}", err);
         process::exit(1);
     }
