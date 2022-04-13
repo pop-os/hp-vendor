@@ -19,10 +19,9 @@ use hp_vendor_client::{ApiError, ErrorJson};
 
 fn handle_err(res: anyhow::Result<()>) {
     if let Err(err) = res {
+        eprintln!("Error: {}", err);
         let is_tty = unsafe { libc::isatty(libc::STDERR_FILENO) } == 1;
-        if is_tty {
-            eprintln!("Error: {}", err);
-        } else {
+        if !is_tty {
             let error = if let Some(err) = err.downcast_ref::<ApiError>() {
                 ErrorJson::Api(err.clone())
             } else {
