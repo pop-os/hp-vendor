@@ -16,6 +16,7 @@ use crate::{
     util,
 };
 
+use hp_vendor_client::ApiError;
 pub use hp_vendor_client::DownloadFormat;
 
 #[derive(Debug, serde::Deserialize)]
@@ -80,25 +81,6 @@ impl fmt::Display for PayloadSizeError {
 }
 
 impl Error for PayloadSizeError {}
-
-#[derive(Debug, Clone)]
-struct ApiError(&'static str, reqwest::StatusCode, Option<String>);
-
-impl fmt::Display for ApiError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(message) = &self.2 {
-            write!(
-                f,
-                "'{}' from API endpoint '{}': {}",
-                self.1, self.0, message
-            )
-        } else {
-            write!(f, "'{}' from API endpoint '{}'", self.1, self.0)
-        }
-    }
-}
-
-impl Error for ApiError {}
 
 pub struct Api {
     client: Client,
@@ -318,12 +300,17 @@ fn message_from_value(mut value: Value) -> Option<String> {
     }
 }
 
-fn err_from_resp(name: &'static str, resp: Response) -> Result<Response, ApiError> {
+fn err_from_resp(endpoint: &'static str, resp: Response) -> Result<Response, ApiError> {
     let status = resp.status();
     if status.is_success() {
         Ok(resp)
     } else {
         let message = resp.json::<Value>().ok().and_then(message_from_value);
-        Err(ApiError(name, status, message))
+        Err(ApiError {
+            endpoint: endpoint.to_string(),
+            code: status.as_u16(),
+            canonical_reason: status.canonical_reason().map(|x| x.to_string()),
+            message,
+        })
     }
 }

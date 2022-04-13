@@ -12,7 +12,7 @@ pub mod pcie;
 pub mod sensors;
 pub mod systemd;
 
-pub use hp_vendor_client::{hp_vendor_conf, HpVendorConf};
+pub use hp_vendor_client::conf::{hp_vendor_conf, HpVendorConf};
 
 fn create_var_dir() -> io::Result<()> {
     fs::create_dir("/var/hp-vendor")?;

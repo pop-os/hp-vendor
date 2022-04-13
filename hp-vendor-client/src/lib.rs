@@ -2,86 +2,22 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
     fmt, fs,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::Path,
     process::{self, Command, ExitStatus, Stdio},
     str,
 };
 
-const DEFAULT_ENDPOINT_URL: &str = "https://api.data.hpdevone.com";
+#[doc(hidden)]
+pub mod conf;
+mod error;
+pub use error::*;
+
 const PURPOSES_CMD: &str = "/usr/libexec/hp-vendor-purposes";
 const CMD: &str = "/usr/libexec/hp-vendor";
-const CONF_PATH: &str = "/etc/hp-vendor.conf";
-
-#[doc(hidden)]
-#[derive(Default, serde::Deserialize)]
-pub struct HpVendorConf {
-    endpoint_url: Option<String>,
-    #[serde(default)]
-    pub allow_unsupported_hardware: bool,
-}
-
-impl HpVendorConf {
-    pub fn endpoint_url(&self) -> &str {
-        self.endpoint_url.as_deref().unwrap_or(DEFAULT_ENDPOINT_URL)
-    }
-}
-
-#[doc(hidden)]
-pub fn hp_vendor_conf() -> &'static HpVendorConf {
-    static CONF: Lazy<HpVendorConf> = Lazy::new(|| {
-        let bytes = match fs::read(CONF_PATH) {
-            Ok(bytes) => bytes,
-            Err(_) => {
-                return HpVendorConf::default();
-            }
-        };
-        toml::from_slice(&bytes).unwrap_or_else(|err| {
-            eprintln!("Failed to parse `{}`: {}", CONF_PATH, err);
-            HpVendorConf::default()
-        })
-    });
-    &CONF
-}
-
-#[derive(Debug)]
-pub enum Error {
-    SerdeJson(serde_json::Error),
-    Io(io::Error),
-    PkexecNoauth,
-    PkexecDismissed,
-    HpVendorFailed,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::SerdeJson(err) => write!(f, "{}", err),
-            Self::Io(err) => write!(f, "{}", err),
-            Self::PkexecNoauth => write!(f, "Polkit authorization failed"),
-            Self::PkexecDismissed => write!(f, "Polkit dialog dismissed"),
-            Self::HpVendorFailed => write!(f, "Call to hp-vendor failed"),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Self {
-        Self::SerdeJson(err)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataCollectionPurpose {
@@ -149,8 +85,10 @@ impl Download {
         self.length
     }
 
-    pub fn wait(&mut self) -> Result<(), Error> {
-        check_pkexec_status(self.child.wait()?)
+    pub fn wait(self) -> Result<(), Error> {
+        drop(self.stdout);
+        let output = self.child.wait_with_output()?;
+        check_pkexec_status(output.status, output.stderr)
     }
 }
 
@@ -160,13 +98,36 @@ impl io::Read for Download {
     }
 }
 
-fn check_pkexec_status(status: ExitStatus) -> Result<(), Error> {
+fn error_from_stderr(mut stderr: &[u8]) -> Option<(&[u8], ErrorJson)> {
+    if stderr.last() == Some(&b'\n') {
+        stderr = &stderr[..stderr.len() - 1];
+    }
+    let idx = stderr.iter().rposition(|x| *x == b'\n').unwrap_or(0);
+    let res = serde_json::from_slice(&stderr[idx..]).ok()?;
+    Some((&stderr[..idx], res))
+}
+
+fn check_pkexec_status(status: ExitStatus, stderr: Vec<u8>) -> Result<(), Error> {
     match status.code() {
         Some(0) => Ok(()),
+        Some(2) => {
+            // Structured error from hp-vendor
+            if let Some((start, err)) = error_from_stderr(&stderr) {
+                let _ = io::stderr().write_all(&start);
+                match err {
+                    ErrorJson::Api(err) => Err(Error::Api(err)),
+                    ErrorJson::Other(message) => Err(Error::HpVendorFailed(Some(message))),
+                }
+            } else {
+                Err(Error::HpVendorFailed(None))
+            }
+        }
         Some(126) => Err(Error::PkexecDismissed),
         Some(127) => Err(Error::PkexecNoauth),
-        // TODO: Collect stderr, or something?
-        _ => Err(Error::HpVendorFailed),
+        _ => {
+            let _ = io::stderr().write_all(&stderr);
+            Err(Error::HpVendorFailed(None))
+        }
     }
 }
 
@@ -178,16 +139,17 @@ pub fn purposes(fetch: bool) -> Result<PurposesOutput, Error> {
         cmd.arg("--no-fetch");
     }
     let output = cmd.output()?;
-    check_pkexec_status(output.status)?;
+    check_pkexec_status(output.status, Vec::new())?;
     Ok(serde_json::from_slice(&output.stdout)?)
 }
 
 /// Sets consent info in db, and enables daemon
 pub fn consent(locale: &str, country: &str, purpose_id: &str, version: &str) -> Result<(), Error> {
-    let status = Command::new("pkexec")
+    let output = Command::new("pkexec")
         .args(&[CMD, "consent", locale, country, purpose_id, version])
-        .status()?;
-    check_pkexec_status(status)
+        .stderr(Stdio::piped())
+        .output()?;
+    check_pkexec_status(output.status, output.stderr)
 }
 
 pub fn download(format: DownloadFormat) -> Result<Download, Error> {
@@ -199,13 +161,15 @@ pub fn download(format: DownloadFormat) -> Result<Download, Error> {
             "--binary-content-length",
         ])
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()?;
     let mut stdout = child.stdout.take().unwrap();
 
     let mut length = [0; 8];
     if let Err(err) = stdout.read_exact(&mut length) {
         if err.kind() == io::ErrorKind::UnexpectedEof {
-            check_pkexec_status(child.wait()?)?;
+            let output = child.wait_with_output()?;
+            check_pkexec_status(output.status, output.stderr)?;
         }
         return Err(Error::Io(err));
     }
@@ -220,14 +184,20 @@ pub fn download(format: DownloadFormat) -> Result<Download, Error> {
 
 // Or document that disable should be called first?
 pub fn delete_and_disable() -> Result<(), Error> {
-    let status = Command::new("pkexec").args(&[CMD, "delete"]).status()?;
-    check_pkexec_status(status)
+    let output = Command::new("pkexec")
+        .args(&[CMD, "delete"])
+        .stderr(Stdio::piped())
+        .output()?;
+    check_pkexec_status(output.status, output.stderr)
 }
 
 /// Disable daemon
 pub fn disable() -> Result<(), Error> {
-    let status = Command::new("pkexec").args(&[CMD, "disable"]).status()?;
-    check_pkexec_status(status)
+    let output = Command::new("pkexec")
+        .args(&[CMD, "disable"])
+        .stderr(Stdio::piped())
+        .output()?;
+    check_pkexec_status(output.status, output.stderr)
 }
 
 pub fn has_hp_vendor() -> bool {
@@ -235,7 +205,7 @@ pub fn has_hp_vendor() -> bool {
 }
 
 pub fn supported_hardware() -> Result<(), String> {
-    if hp_vendor_conf().allow_unsupported_hardware {
+    if conf::hp_vendor_conf().allow_unsupported_hardware {
         eprintln!("Skipping `supported_hardware` check due to config setting.");
         return Ok(());
     }
