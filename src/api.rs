@@ -81,6 +81,25 @@ impl fmt::Display for PayloadSizeError {
 
 impl Error for PayloadSizeError {}
 
+#[derive(Debug, Clone)]
+struct ApiError(&'static str, reqwest::StatusCode, Option<String>);
+
+impl fmt::Display for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(message) = &self.2 {
+            write!(
+                f,
+                "'{}' from API endpoint '{}': {}",
+                self.1, self.0, message
+            )
+        } else {
+            write!(f, "'{}' from API endpoint '{}'", self.1, self.0)
+        }
+    }
+}
+
+impl Error for ApiError {}
+
 pub struct Api {
     client: Client,
     ids: DeviceOSIds,
@@ -95,7 +114,7 @@ fn authenticate(client: &Client, ids: &DeviceOSIds) -> anyhow::Result<TokenRespo
         ))
         .json(&event::DeviceIds::from(ids))
         .send()?;
-    Ok(err_from_resp(resp)?.json()?)
+    Ok(err_from_resp("Token", resp)?.json()?)
 }
 
 impl Api {
@@ -134,7 +153,7 @@ impl Api {
 
     fn request_inner<T: serde::Serialize>(
         &self,
-        name: &str,
+        name: &'static str,
         query: &[(&str, &str)],
         accept: Option<&str>,
         body: Option<&T>,
@@ -168,14 +187,14 @@ impl Api {
                 self.reauthenticate()?;
                 reauthenticated = true;
             } else {
-                return err_from_resp(resp);
+                return Ok(err_from_resp(name, resp)?);
             }
         }
     }
 
     fn request(
         &self,
-        name: &str,
+        name: &'static str,
         query: &[(&str, &str)],
         accept: Option<&str>,
     ) -> anyhow::Result<Response> {
@@ -184,7 +203,7 @@ impl Api {
 
     fn request_json<T: serde::Serialize>(
         &self,
-        name: &str,
+        name: &'static str,
         query: &[(&str, &str)],
         json: &T,
     ) -> anyhow::Result<Response> {
@@ -288,18 +307,23 @@ impl Api {
     }
 }
 
-fn err_from_resp(resp: Response) -> anyhow::Result<Response> {
+fn message_from_value(mut value: Value) -> Option<String> {
+    let obj = value.as_object_mut()?;
+    if let Some(Value::String(message)) = obj.remove("message") {
+        Some(message)
+    } else if let Some(Value::String(detail)) = obj.remove("detail") {
+        Some(detail)
+    } else {
+        None
+    }
+}
+
+fn err_from_resp(name: &'static str, resp: Response) -> Result<Response, ApiError> {
     let status = resp.status();
     if status.is_success() {
         Ok(resp)
     } else {
-        if let Ok(Value::Object(obj)) = resp.json::<Value>() {
-            if let Some(Value::String(message)) = obj.get("message") {
-                return Err(anyhow::anyhow!("{}: {}", status, message));
-            } else if let Some(Value::String(detail)) = obj.get("detail") {
-                return Err(anyhow::anyhow!("{}: {}", status, detail));
-            }
-        }
-        Err(anyhow::anyhow!("{}", status))
+        let message = resp.json::<Value>().ok().and_then(message_from_value);
+        Err(ApiError(name, status, message))
     }
 }
