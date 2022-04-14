@@ -43,6 +43,7 @@ install: all
 	install -D -m 0644 "$(BIN)-upload.service" "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-upload.service"
 	install -D -m 0644 "$(BIN)-upload.timer" "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-upload.timer"
 	install -D -m 0644 "org.pop_os.hpvendor.policy" "$(DESTDIR)$(datarootdir)/polkit-1/actions/org.pop_os.hpvendor.policy"
+	install -D -m 0644 "org.pop_os.hpvendor.pkla" "$(DESTDIR)/var/lib/polkit-1/localauthority/10-vendor.d/org.pop_os.hpvendor.pkla"
 
 uninstall:
 	rm -f "$(DESTDIR)$(libexecdir)/$(BIN)"
@@ -53,6 +54,7 @@ uninstall:
 	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily-upload.service"
 	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily-upload.timer"
 	rm -f "$(DESTDIR)$(datarootdir)/polkit-1/actions/org.pop_os.hpvendor.policy"
+	rm -f "$(DESTDIR)/var/lib/polkit-1/localauthority/10-vendor.d/org.pop_os.hpvendor.pkla"
 
 update:
 	cargo update

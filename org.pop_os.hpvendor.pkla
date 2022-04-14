@@ -1,0 +1,4 @@
+[Configure HP analytics]
+Identity=unix-group:admin;unix-group:sudo;unix-user:gnome-initial-setup
+Action=org.pop_os.hpvendor
+ResultActive=yes
