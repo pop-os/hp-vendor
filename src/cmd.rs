@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{env, fs, io};
+use std::{collections::BTreeMap, env, fs, io};
 
 use crate::{api::Api, db::DB, event::DeviceOSIds, util};
 
@@ -41,7 +41,7 @@ pub fn update_purposes() {
     let ids = DeviceOSIds::new(os_install_id).ok().unwrap();
     let api = Api::new(ids).ok().unwrap();
 
-    let purposes = api.purposes(None).unwrap();
+    let purposes = BTreeMap::from_iter(api.purposes(None).unwrap().into_iter());
 
     let file = fs::File::create("purposes.json").unwrap();
     serde_json::to_writer_pretty(file, &purposes).unwrap();
