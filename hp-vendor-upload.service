@@ -10,4 +10,4 @@ StartLimitBurst=6
 Type=simple
 ExecStart=/usr/libexec/hp-vendor daily-upload
 Restart=on-failure
-RandomizedDelaySec=10min
+RestartSec=10min
