@@ -53,10 +53,10 @@ pub fn run() {
         Some("download") => handle_err(download::run(args)),
         Some("exists") => handle_err(exists::run(args)),
         Some("print") => print::run(args),
-        Some("upload") => upload::run(args),
+        Some("daily-upload") => upload::run(args),
         _ => {
             eprintln!(
-                "Usage: hp-vendor (consent|daemon|daily|delete|disable|download|exists|print|upload)"
+                "Usage: hp-vendor (consent|daemon|daily|daily-upload|delete|disable|download|exists|print)"
             );
             process::exit(1);
         }
