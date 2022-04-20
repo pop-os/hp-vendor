@@ -18,7 +18,12 @@ use crate::util;
 use hp_vendor_client::{ApiError, ErrorJson};
 
 fn handle_err(res: anyhow::Result<()>) {
-    if let Err(err) = res {
+    if let Err(mut err) = res {
+        err = match err.downcast::<reqwest::Error>() {
+            Ok(err) => err.without_url().into(),
+            Err(err) => err,
+        };
+
         eprintln!("Error: {}", err);
         let is_tty = unsafe { libc::isatty(libc::STDERR_FILENO) } == 1;
         if !is_tty {
