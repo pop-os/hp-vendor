@@ -122,6 +122,7 @@ fn check_pkexec_status(status: ExitStatus, stderr: Vec<u8>) -> Result<(), Error>
                 match err {
                     ErrorJson::Api(err) => Err(Error::Api(err)),
                     ErrorJson::Other(message) => Err(Error::HpVendorFailed(Some(message))),
+                    ErrorJson::Reqwest(message) => Err(Error::Reqwest(message)),
                 }
             } else {
                 Err(Error::HpVendorFailed(None))

@@ -41,6 +41,7 @@ pub enum Error {
     PkexecDismissed,
     HpVendorFailed(Option<String>),
     Api(ApiError),
+    Reqwest(String),
 }
 
 impl fmt::Display for Error {
@@ -55,6 +56,7 @@ impl fmt::Display for Error {
                 write!(f, "Call to hp-vendor failed: {}", message)
             }
             Self::Api(err) => write!(f, "{}", err),
+            Self::Reqwest(err) => write!(f, "{}", err),
         }
     }
 }
@@ -78,4 +80,5 @@ impl From<io::Error> for Error {
 pub enum ErrorJson {
     Api(ApiError),
     Other(String),
+    Reqwest(String),
 }

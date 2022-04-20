@@ -29,6 +29,8 @@ fn handle_err(res: anyhow::Result<()>) {
         if !is_tty {
             let error = if let Some(err) = err.downcast_ref::<ApiError>() {
                 ErrorJson::Api(err.clone())
+            } else if let Some(err) = err.downcast_ref::<reqwest::Error>() {
+                ErrorJson::Reqwest(err.to_string())
             } else {
                 ErrorJson::Other(err.to_string())
             };
