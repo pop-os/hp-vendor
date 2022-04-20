@@ -51,8 +51,8 @@ uninstall:
 	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN).service"
 	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.service"
 	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily.timer"
-	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily-upload.service"
-	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-daily-upload.timer"
+	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-upload.service"
+	rm -f "$(DESTDIR)$(libdir)/systemd/system/$(BIN)-upload.timer"
 	rm -f "$(DESTDIR)$(datarootdir)/polkit-1/actions/org.pop_os.hpvendor.policy"
 	rm -f "$(DESTDIR)/var/lib/polkit-1/localauthority/10-vendor.d/org.pop_os.hpvendor.pkla"
 
