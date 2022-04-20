@@ -708,6 +708,6 @@ fn purposes(db: &db::DB, api: Option<&api::Api>) -> HashMap<String, event::DataC
     if !purposes.is_empty() {
         purposes
     } else {
-        serde_json::from_slice(include_bytes!("../purposes.json")).unwrap()
+        hp_vendor_client::static_purposes()
     }
 }

@@ -19,6 +19,10 @@ pub use error::*;
 const PURPOSES_CMD: &str = "/usr/libexec/hp-vendor-purposes";
 const CMD: &str = "/usr/libexec/hp-vendor";
 
+pub fn static_purposes() -> HashMap<String, DataCollectionPurpose> {
+    serde_json::from_slice(include_bytes!("../../purposes.json")).unwrap()
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataCollectionPurpose {
     pub purpose_id: String,
