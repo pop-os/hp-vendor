@@ -108,16 +108,17 @@ fn error_from_stderr(mut stderr: &[u8]) -> Option<(&[u8], ErrorJson)> {
     }
     let idx = stderr.iter().rposition(|x| *x == b'\n').unwrap_or(0);
     let res = serde_json::from_slice(&stderr[idx..]).ok()?;
-    Some((&stderr[..idx], res))
+    Some((&stderr[..=idx], res))
 }
 
 fn check_pkexec_status(status: ExitStatus, stderr: Vec<u8>) -> Result<(), Error> {
-    match status.code() {
+    let mut output = stderr.as_slice();
+    let res = match status.code() {
         Some(0) => Ok(()),
         Some(2) => {
             // Structured error from hp-vendor
             if let Some((start, err)) = error_from_stderr(&stderr) {
-                let _ = io::stderr().write_all(&start);
+                output = start;
                 match err {
                     ErrorJson::Api(err) => Err(Error::Api(err)),
                     ErrorJson::Other(message) => Err(Error::HpVendorFailed(Some(message))),
@@ -128,11 +129,14 @@ fn check_pkexec_status(status: ExitStatus, stderr: Vec<u8>) -> Result<(), Error>
         }
         Some(126) => Err(Error::PkexecDismissed),
         Some(127) => Err(Error::PkexecNoauth),
-        _ => {
-            let _ = io::stderr().write_all(&stderr);
-            Err(Error::HpVendorFailed(None))
-        }
-    }
+        _ => Err(Error::HpVendorFailed(None)),
+    };
+
+    let mut stderr = io::stderr();
+    let _ = stderr.write_all(output);
+    let _ = stderr.flush();
+
+    res
 }
 
 /// Get data colection purposes and opt-in status. Does not prompt for authentication.
