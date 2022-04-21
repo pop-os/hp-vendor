@@ -235,14 +235,14 @@ pub fn run() {
                     }
                 }
                 TOKEN_TIMER => {
-                    println!("timer");
+                    // println!("timer");
                     let mut buf = [0; 8];
                     let _ = unistd::read(timer.as_raw_fd(), &mut buf);
                     if let Some(rpm) = util::sensors::fan() {
-                        println!("Fan: {} RPM", rpm);
+                        // println!("Fan: {} RPM", rpm);
                     }
                     if let Some(temps) = util::sensors::thermal() {
-                        println!("Temps: {:?}", temps);
+                        // println!("Temps: {:?}", temps);
                     }
                 }
                 _ => unreachable!(),
