@@ -238,8 +238,8 @@ pub fn run() {
                     println!("timer");
                     let mut buf = [0; 8];
                     let _ = unistd::read(timer.as_raw_fd(), &mut buf);
-                    if let Some((current, requested)) = util::sensors::fan() {
-                        println!("Fan: {} RPM current, {} RPM requested", current, requested);
+                    if let Some(rpm) = util::sensors::fan() {
+                        println!("Fan: {} RPM", rpm);
                     }
                     if let Some(temps) = util::sensors::thermal() {
                         println!("Temps: {:?}", temps);
