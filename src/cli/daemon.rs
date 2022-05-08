@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 // XXX memory usage? Is there any danger remove events won't occur, and memory will grow?
-// TODO Change events
 
 use mio::{unix::SourceFd, Token};
 use nix::{
@@ -163,6 +162,11 @@ pub fn run() {
         .map(|(syspath, range)| (syspath, ids[range].to_owned()))
         .collect::<HashMap<_, _>>();
 
+    let mut sensors = util::Sensors::new();
+    if sensors.is_none() {
+        eprintln!("Error: Failed to intitialize `Sensors`");
+    }
+
     let mut events = mio::Events::with_capacity(1024);
     loop {
         loop {
@@ -238,11 +242,14 @@ pub fn run() {
                     // println!("timer");
                     let mut buf = [0; 8];
                     let _ = unistd::read(timer.as_raw_fd(), &mut buf);
-                    if let Some(rpm) = util::sensors::fan() {
-                        // println!("Fan: {} RPM", rpm);
-                    }
-                    if let Some(temps) = util::sensors::thermal() {
-                        // println!("Temps: {:?}", temps);
+                    if let Some(sensors) = &mut sensors {
+                        sensors.update();
+                        if let Some(rpm) = sensors.fan() {
+                            // println!("Fan: {} RPM", rpm);
+                        }
+                        if let Some(temps) = sensors.thermal() {
+                            // println!("Temps: {:?}", temps);
+                        }
                     }
                 }
                 _ => unreachable!(),
