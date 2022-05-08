@@ -2,6 +2,21 @@
 //
 // SPDX-License-Identifier: GPL-3.0-only
 
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+
+use crate::event;
+
+fn unix_time() -> i64 {
+    OffsetDateTime::now_utc().unix_timestamp()
+}
+
+fn format_unix_time(time: i64) -> String {
+    OffsetDateTime::from_unix_timestamp(time)
+        .unwrap()
+        .format(&Rfc3339)
+        .unwrap()
+}
+
 #[derive(Debug)]
 pub struct Temps {
     pub cpu: i64,
@@ -10,6 +25,79 @@ pub struct Temps {
     pub chg: i64,
     pub on_ac: bool,
     pub charging: bool,
+    pub time: i64,
+}
+
+// Coppied from https://github.com/rust-lang/rust/pull/88582
+// (Not in stable)
+fn div_ceil(lhs: i64, rhs: i64) -> i64 {
+    let d = lhs / rhs;
+    let r = lhs % rhs;
+    if (r > 0 && rhs > 0) || (r < 0 && rhs < 0) {
+        d + 1
+    } else {
+        d
+    }
+}
+
+fn percentiles(values: impl Iterator<Item = i64>) -> Vec<i64> {
+    let mut values = values.collect::<Vec<_>>();
+    values.sort_unstable();
+
+    if values.is_empty() {
+        return Vec::new();
+    }
+
+    let n = values.len() as i64;
+    let percentile = |p| div_ceil(p * n, 100);
+
+    vec![
+        *values.first().unwrap(),
+        percentile(10),
+        percentile(20),
+        percentile(30),
+        percentile(40),
+        percentile(50),
+        percentile(60),
+        percentile(70),
+        percentile(80),
+        percentile(90),
+        *values.last().unwrap(),
+    ]
+}
+
+// `temps` must be sorted by time, and non-empty
+pub fn sumarize_temps(temps: &[Temps]) -> event::ThermalSummary {
+    assert!(!temps.is_empty());
+
+    let start_time = temps.first().unwrap().time;
+    let end_time = temps.last().unwrap().time;
+    // Assume system up one minute per sample
+    // TODO: better method
+    let system_up_time = temps.len() as i64 * 60;
+
+    event::ThermalSummary {
+        bat_zone_ac_charging_ptile: percentiles(
+            temps
+                .iter()
+                .filter(|x| x.on_ac && x.charging)
+                .map(|x| x.bat),
+        ),
+        bat_zone_ac_not_charging_ptile: percentiles(
+            temps
+                .iter()
+                .filter(|x| x.on_ac && !x.charging)
+                .map(|x| x.bat),
+        ),
+        bat_zone_dc_ptile: percentiles(temps.iter().filter(|x| !x.on_ac).map(|x| x.bat)),
+        chg_zone_ptile: percentiles(temps.iter().map(|x| x.chg)),
+        cpu_zone_ptile: percentiles(temps.iter().map(|x| x.cpu)),
+        end_time: format_unix_time(end_time),
+        ext_zone_ptile: percentiles(temps.iter().map(|x| x.ext)),
+        num_samples: temps.len() as i64,
+        start_time: format_unix_time(start_time),
+        system_up_time,
+    }
 }
 
 #[derive(Debug)]
@@ -100,6 +188,7 @@ impl Sensors {
             chg: temp_n(6)?,
             on_ac,
             charging,
+            time: unix_time(),
         })
     }
 }
