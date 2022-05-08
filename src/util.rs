@@ -9,7 +9,8 @@ pub mod drm;
 pub mod lock;
 pub mod nvme;
 pub mod pcie;
-pub mod sensors;
+mod sensors;
+pub use sensors::Sensors;
 pub mod systemd;
 
 pub use hp_vendor_client::conf::{hp_vendor_conf, HpVendorConf};
