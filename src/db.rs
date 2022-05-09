@@ -381,12 +381,19 @@ impl DB {
         Ok(())
     }
 
-    pub fn get_temps(&self) -> Result<Vec<util::Temps>> {
-        let mut stmt = self.0.prepare(
-            "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
+    pub fn get_temps(&self, limit: bool) -> Result<Vec<util::Temps>> {
+        let mut stmt = if limit {
+            self.0.prepare(
+                "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
                  LIMIT 100
                  SORT BY time",
-        )?;
+            )?
+        } else {
+            self.0.prepare(
+                "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
+                 SORT BY time",
+            )?
+        };
         let rows = stmt.query_map([], |row| {
             Ok(util::Temps {
                 cpu: row.get(0)?,
