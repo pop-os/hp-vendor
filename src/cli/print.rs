@@ -25,8 +25,9 @@ pub fn run(mut args: env::Args) {
         Some("purposes") => println!("{:#?}", crate::purposes(&db, api(&db).as_ref())),
         Some("queued") => println!("{:#?}", db.get_queued().unwrap().1),
         Some("state") => println!("{:#?}", db.get_state(db::State::All).unwrap()),
+        Some("temps") => println!("{:#?}", db.get_temps(false).unwrap()),
         _ => {
-            eprintln!("Usage: hp-vendor print (consent|frequencies|purposes|queued|state)");
+            eprintln!("Usage: hp-vendor print (consent|frequencies|purposes|queued|state|temps)");
             process::exit(1);
         }
     }

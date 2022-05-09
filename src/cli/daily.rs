@@ -22,7 +22,7 @@ pub fn run() {
 
     let mut insert_statement = db.prepare_queue_insert().unwrap();
     loop {
-        let temps = db.get_temps().unwrap();
+        let temps = db.get_temps(true).unwrap();
         if temps.len() < 100 {
             break;
         }
