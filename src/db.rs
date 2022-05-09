@@ -386,12 +386,12 @@ impl DB {
             self.0.prepare(
                 "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
                  LIMIT 100
-                 SORT BY time",
+                 ORDER BY time",
             )?
         } else {
             self.0.prepare(
                 "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
-                 SORT BY time",
+                 ORDER BY time",
             )?
         };
         let rows = stmt.query_map([], |row| {
