@@ -106,7 +106,9 @@ pub fn run() {
     let timer = TimerFd::new(ClockId::CLOCK_MONOTONIC, TimerFlags::empty()).unwrap();
     timer
         .set(
-            Expiration::Interval(TimeSpec::from_duration(Duration::from_secs(10))),
+            Expiration::Interval(TimeSpec::from_duration(Duration::from_secs(
+                util::TEMP_SAMPLE_SECONDS as u64,
+            ))),
             TimerSetTimeFlags::empty(),
         )
         .unwrap();
@@ -250,7 +252,6 @@ pub fn run() {
                         if let Some(temps) = sensors.thermal() {
                             // println!("Temps: {:?}", temps);
                             db.insert_temps(&temps).unwrap();
-                            // XXX frequency
                         }
                     }
                 }

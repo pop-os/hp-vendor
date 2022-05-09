@@ -6,6 +6,8 @@ use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
 use crate::event;
 
+pub const TEMP_SAMPLE_SECONDS: i64 = 60;
+
 fn unix_time() -> i64 {
     OffsetDateTime::now_utc().unix_timestamp()
 }
@@ -74,7 +76,7 @@ pub fn sumarize_temps(temps: &[Temps]) -> event::ThermalSummary {
     let end_time = temps.last().unwrap().time;
     // Assume system up one minute per sample
     // TODO: better method
-    let system_up_time = temps.len() as i64 * 60;
+    let system_up_time = temps.len() as i64 * TEMP_SAMPLE_SECONDS;
 
     event::ThermalSummary {
         bat_zone_ac_charging_ptile: percentiles(
