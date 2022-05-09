@@ -14,6 +14,7 @@ use crate::{
     config::SamplingFrequency,
     event::{DataCollectionConsent, DataCollectionPurpose, TelemetryEvent, TelemetryEventType},
     frequency::Frequencies,
+    util,
 };
 
 pub enum State<'a> {
@@ -71,7 +72,23 @@ fn migration1(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[migration1];
+fn migration2(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "CREATE TABLE temps (
+             id INTEGER PRIMARY KEY,
+             cpu INTEGER NOT NULL,
+             ext INTEGER NOT NULL,
+             bat INTEGER NOT NULL,
+             chg INTEGER NOT NULL,
+             on_ac INTEGER NOT NULL,
+             charging INTEGER NOT NULL,
+             time INTEGER NOT NULL
+        );",
+    )?;
+    Ok(())
+}
+
+static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[migration1, migration2];
 
 pub struct DB(Connection);
 
@@ -345,6 +362,50 @@ impl DB {
             ",
         )?;
         tx.commit()
+    }
+
+    pub fn insert_temps(&self, temps: &util::Temps) -> Result<()> {
+        self.0.execute(
+            "INSERT INTO temps (cpu, ext, bat, chg, on_ac, charging, time)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params![
+                temps.cpu,
+                temps.ext,
+                temps.bat,
+                temps.chg,
+                temps.on_ac,
+                temps.charging,
+                temps.time,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_temps(&self) -> Result<Vec<util::Temps>> {
+        let mut stmt = self.0.prepare(
+            "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
+                 LIMIT 100
+                 SORT BY time",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(util::Temps {
+                cpu: row.get(0)?,
+                ext: row.get(1)?,
+                bat: row.get(2)?,
+                chg: row.get(3)?,
+                on_ac: row.get(4)?,
+                charging: row.get(5)?,
+                time: row.get(6)?,
+            })
+        })?;
+        Ok(rows.filter_map(Result::ok).collect())
+    }
+
+    // Remove where time less than last
+    pub fn remove_temps_before(&self, temps: &util::Temps) -> Result<()> {
+        self.0
+            .execute("DELETE FROM temps WHERE time <= ?", [temps.time])?;
+        Ok(())
     }
 }
 

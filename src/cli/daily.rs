@@ -19,4 +19,16 @@ pub fn run() {
         crate::update_events_and_queue(&db, &freqs, SamplingFrequency::Weekly).unwrap();
         db.update_last_weekly_time().unwrap();
     }
+
+    let mut insert_statement = db.prepare_queue_insert().unwrap();
+    loop {
+        let temps = db.get_temps().unwrap();
+        if temps.len() < 100 {
+            break;
+        }
+        insert_statement
+            .execute(&util::sumarize_temps(&temps).into())
+            .unwrap();
+        db.remove_temps_before(temps.last().unwrap()).unwrap();
+    }
 }

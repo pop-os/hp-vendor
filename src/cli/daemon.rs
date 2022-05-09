@@ -249,6 +249,8 @@ pub fn run() {
                         }
                         if let Some(temps) = sensors.thermal() {
                             // println!("Temps: {:?}", temps);
+                            db.insert_temps(&temps).unwrap();
+                            // XXX frequency
                         }
                     }
                 }
