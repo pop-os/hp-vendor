@@ -173,7 +173,7 @@ impl Sensors {
             let value = self
                 .hwmon_acpi_device
                 .attribute_value(format!("temp{}_input", n))?;
-            value.to_str()?.trim().parse().ok()
+            Some(value.to_str()?.trim().parse::<i64>().ok()? / 1000)
         };
 
         let on_ac = self.ac_device.attribute_value("online")?.to_str()?.trim() == "1";
