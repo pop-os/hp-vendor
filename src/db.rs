@@ -385,8 +385,8 @@ impl DB {
         let mut stmt = if limit {
             self.0.prepare(
                 "SELECT cpu, ext, bat, chg, on_ac, charging, time FROM temps
-                 LIMIT 100
-                 ORDER BY time",
+                 ORDER BY time
+                 LIMIT 100",
             )?
         } else {
             self.0.prepare(
