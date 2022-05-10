@@ -51,7 +51,7 @@ fn percentiles(values: impl Iterator<Item = i64>) -> Vec<i64> {
     }
 
     let n = values.len() as i64;
-    let percentile = |p| values[div_ceil(p * n, 100) as usize];
+    let percentile = |p| values[div_ceil(p * n, 100) as usize - 1];
 
     vec![
         *values.first().unwrap(),
