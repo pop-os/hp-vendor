@@ -1708,10 +1708,7 @@
                 "num_samples",
                 "cpu_zone_ptile",
                 "chg_zone_ptile",
-                "ext_zone_ptile",
-                "bat_zone_dc_ptile",
-                "bat_zone_ac_charging_ptile",
-                "bat_zone_ac_not_charging_ptile"
+                "ext_zone_ptile"
             ],
             "additionalProperties": false
         },

@@ -42,18 +42,18 @@ fn div_ceil(lhs: i64, rhs: i64) -> i64 {
     }
 }
 
-fn percentiles(values: impl Iterator<Item = i64>) -> Vec<i64> {
+fn percentiles(values: impl Iterator<Item = i64>) -> Option<Vec<i64>> {
     let mut values = values.collect::<Vec<_>>();
     values.sort_unstable();
 
     if values.is_empty() {
-        return Vec::new();
+        return None;
     }
 
     let n = values.len() as i64;
     let percentile = |p| values[div_ceil(p * n, 100) as usize - 1];
 
-    vec![
+    Some(vec![
         *values.first().unwrap(),
         percentile(10),
         percentile(20),
@@ -65,7 +65,7 @@ fn percentiles(values: impl Iterator<Item = i64>) -> Vec<i64> {
         percentile(80),
         percentile(90),
         *values.last().unwrap(),
-    ]
+    ])
 }
 
 // `temps` must be sorted by time, and non-empty
@@ -92,10 +92,10 @@ pub fn sumarize_temps(temps: &[Temps]) -> event::ThermalSummary {
                 .map(|x| x.bat),
         ),
         bat_zone_dc_ptile: percentiles(temps.iter().filter(|x| !x.on_ac).map(|x| x.bat)),
-        chg_zone_ptile: percentiles(temps.iter().map(|x| x.chg)),
-        cpu_zone_ptile: percentiles(temps.iter().map(|x| x.cpu)),
+        chg_zone_ptile: percentiles(temps.iter().map(|x| x.chg)).unwrap(),
+        cpu_zone_ptile: percentiles(temps.iter().map(|x| x.cpu)).unwrap(),
         end_time: format_unix_time(end_time),
-        ext_zone_ptile: percentiles(temps.iter().map(|x| x.ext)),
+        ext_zone_ptile: percentiles(temps.iter().map(|x| x.ext)).unwrap(),
         num_samples: temps.len() as i64,
         start_time: format_unix_time(start_time),
         system_up_time,
