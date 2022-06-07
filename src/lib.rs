@@ -143,29 +143,6 @@ pub fn event(type_: TelemetryEventType) -> Option<EventDesc> {
                 .into(),
             );
         }),
-        // TODO: generate in daemon
-        TelemetryEventType::HwBatteryLife => EventDesc::new(|events| {
-            let path = match battery() {
-                Some(path) => path,
-                None => return,
-            };
-
-            events.push(
-                event::BatteryLife {
-                    ct_number: read_file(path.join("battery_ct_number")).unwrap_or_else(unknown),
-                    cycle_count: read_file(path.join("cycle_count")).unwrap_or(-1),
-                    energy_full: read_file(path.join("charge_full"))
-                        .map(|x: i64| x / 1000)
-                        .unwrap_or(-1),
-                    serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
-                    timestamp: event::date_time(),
-                    total_ac_charging_time: None, // XXX
-                    total_ac_time: 0,             // XXX
-                    total_dc_time: 0,             // XXX
-                }
-                .into(),
-            );
-        }),
         TelemetryEventType::HwBaseBoard => EventDesc::new(|events| {
             events.push(
                 event::BaseBoard {

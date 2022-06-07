@@ -29,6 +29,9 @@ pub fn run() {
         insert_statement
             .execute(&util::sumarize_temps(&temps).into())
             .unwrap();
+        if let Some(battery_life) = util::sumarize_battery_life(&temps) {
+            insert_statement.execute(&battery_life.into()).unwrap();
+        }
         db.remove_temps_before(temps.last().unwrap()).unwrap();
     }
 }
