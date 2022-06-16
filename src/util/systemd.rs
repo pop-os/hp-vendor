@@ -8,6 +8,7 @@ use std::process::Command;
 
 const SERVICE: &str = "hp-vendor.service";
 const TIMERS: &[&str] = &["hp-vendor-daily.timer", "hp-vendor-upload.timer"];
+const OPT_OUT: &str = "hp-vendor-opt-out.timer";
 
 /// Restarts daemon if running, to handle frequencies change
 pub fn try_restart_daemon() {
@@ -39,5 +40,21 @@ pub fn disable_services_and_timers() {
         .arg("disable")
         .arg(SERVICE)
         .args(TIMERS)
+        .status();
+}
+
+pub fn enable_opt_out_service() {
+    let _ = Command::new("systemctl")
+        .arg("enable")
+        .arg(OPT_OUT)
+        .status();
+    let _ = Command::new("systemctl").arg("start").arg(OPT_OUT).status();
+}
+
+pub fn disable_opt_out_service() {
+    let _ = Command::new("systemctl").arg("stop").arg(OPT_OUT).status();
+    let _ = Command::new("systemctl")
+        .arg("disable")
+        .arg(OPT_OUT)
         .status();
 }

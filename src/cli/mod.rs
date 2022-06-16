@@ -10,6 +10,8 @@ mod disable;
 mod download;
 mod exists;
 mod print;
+mod send_opt_out;
+mod upgrade_opt_out;
 mod upload;
 
 use std::{env, io, process};
@@ -56,9 +58,11 @@ pub fn run() {
         Some("exists") => handle_err(exists::run(args)),
         Some("print") => print::run(args),
         Some("daily-upload") => upload::run(args),
+        Some("send-opt-out") => send_opt_out::run(),
+        Some("upgrade-opt-out") => upgrade_opt_out::run(),
         _ => {
             eprintln!(
-                "Usage: hp-vendor (consent|daemon|daily|daily-upload|delete|disable|download|exists|print)"
+                "Usage: hp-vendor (consent|daemon|daily|daily-upload|delete|disable|download|exists|send-opt-out|print)"
             );
             process::exit(1);
         }

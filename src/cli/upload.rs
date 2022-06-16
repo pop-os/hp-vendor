@@ -39,6 +39,7 @@ pub fn run(mut args: env::Args) {
         if !consent.sent {
             let resp = api
                 .consent(
+                    true,
                     &consent.locale,
                     &consent.country,
                     &consent.purpose_id,

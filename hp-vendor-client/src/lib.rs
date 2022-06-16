@@ -8,7 +8,7 @@ use std::{
     io::{self, Read, Write},
     path::Path,
     process::{self, Command, ExitStatus, Stdio},
-    str,
+    str::{self, FromStr},
 };
 
 #[doc(hidden)]
@@ -31,8 +31,14 @@ pub struct DataCollectionPurpose {
     pub statement: String,
 }
 
+fn default_true() -> bool {
+    true
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DataCollectionConsent {
+    #[serde(default = "default_true")]
+    pub opt_in: bool,
     pub country: String,
     pub locale: String,
     pub purpose_id: String,
@@ -153,9 +159,23 @@ pub fn purposes(fetch: bool) -> Result<PurposesOutput, Error> {
 }
 
 /// Sets consent info in db, and enables daemon
-pub fn consent(locale: &str, country: &str, purpose_id: &str, version: &str) -> Result<(), Error> {
+pub fn consent(
+    locale: &str,
+    country: &str,
+    purpose_id: &str,
+    version: &str,
+    opt_in: bool,
+) -> Result<(), Error> {
     let output = Command::new("pkexec")
-        .args(&[CMD, "consent", locale, country, purpose_id, version])
+        .args(&[
+            CMD,
+            "consent",
+            locale,
+            country,
+            purpose_id,
+            version,
+            &opt_in.to_string(),
+        ])
         .stderr(Stdio::piped())
         .output()?;
     check_pkexec_status(output.status, output.stderr)
@@ -227,4 +247,29 @@ pub fn supported_hardware() -> Result<(), String> {
     } else {
         Ok(())
     }
+}
+
+pub fn purpose_for_locale(
+    mut purposes: HashMap<String, DataCollectionPurpose>,
+) -> (String, String, DataCollectionPurpose) {
+    let locale = locale_config::Locale::current();
+    let mut region = None;
+    for i in locale.tags_for("messages") {
+        if let Ok(identifier) = unic_langid::LanguageIdentifier::from_str(&i.to_string()) {
+            let language = identifier.language.as_str();
+            if region.is_none() {
+                if let Some(new_region) = identifier.region {
+                    region = Some(new_region.as_str().to_owned());
+                }
+            }
+            if let Some(purpose) = purposes.remove(language) {
+                // Is this a reasonable default?
+                let region = region.unwrap_or_else(String::new);
+                return (language.to_string(), region, purpose);
+            }
+        }
+    }
+    // Assume `en` is always a valid locale, and use as fallback
+    let region = region.unwrap_or_else(String::new);
+    ("en".to_string(), region, purposes.remove("en").unwrap())
 }
