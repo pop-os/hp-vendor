@@ -88,7 +88,15 @@ fn migration2(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[migration1, migration2];
+fn migration3(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+        "ALTER TABLE consents
+         ADD COLUMN opt_in INTEGER DEFAULT 1 NOT NULL",
+    )?;
+    Ok(())
+}
+
+static MIGRATIONS: &[fn(&Connection) -> Result<()>] = &[migration1, migration2, migration3];
 
 pub struct DB(Connection);
 
@@ -98,6 +106,9 @@ impl DB {
 
         let tx = conn.unchecked_transaction()?;
         let user_version: usize = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if user_version > MIGRATIONS.len() {
+            panic!("Invalid db version: {}", user_version);
+        }
         for migration in &MIGRATIONS[user_version..] {
             migration(&conn)?;
         }
@@ -124,7 +135,7 @@ impl DB {
     pub fn get_consent(&self) -> Result<Option<DataCollectionConsent>> {
         let mut stmt = self
             .0
-            .prepare("SELECT locale, country, purpose_id, version, sent from consents")?;
+            .prepare("SELECT locale, country, purpose_id, version, sent, opt_in from consents")?;
         stmt.query_row([], |row| {
             Ok(DataCollectionConsent {
                 locale: row.get(0)?,
@@ -132,6 +143,7 @@ impl DB {
                 purpose_id: row.get(2)?,
                 version: row.get(3)?,
                 sent: row.get(4)?,
+                opt_in: row.get(5)?,
             })
         })
         .optional()
@@ -141,8 +153,8 @@ impl DB {
         let tx = self.0.unchecked_transaction()?;
         self.0.execute("DELETE FROM consents", [])?;
         let mut stmt = self.0.prepare(
-            "INSERT INTO consents (locale, country, purpose_id, version, sent)
-             VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO consents (locale, country, purpose_id, version, sent, opt_in)
+             VALUES (?, ?, ?, ?, ?, ?)",
         )?;
         if let Some(consent) = consent {
             stmt.execute(params![
@@ -150,7 +162,8 @@ impl DB {
                 &consent.country,
                 &consent.purpose_id,
                 &consent.version,
-                &consent.sent
+                &consent.sent,
+                &consent.opt_in,
             ])?;
         }
         tx.commit()
