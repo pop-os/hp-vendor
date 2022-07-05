@@ -4,8 +4,9 @@
 
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-use crate::event;
+use crate::{event, read_file, unknown};
 
+// Also used for BatteryLife
 pub const TEMP_SAMPLE_SECONDS: i64 = 60;
 
 fn unix_time() -> i64 {
@@ -100,6 +101,28 @@ pub fn sumarize_temps(temps: &[Temps]) -> event::ThermalSummary {
         start_time: format_unix_time(start_time),
         system_up_time,
     }
+}
+
+pub fn sumarize_battery_life(temps: &[Temps]) -> Option<event::BatteryLife> {
+    // Assume 1 minute samples
+    let total_ac_charging_time = temps.iter().filter(|x| x.on_ac && x.charging).count() as i64;
+    let total_ac_time = temps.iter().filter(|x| x.on_ac).count() as i64;
+    let total_dc_time = temps.iter().filter(|x| !x.on_ac).count() as i64;
+
+    let path = crate::battery()?;
+
+    Some(event::BatteryLife {
+        ct_number: read_file(path.join("battery_ct_number")).unwrap_or_else(unknown),
+        cycle_count: read_file(path.join("cycle_count")).unwrap_or(-1),
+        energy_full: read_file(path.join("charge_full"))
+            .map(|x: i64| x / 1000)
+            .unwrap_or(-1),
+        serial_number: read_file(path.join("serial_number")).unwrap_or_else(unknown),
+        timestamp: event::date_time(),
+        total_ac_charging_time: Some(total_ac_charging_time),
+        total_ac_time,
+        total_dc_time,
+    })
 }
 
 #[derive(Debug)]
