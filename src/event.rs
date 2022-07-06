@@ -139,16 +139,16 @@ impl<'a> Events<'a> {
     }
 }
 
-pub fn remove_event(event: &mut TelemetryEvent) {
-    if let Some(state) = event.state_mut() {
-        *state = State::Removed;
-    }
+pub fn remove_event(mut event: TelemetryEvent) -> Option<TelemetryEvent> {
+    *(event.state_mut()?) = State::Removed;
     event.clear_options();
 
-    if let TelemetryEvent::HwPeripheralUsb(event) = event {
+    if let TelemetryEvent::HwPeripheralUsb(event) = &mut event {
         event.timestamp = date_time();
     }
     // TODO: any other types with timestamp, etc.
+
+    Some(event)
 }
 
 pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
@@ -184,9 +184,9 @@ pub fn diff(events: &mut Vec<TelemetryEvent>, old_events: &[TelemetryEvent]) {
     let mut new_events = Vec::new();
     for (k, old) in m2.iter_mut() {
         if !m1.contains_key(k) {
-            let mut new = (**old).clone();
-            remove_event(&mut new);
-            new_events.push(new);
+            if let Some(new) = remove_event((**old).clone()) {
+                new_events.push(new);
+            }
         }
     }
 
