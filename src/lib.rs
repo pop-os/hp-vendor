@@ -646,6 +646,10 @@ pub fn events(freqs: &Frequencies, freq: SamplingFrequency) -> Vec<event::Teleme
     events_inner(event::TelemetryEventType::iter().filter(|i| freqs.get(*i) == freq))
 }
 
+pub fn smart_log_events() -> Vec<event::TelemetryEvent> {
+    events_inner([TelemetryEventType::HwNvmeSmartLog].into_iter())
+}
+
 pub fn update_events_and_queue(
     db: &db::DB,
     freqs: &Frequencies,
