@@ -4,7 +4,7 @@
 
 use std::{ffi::OsStr, process::Command};
 
-#[derive(serde::Deserialize)]
+#[derive(Debug)]
 pub struct ControllerId {
     pub sn: String,
     // mn: String,
@@ -19,6 +19,29 @@ impl ControllerId {
         let major = self.ver >> 16;
         let minor = (self.ver >> 8) & 0xff;
         format!("{}.{}", major, minor)
+    }
+
+    // Json output of `nvme` has issues: https://github.com/linux-nvme/nvme-cli/issues/1598
+    // Parse binary instead.
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        let sn = bytes.get(04..=23)?;
+        let sn = String::from_utf8_lossy(sn).into_owned();
+
+        let ver = bytes.get(80..=83)?;
+        let ver = i64::from(u32::from_le_bytes([ver[0], ver[1], ver[2], ver[3]]));
+
+        let wctemp = bytes.get(266..=267)?;
+        let wctemp = i64::from(u16::from_le_bytes([wctemp[0], wctemp[1]]));
+
+        let cctemp = bytes.get(268..=269)?;
+        let cctemp = i64::from(u16::from_le_bytes([cctemp[0], cctemp[1]]));
+
+        Some(Self {
+            sn,
+            ver,
+            wctemp,
+            cctemp,
+        })
     }
 }
 
@@ -84,6 +107,18 @@ impl SmartLog {
     }
 }
 
+fn nvme_cmd_binary<S: AsRef<OsStr>>(cmd: &str, path: S) -> Option<Vec<u8>> {
+    Some(
+        Command::new("nvme")
+            .arg(cmd)
+            .arg(&path)
+            .arg("--output-format=binary")
+            .output()
+            .ok()?
+            .stdout,
+    )
+}
+
 fn nvme_cmd<S: AsRef<OsStr>, T: serde::de::DeserializeOwned>(cmd: &str, path: S) -> Option<T> {
     let stdout = Command::new("nvme")
         .arg(cmd)
@@ -100,7 +135,7 @@ pub fn smart_log<S: AsRef<OsStr>>(path: S) -> Option<SmartLog> {
 }
 
 pub fn controller_id<S: AsRef<OsStr>>(path: S) -> Option<ControllerId> {
-    nvme_cmd("id-ctrl", path)
+    ControllerId::from_bytes(&nvme_cmd_binary("id-ctrl", path)?)
 }
 
 #[allow(dead_code)]
