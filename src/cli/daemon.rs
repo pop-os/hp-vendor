@@ -208,10 +208,11 @@ pub fn run() {
                         } else if x.event_type() == udev::EventType::Remove {
                             if let Some(ids) = udev_devices.remove(x.syspath()) {
                                 let events = db.get_state(db::State::Ids(&ids)).unwrap();
-                                for mut event in events {
-                                    crate::event::remove_event(&mut event);
-                                    println!("{:#?}", event);
-                                    insert_statement.execute(&event).unwrap();
+                                for event in events {
+                                    if let Some(remove_event) = crate::event::remove_event(event) {
+                                        println!("{:#?}", remove_event);
+                                        insert_statement.execute(&remove_event).unwrap();
+                                    }
                                 }
                                 db.replace_state(db::State::Ids(&ids), &[]).unwrap();
                             }
