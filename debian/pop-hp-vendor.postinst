@@ -1,0 +1,6 @@
+case "$1" in
+	configure)
+		# Don't make upgrade fail if this crashes for some reason
+		/usr/libexec/hp-vendor upgrade-opt-out || true
+	;;
+esac
