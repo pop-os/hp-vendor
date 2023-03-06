@@ -70,7 +70,11 @@ static struct attribute *hp_vendor_battery_attrs[] = {
 
 ATTRIBUTE_GROUPS(hp_vendor_battery);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0)
+static int hp_vendor_battery_add(struct power_supply *battery, struct acpi_battery_hook *hook)
+#else
 static int hp_vendor_battery_add(struct power_supply *battery)
+#endif
 {
 	// HP vendor only supports 1 battery
 	if (strcmp(battery->desc->name, "BATT") != 0)
@@ -82,7 +86,11 @@ static int hp_vendor_battery_add(struct power_supply *battery)
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0)
+static int hp_vendor_battery_remove(struct power_supply *battery, struct acpi_battery_hook *hook)
+#else
 static int hp_vendor_battery_remove(struct power_supply *battery)
+#endif
 {
 	device_remove_groups(&battery->dev, hp_vendor_battery_groups);
 	return 0;
