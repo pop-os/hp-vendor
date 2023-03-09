@@ -245,16 +245,18 @@ impl Api {
 
     pub fn consent(
         &self,
+        opt_in: bool,
         locale: &str,
         country: &str,
         purpose_id: &str,
         version: &str,
     ) -> anyhow::Result<ConsentResponse> {
+        let opt_in = if opt_in { "true" } else { "false" };
         Ok(self
             .request_json(
                 "DataCollectionConsent",
                 &[
-                    ("optIn", "true"),
+                    ("optIn", opt_in),
                     ("locale", locale),
                     ("country", country),
                     ("purposeId", purpose_id),

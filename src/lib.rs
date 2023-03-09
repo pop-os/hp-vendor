@@ -668,7 +668,8 @@ pub fn update_events_and_queue(
 
 pub fn exit_if_not_opted_in(db: &db::DB) {
     let consent = db.get_consent().unwrap();
-    if consent.is_none() {
+    let opt_in = consent.map_or(false, |consent| consent.opt_in);
+    if opt_in {
         eprintln!("Not opted in to data colection.");
         process::exit(0);
     }

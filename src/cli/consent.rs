@@ -6,6 +6,7 @@ use std::{
     env,
     io::{self, Write},
     process,
+    str::FromStr,
 };
 
 use crate::{
@@ -32,21 +33,26 @@ pub fn run(mut args: env::Args) {
     let purpose_version = if args.len() != 0 {
         let purpose_id = args.next().unwrap_or_else(arg_err);
         let version = args.next().unwrap_or_else(arg_err);
-        Some((purpose_id, version))
+        let opt_in = args
+            .next()
+            .map_or(true, |arg| bool::from_str(&arg).unwrap());
+        Some((purpose_id, version, opt_in))
     } else {
         None
     };
 
     let db = DB::open().unwrap();
 
-    let consent = if let Some((purpose_id, version)) = purpose_version {
+    let consent = if let Some((purpose_id, version, opt_in)) = purpose_version {
         event::DataCollectionConsent {
             country: country,
             locale: locale,
             purpose_id: purpose_id,
             version: version,
             sent: false,
+            opt_in,
         }
+        // XXX enable or disable
     } else {
         // XXX show existing consent
 
@@ -65,9 +71,7 @@ pub fn run(mut args: env::Args) {
         let mut answer = String::new();
         io::stdin().read_line(&mut answer).unwrap();
 
-        if answer.trim() != "y" {
-            return;
-        }
+        let opt_in = answer.trim() == "y";
 
         event::DataCollectionConsent {
             country: country.to_string(),
@@ -75,9 +79,16 @@ pub fn run(mut args: env::Args) {
             purpose_id: purpose.purpose_id.clone(),
             version: purpose.version.clone(),
             sent: false,
+            opt_in,
         }
     };
 
     db.set_consent(Some(&consent)).unwrap();
-    util::systemd::enable_services_and_timers();
+    if consent.opt_in {
+        util::systemd::disable_opt_out_service();
+        util::systemd::enable_services_and_timers();
+    } else {
+        util::systemd::disable_services_and_timers();
+        util::systemd::enable_opt_out_service();
+    }
 }

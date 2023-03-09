@@ -1,3 +1,9 @@
+pop-hp-vendor (0.2.0) jammy; urgency=medium
+
+  * Send explict opt out to server.
+
+ -- Ian Scott <idscott@system76.com>  Wed, 06 Jul 2022 17:05:42 -0700
+
 pop-hp-vendor (0.1.0) impish; urgency=medium
 
   * Initial release.
