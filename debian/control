@@ -8,6 +8,7 @@ Build-Depends:
   clang,
   dkms,
   dh-modaliases,
+  dh-sequence-dkms,
   libclang-dev,
   libsensors-dev,
   libsqlite3-dev,
